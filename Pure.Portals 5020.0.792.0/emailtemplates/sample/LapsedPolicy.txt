@@ -1,0 +1,7 @@
+Good Day,
+
+Please note that [!PolicyNumber!] on [!ProductName!] for [!InsuredName!] has been lapsed, effective [!ExpiryDate!].
+
+Regards,
+
+[!LoggedInUserFullName!]

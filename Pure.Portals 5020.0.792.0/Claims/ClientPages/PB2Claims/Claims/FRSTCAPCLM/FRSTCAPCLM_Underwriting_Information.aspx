@@ -1,0 +1,3437 @@
+﻿<%@ Page Language="VB" AutoEventWireup="false" MasterPageFile="~/Default.master"
+    CodeFile="FRSTCAPCLM_Underwriting_Information.aspx.vb" Inherits="Nexus.PB2_FRSTCAPCLM_Underwriting_Information" %>
+
+<%@ Register Src="~/Controls/ProgressBar.ascx" TagName="ProgressBar" TagPrefix="NexusControl" %>
+<%@ Register TagPrefix="NexusProvider" Namespace="NexusProvider" Assembly="NexusProvider" %>
+<%@ Register Src="~/controls/CalendarLookup.ascx" TagName="CalendarLookup" TagPrefix="uc1" %>
+<%@ Register Src="~/Controls/BOCoverDates.ascx" TagName="CoverDate" TagPrefix="uc2" %>
+<%@ Register Src="~/Controls/SubAgents.ascx" TagName="SubAgents" TagPrefix="uc4" %>
+<%@ Register Src="~/Controls/Contacts.ascx" TagName="Contact" TagPrefix="uc5" %>
+<%@ Register Src="~/controls/AddressCntrl.ascx" TagName="AddressCntrl" TagPrefix="uc6" %>
+<%@ Register TagPrefix="Nexus" Namespace="Nexus" %>
+<%@ Register Src="~/Controls/StandardWordings.ascx" TagName="SW" TagPrefix="uc7" %>
+<%@ Register Src="~/Controls/FindParty.ascx" TagName="FindParty" TagPrefix="NexusControl" %>
+<%@ Register Src="~/Controls/VehicleLookup.ascx" TagName="VehicleLookup" TagPrefix="uc8" %> 
+
+<asp:Content ID="cntMainBody" ContentPlaceHolderID="cntMainBody" Runat="Server" xmlns:asp="remove" xmlns:Nexus="remove" xmlns:NexusControl="remove" xmlns:NexusProvider="remove">
+<div class="itl">
+  <asp:ScriptManager ID="ScriptManagerMainDetails" runat="server" />
+
+  <script type="text/javascript">
+	window['NoCurrencySymbols'] = true;
+	window['XMLDataSet'] = '<asp:Literal ID="XMLDataSet" runat="server"></asp:Literal>';
+	window['ThisOI'] = '<asp:Literal ID="ThisOI" runat="server"></asp:Literal>';
+
+	<% If CType(Session.Item(Nexus.Constants.CNMode), Nexus.Constants.Mode) = Nexus.Constants.Mode.View Or CType(Session.Item(Nexus.Constants.CNMode), Nexus.Constants.Mode) = Nexus.Constants.Mode.Review Or CType(Session.Item(Nexus.Constants.CNMode), Nexus.Constants.Mode) = Nexus.Constants.Mode.ViewClaim Then %>
+	  window["rulesDisabled"] = true;
+	<% End If %>
+	
+  </script>
+
+  
+	<!-- ITL Externals -->
+	<script src="<%=ResolveUrl("~/App_Themes/Standard/js/es5-shim.min.js")%>" type="text/javascript"></script>
+	<script src="<%=ResolveUrl("~/App_Themes/Standard/js/es6-shim.min.js")%>" type="text/javascript"></script>
+	<script src="<%=ResolveUrl("~/App_Themes/Standard/js/closure-v1.5.1.js")%>" type="text/javascript"></script>
+	<script src="<%=ResolveUrl("~/App_Themes/Standard/js/buildComponents-v1.5.1.js")%>" type="text/javascript"></script>
+	<link href="<%=ResolveUrl("~/App_Themes/Standard/css/closure-v1.5.1.css")%>" rel="stylesheet" type="text/css" />
+	<link href="<%=ResolveUrl("~/App_Themes/Standard/internal-differences.css")%>" rel="stylesheet" type="text/css" />
+	<link href="<%=ResolveUrl("~/App_Themes/Standard/internal-differences-addon-3-to-3.1.css")%>" rel="stylesheet" type="text/css" />
+	<!-- /ITL Externals -->
+  
+	<script type="text/javascript">
+        /**
+         * @fileoverview
+         * GeneralValidation.h
+         */ 
+        	var GeneralValidationHandler = {};
+        
+        	GeneralValidationHandler.isDate = function(value, sepVal, dayIdx, monthIdx, yearIdx) {
+        		try {
+        			//Change the below values to determine which format of date you wish to check. It is set to dd/mm/yyyy by default.
+        			var DayIndex = dayIdx !== undefined ? dayIdx : 0; 
+        			var MonthIndex = monthIdx !== undefined ? monthIdx : 1;
+        			var YearIndex = yearIdx !== undefined ? yearIdx : 2;
+        	 
+        			value = value.replace(/-/g, "/").replace(/\./g, "/"); 
+        			var SplitValue = value.split(sepVal || "/");
+        			var OK = true;
+        			if (!(SplitValue[DayIndex].length == 1 || SplitValue[DayIndex].length == 2)) {
+        				OK = false;
+        			}
+        			if (OK && !(SplitValue[MonthIndex].length == 1 || SplitValue[MonthIndex].length == 2)) {
+        				OK = false;
+        			}
+        			if (OK && SplitValue[YearIndex].length != 4) {
+        				OK = false;
+        			}
+        			if (OK) {
+        				var Day = parseInt(SplitValue[DayIndex], 10);
+        				var Month = parseInt(SplitValue[MonthIndex], 10);
+        				var Year = parseInt(SplitValue[YearIndex], 10);
+        	 
+        				if (OK = ((Year > 1900) && (Year < (100 + new Date().getFullYear())))) {
+        					if (OK = (Month <= 12 && Month > 0)) {
+        
+        						var LeapYear = (((Year % 4) == 0) && ((Year % 100) != 0) || ((Year % 400) == 0));   
+        						
+        						if(OK = Day > 0)
+        						{
+        							if (Month == 2) {  
+        								OK = LeapYear ? Day <= 29 : Day <= 28;
+        							} 
+        							else {
+        								if ((Month == 4) || (Month == 6) || (Month == 9) || (Month == 11)) {
+        									OK = Day <= 30;
+        								}
+        								else {
+        									OK = Day <= 31;
+        								}
+        							}
+        						}
+        					}
+        				}
+        			}
+        			return OK;
+        		}
+        		catch (e) {
+        			return false;
+        		}
+        	} 
+        	
+        	GeneralValidationHandler.Validate = function(isOnLoad, args, obj, prop, type){
+        		type = type.toLowerCase();
+        		var node = document.getElementById("ctl00_cntMainBody_val" + obj.toUpperCase() + "__" + prop);
+        		if (node == null){
+        			// Try slightly different format with only one underscore
+        			node = document.getElementById("ctl00_cntMainBody_val" + obj.toUpperCase() + "_" + prop);
+        		}
+        
+        		if (isOnLoad) {
+        			//
+        			//	Add a blur event to call validation function
+        			if (node != null) {
+        				if (node.addEventListener) {
+        					node.addEventListener('blur', function() { window['onValidate_' + obj + '__' + prop](null, null, this); } );
+        				} else {
+        					node.attachEvent('onblur', function() { window['onValidate_' + obj + '__' + prop](null, null, this); } );
+        				}
+        			}
+        		} else {
+        			// Ensure the field contents is the correct format on exit from the field
+        			var field = Field.getInstance(obj, prop);
+        			var errorMessage = null;
+        			var isValid = true;
+        			
+        			if (type == "integer") {
+        				var value = field.getValue();
+        				
+        				if (value != null && value != '') {
+        					var regExp = /^-?[0-9]+$/;
+        
+        					if (regExp.test(value)){
+        						if (value <= -1000000000 || value >= 1000000000){
+        							errorMessage = "Is out of range";
+        							isValid = false;
+        						}
+        					} else {
+        						isValid = false;
+        						errorMessage = "Must be numeric";
+        					}
+        				}
+        			}
+        
+        			if (type == "date") {
+        				var date = field.getValue();
+        				//if ((date instanceof Date) && window.isNaN(date.getTime())) {
+        				///if (date.length > 0 && !GeneralValidationHandler.isDate(date, "/", 0, 1, 2)) {
+        				if (! date instanceof Date){
+        					isValid = false;
+        					errorMessage = "Must be a valid date";
+        				}
+        			}
+        
+        			if (type == "currency") {
+        				var value = field.getValue();
+        				if (value <= -1000000000000000 || value >= 1000000000000000){
+        					errorMessage = "Is out of range";
+        					isValid = false;
+        				}
+        			}
+        
+        			if (type == "percentage") {
+        				var value = field.getValue();
+        				if (value <= -1000 || value >= 1000){
+        					errorMessage = "Is out of range";
+        					isValid = false;
+        				}
+        			}
+        			
+        			if (type == "text") {
+        				var value = field.getValue();
+        				if (value.length > 255){
+        					errorMessage = "Too many characters";
+        					isValid = false;
+        				}
+        			
+        			}
+        			
+        			if (!isValid) {
+        				if (node != null){
+        					var lbl = document.getElementById('ctl00_cntMainBody_lbl' + obj + '_' + prop);
+        					if (lbl != null) {
+        						node.errormessage = lbl.innerHTML + " -- " + errorMessage;
+        						if (args && args.IsValid == true){
+        							args.IsValid = false;
+        						}
+        					}
+        				}
+        			}
+        		}
+        	}
+        
+        
+        String.prototype.killWhiteSpace = function() {
+            return this.replace(/\s/g, '');
+        };
+        
+        String.prototype.reduceWhiteSpace = function() {
+            return this.replace(/\s+/g, ' ');
+        };
+        
+        var SetControlProperties = function( field, setControl, strFeaturesOn, strFeaturesOff, paramValidationMessage ){
+        
+        	var strFeaturesToUse
+        
+        	if (setControl == true){
+        		strFeaturesToUse = strFeaturesOn;
+        		
+        		// Don't do anything if no features are provided, i.e. empty parameter
+        		if (strFeaturesOn == "")
+        			return;
+        	} else {               
+        		strFeaturesToUse = strFeaturesOff;
+        	}
+        
+        
+        	// L = Leave the attributes only
+        	if (strFeaturesToUse.toLowerCase().indexOf("l") == -1
+        		&& strFeaturesToUse.toLowerCase().indexOf("n") == -1) {
+        	
+        		if (strFeaturesToUse.toLowerCase().indexOf("e") != -1){
+        			field.setReadOnly(false);
+        		} else {
+        			field.setReadOnly(true);
+        		};
+        		   
+        		if (strFeaturesToUse.toLowerCase().indexOf("v") != -1){
+        			field.setVisible(true);
+        		} else {
+        			field.setVisible(false);
+        		}   
+        		   
+        		if (strFeaturesToUse.toLowerCase().indexOf("m") != -1){
+        			field.setMandatory(true, paramValidationMessage);
+        			if (strFeaturesToUse.indexOf("m") != -1){
+        				// If a lower case m, 0 is not valid
+        				var exp = new Expression(field.getObjectName() + "." + field.getPropertyName() + " == 0")
+        				
+        				goog.events.listen(exp, "change", function(){
+        					if (exp.getValue() == true){
+        						field.setValid(false);
+        					} else {
+        						field.setValid(true);
+        					}
+        				}, false, this);
+        			}
+        		} else {
+        			field.setMandatory(false);
+        		}   
+        		
+        		if (strFeaturesToUse.toLowerCase().indexOf("r") != -1){
+        			field.setHidden(true);
+        		} else {
+        			field.setHidden(false);
+        		}   
+        
+        		if (strFeaturesToUse.toLowerCase().indexOf("h") != -1){
+        			field.setMandatory(false);
+        			field.setVisible(false);
+        			field.setReadOnly(true);
+        		} 
+        
+                
+        
+        
+        	}
+        };
+        
+        
+        
+        var NormaliseCurrencyString = function(theString) {
+        	
+        	// Force to string
+        	theString = "" + theString;
+        
+            var strValidChars, strNormalised, i, strChar;
+        
+        	strValidChars  = "0123456789.";
+        	strNormalised = "";
+        
+        	for (var i = 0; i < theString.length; i++){
+        		strChar = theString.slice(i, 1);
+        		if (strValidChars.indexOf(strChar) != -1){
+        			strNormalised += strChar;
+        		}
+        	}
+        
+        	if (theString.length == 0)
+                strNormalised = "0";
+             
+        
+            return strNormalised; 
+        };
+        
+        /**
+         * Get the column total.
+         * @param screenObjectStr The screen object name
+         * @param strObject The object string of the column to total
+         * @param strProperty The property string of the column to total
+         */
+        var getColumnTotal = function(screenObjectStr, strObject, strProperty, condition){
+        
+        	var root = new XMLDataSetReader(window.XMLDataSet);
+        
+        	var childScreenObject = root.getObjects(screenObjectStr)[0];
+        	if (childScreenObject == null)
+        		return 0;
+        	var childObjects = childScreenObject.getObjects(strObject);
+        	
+        	var total = 0;
+        	for (var i = 0; i < childObjects.length; i++){
+        		if (condition != null){
+        			var conditionExpression = new Expression(condition);
+        		} else {
+        			total += window.parseFloat(childObjects[i].getPropertyValue(strProperty)) || 0;
+        		}
+        	};
+        	return total;
+        };
+        /**
+         * @fileoverview
+         * Set property
+         */
+        window.setProperty = function(field, value, condition, elseValue, validationMessage){
+        		
+        		
+        	var paramValue = value,
+        		paramCondition = condition,
+        		paramElseValue = elseValue,
+        		paramValidationMessage = validationMessage;
+        		
+        	paramValidationMessage = (Expression.isValidParameter(paramValidationMessage)) ? paramValidationMessage : undefined;
+        	
+        	
+        	
+        	if (paramValue != ""){
+        		var paramValueExpression = new Expression(paramValue);
+        	}
+        	if (Expression.isValidParameter(paramCondition)){
+        		// Check for condition
+        		
+        		var condition = new Expression(paramCondition);
+        		var update = function(){
+        			paramValue = (paramValueExpression) ? paramValueExpression.getValue() : paramValue;
+        			var value = condition.getValue();
+        			if (value == true){
+        				SetControlProperties(field, value, paramValue, paramElseValue, paramValidationMessage);
+        			} else if (Expression.isValidParameter(paramElseValue)){
+        				if (paramElseValue != "U") {
+        					SetControlProperties(field, value, paramValue, paramElseValue, paramValidationMessage);
+        				}
+        			} else {
+        				// No else value provided
+        				// Set field to not visible/ non editable/ non mandatory
+        				field.setVisible(false);
+        				field.setMandatory(false);
+        				field.setReadOnly(true);
+        			}
+        		};
+        		events.listen(condition, "change", update);
+        		update();
+        	} else {
+        		// Set to the value
+        		paramValue = (paramValueExpression) ? paramValueExpression.getValue() : paramValue;
+        		SetControlProperties(field, true, paramValue, undefined, paramValidationMessage);
+        	}
+        };
+        /**
+         * Set the control width
+         */
+        window.setControlWidth = function(field, width, obj, prop){
+        	
+        	// width sanitisation
+        	if (typeof width == "string" 
+        		&& ((width.slice(0,1) == "'" && width.slice(-1) == "'") || (width.slice(0,1) == "\"" || width.slice(-1) == "\""))){
+        		
+        		// As there is loads of rules in the spreadsheet in this format correcting this now will throw
+        		// all the sizes of fields out of sync to what they were before. So to keep the same
+        		// behaviour without erroring will exit out here instead.
+        		return;
+        		//width = width.slice(1, -1);
+        	}
+        	if (typeof width == "string"){
+        		width = window.parseFloat(width);
+        		if (width == NaN)
+        			return; // Don't continue
+        	}
+        	
+        	
+        	// If the control supports setWidth, use that else fall back on other method
+        	// for older controls
+        	// TO keep resizing consistent we will hard code a standard width
+        	var standardWidth = 165;
+        	//if (field.setWidth && field.getWidth){
+        	if (field.setWidth){
+        		field.setWidth(standardWidth * width);
+        	}
+        	var sWidthClass ="";
+        	var sWidthClass2 ="";
+            sWidthClass = "w-25";
+        	
+        	// Fall back for older fields
+            var ele = document.getElementById('ctl00_cntMainBody_' + obj + '__' + prop);
+            if (ele.firstElementChild != null && ele.firstElementChild.id == 'Controls_FindParty') {
+                ele = document.getElementById('ctl00_cntMainBody_' + obj + '__' + prop + '_' + 'txtPartyName');
+            }
+        	//var bounds = window.getBounds(ele);
+        	var widthPx = Math.round(width * standardWidth);
+        	if (width>=1)
+        		sWidthClass2 = "col-md-8 col-sm-9";
+        	
+        	if (width>=0.9 && width <1.0)
+        		sWidthClass2 ="col-md-7 col-sm-8";
+        	
+        	if (width>=0.8 && width <0.9)
+        		sWidthClass2 ="col-md-6 col-sm-7";
+        	
+        	if (width>=0.7 && width <0.8)
+        		sWidthClass2 ="col-md-5 col-sm-6";
+        	
+        	if (width>=0.5 && width <0.7)
+        		sWidthClass2 ="col-md-4 col-sm-5";
+        	if (width>=0.3 && width <0.5 )
+        		sWidthClass2 ="col-md-3 col-sm-4";
+        	
+        	if (width>=0.2 && width <0.3 )
+        		sWidthClass2 ="col-md-2 col-sm-3";
+        	if (width=0.1 && width <0.2 )
+        		sWidthClass2 ="col-md-1 col-sm-2";
+        	
+        	
+        	if (ele != null)
+        	{
+        		//ele.style.width = ((widthPx > 790) ? 790 : widthPx) + "px !important";
+        		var parentClassName = ele.parentElement.className;
+        		//if (parentClassName !="col-md-8 col-sm-9")
+        		//{
+        			//ele.parentElement.parentElement.className = ele.parentElement.parentElement.className + " " + sWidthClass ;
+        		//}
+        		//else
+        			//ele.parentElement.className = ele.parentElement.className + " " + sWidthClass ;
+        		
+        		var sblEle = ele.parentElement.parentElement.previousElementSibling;
+        		if (parentClassName !="col-md-8 col-sm-9")
+        		{
+        			ele.parentElement.parentElement.className = sWidthClass2;			
+        			if (sblEle != undefined)
+        			{				
+        				if(sblEle.nodeName == "LABEL")
+        			      sblEle.className = sWidthClass2 + " " + "control-label";
+        			}
+        		}
+        		else
+        		{
+        			ele.parentElement.className = sWidthClass2;
+        			if (sblEle != undefined)
+        			{				
+        				if(sblEle.nodeName == "LABEL")
+        			      sblEle.className = sWidthClass2 + " " + "control-label";
+        			}
+        		}
+        		
+        		
+        		
+        		
+        	}
+        		
+        	// Check for text area also
+        	var textarea = document.getElementById('ctl00_cntMainBody_' + obj + '_' + prop + '_textarea');
+        	//if (textarea != null){
+        		//bounds = window.getBounds(textarea);
+        	//	textarea.style.width = ((widthPx > 790) ? 790 : widthPx) + "px !important";
+        	//}
+        	if (textarea != null)
+        	{
+        		if (parentClassName !="col-md-8 col-sm-9")
+        		{
+        			textarea.parentElement.className = sWidthClass2 ;
+        		}
+        		else
+        			textarea.parentElement.className = sWidthClass2;
+        	}
+        	
+        };
+        /**
+         * Set the value of a field. When any of the passed in expressions
+         * change the set value is re-evaluated.
+         * @param {pb.fields.AbstractBase} field The field
+         * @param {Expression} value The value to give the field
+         * @param {Expression} opt_condition If specified the value will 
+         * only be set when this evaluates to true.
+         * @param {Expression} opt_elseValue If specified this is the value
+         * that will be set when the condition evaluates to false, if 
+         * omitted then no value will be set on condition false.
+         */
+        window.setValue = function(field, value, opt_condition, opt_elseValue){
+        	
+        		// Helper class to handle the condition and else logic.
+        		var valueWhen = new ValueWhenHelper(value, opt_condition, opt_elseValue);
+        		
+        		var update;
+        		events.listen(valueWhen, "change", update = function(e){
+        			// Don't set a value if one doesn't exist, this occurs if the condition
+        			// is false but no else value is provided.
+        			var value = valueWhen.valueOf();
+        			// null is a valid value
+        			if (value === undefined)
+        				return;
+        			
+        			field.setValue(value);
+        		}, false, this);
+        		update();
+        };
+function onValidate_FIRSTCAP__CONSTRUCT(source, args, sender, isOnLoad) {
+        
+        /**
+         * @fileoverview
+         * GeneralValidation
+         */
+        (function(){
+        	GeneralValidationHandler.Validate(isOnLoad, args, "FIRSTCAP", "CONSTRUCT", "List");
+        })();
+        /**
+         * @fileoverview
+         * Set property
+         */
+        (function(){
+        	if (isOnLoad) {	
+        		var field
+        		if ("{name}" != "{na" + "me}"){
+        			field = Field.getLabel("{name}");
+        		} else { 
+        			field = Field.getInstance("FIRSTCAP", "CONSTRUCT");
+        		}
+        		//window.setProperty(field, "V", "{1}", "{2}", "{3}");
+        
+            var paramValue = "V",
+            paramCondition = "{1}",
+            paramElseValue = "{2}",
+            paramValidationMessage = "{3}";
+            
+            paramValidationMessage = (Expression.isValidParameter(paramValidationMessage)) ? paramValidationMessage : undefined;
+            
+            if (paramValue != ""){
+              var paramValueExpression = new Expression(paramValue);
+            }
+            if (Expression.isValidParameter(paramCondition)){
+              // Check for condition
+              
+              var condition = new Expression(paramCondition);
+              var update = function(){
+                paramValue = (paramValueExpression) ? paramValueExpression.getValue() : paramValue;
+                var value = condition.getValue();
+                if (value == true){
+                  SetControlProperties(field, value, paramValue, paramElseValue, paramValidationMessage);
+                } else if (Expression.isValidParameter(paramElseValue)){
+                  if (paramElseValue != "U") {
+                    SetControlProperties(field, value, paramValue, paramElseValue, paramValidationMessage);
+                  }
+                } else {
+                  // No else value provided
+                  // Set field to not visible/ non editable/ non mandatory
+                  field.setVisible(false);
+                  field.setMandatory(false);
+                  field.setReadOnly(true);
+                }
+              };
+              events.listen(condition, "change", update);
+              update();
+            } else {
+              // Set to the value
+              paramValue = (paramValueExpression) ? paramValueExpression.getValue() : paramValue;
+              SetControlProperties(field, true, paramValue, undefined, paramValidationMessage);
+            }
+        
+        	}
+        })();
+        /**
+         * Set the control width
+         */
+        (function(){
+        	
+        	if (isOnLoad) {	
+        		(function(){
+              var field = Field.getInstance("FIRSTCAP.CONSTRUCT");
+        			window.setControlWidth(field, "0.8", "FIRSTCAP", "CONSTRUCT");
+        		})();
+        	}
+        })();
+        /**
+         * Set the label width
+         */
+        (function(){
+        	
+        	if (isOnLoad) {	
+        		window.setTimeout(function(){
+        
+        			var width = window.parseFloat("0.7");
+        			var standardWidth = 165;
+        			if ("{name}" != "{na" + "me}"){
+        				var label = document.getElementById("{name}");
+        				// Walk up the dom, if a co-cell is found use that intead
+        				if (label.parentNode.parentNode.parentNode.className.toLowerCase() == "co-cell")
+        					label = label.parentNode.parentNode.parentNode;
+        			} else {
+        			    var label = document.getElementById("ctl00_cntMainBody_lblFIRSTCAP_CONSTRUCT");
+        			    var ele = document.getElementById('ctl00_cntMainBody_FIRSTCAP__CONSTRUCT');
+        			    if (ele.firstElementChild != null && ele.firstElementChild.id == 'Controls_FindParty') {
+        			        label = document.getElementById("ctl00_cntMainBody_FIRSTCAP__CONSTRUCT_lblFindParty");
+        			    }
+        			}
+        			var bounds = goog.style.getBounds(label);
+        			//if (bounds.width != 0)
+        				//standardWidth = bounds.width;
+        			
+        			//var bounds = window.getBounds(ele);
+        			//if (label != null)
+        				//label.style.width = Math.round(width * standardWidth) + "px";
+        			var sWidthClass2="col-md-4 col-sm-3 control-label";
+        			if (width>=1)
+        		sWidthClass2 = "col-md-4 col-sm-3 control-label";
+        	
+        	if (width>=0.9 && width <1.0)
+        		sWidthClass2 ="col-md-4 col-sm-3 control-label";
+        	
+        	if (width>=0.8 && width <0.9)
+        		sWidthClass2 ="col-md-3 col-sm-2 control-label";
+        	
+        	if (width>=0.7 && width <0.8)
+        		sWidthClass2 ="col-md-3 col-sm-2 control-label";
+        	
+        	if (width>=0.5 && width <0.7)
+        		sWidthClass2 ="col-md-2 col-sm-1 control-label";
+        	if (width>=0.3 && width <0.5 )
+        		sWidthClass2 ="col-md-2 col-sm-1 control-label";
+        	
+        	if (width>=0.1 && width <0.3 )
+        		sWidthClass2 ="col-md-1 col-sm-1 control-label";
+        	
+        	label.className = sWidthClass2;
+        		}, 4);
+        	}
+        })();
+}
+function onValidate_FIRSTCAP__CONSTRUCT_CODE(source, args, sender, isOnLoad) {
+        
+        /**
+         * @fileoverview
+         * GeneralValidation
+         */
+        (function(){
+        	GeneralValidationHandler.Validate(isOnLoad, args, "FIRSTCAP", "CONSTRUCT_CODE", "Text");
+        })();
+        /**
+         * @fileoverview
+         * NotOnPage. Set field to hidden, hidden doesn't take up space in the document.
+         */
+        (function(){
+        	if (isOnLoad) {		
+        		if ("{name}" != ("{na" + "me}")){
+        			var field = Field.getLabel("{name}");
+        		} else {
+        			var field = Field.getInstance("FIRSTCAP", "CONSTRUCT_CODE");
+        		}
+        		var exp = Expression.isValidParameter("{0}") ? new Expression("{0}") : true;
+        
+        		var update = function(){
+        			var isHidden = (exp === true || exp.getValue() == true);
+        			field.setHidden(isHidden);
+        		};
+        		if (Expression.isValidParameter("{0}")){
+        			events.listen(exp, "change",update);
+        			events.listen(exp, "visibilitychange",update);
+        			events.listen(exp, "displaychange",update);
+        		}
+        		update();
+        	};
+        })();
+        /**
+         * @fileoverview
+         * SetValue
+         */
+        (function(){
+        	if (isOnLoad) {		
+        		// Get the field
+        		var field = Field.getWithQuery("type=Text&objectName=FIRSTCAP&propertyName=CONSTRUCT_CODE&name={name}");
+        		
+        		var value = new Expression("Code(FIRSTCAP.CONSTRUCT)"), 
+        			condition = (Expression.isValidParameter("{1}")) ? new Expression("{1}") : null, 
+        			elseValue = (Expression.isValidParameter("{2}")) ? new Expression("{2}") : null;
+        		
+        		window.setValue(field, value, condition, elseValue);
+        	};
+        })();
+}
+function onValidate_FIRSTCAP__RESIDENCE(source, args, sender, isOnLoad) {
+        
+        /**
+         * @fileoverview
+         * GeneralValidation
+         */
+        (function(){
+        	GeneralValidationHandler.Validate(isOnLoad, args, "FIRSTCAP", "RESIDENCE", "List");
+        })();
+        /**
+         * @fileoverview
+         * Set property
+         */
+        (function(){
+        	if (isOnLoad) {	
+        		var field
+        		if ("{name}" != "{na" + "me}"){
+        			field = Field.getLabel("{name}");
+        		} else { 
+        			field = Field.getInstance("FIRSTCAP", "RESIDENCE");
+        		}
+        		//window.setProperty(field, "V", "{1}", "{2}", "{3}");
+        
+            var paramValue = "V",
+            paramCondition = "{1}",
+            paramElseValue = "{2}",
+            paramValidationMessage = "{3}";
+            
+            paramValidationMessage = (Expression.isValidParameter(paramValidationMessage)) ? paramValidationMessage : undefined;
+            
+            if (paramValue != ""){
+              var paramValueExpression = new Expression(paramValue);
+            }
+            if (Expression.isValidParameter(paramCondition)){
+              // Check for condition
+              
+              var condition = new Expression(paramCondition);
+              var update = function(){
+                paramValue = (paramValueExpression) ? paramValueExpression.getValue() : paramValue;
+                var value = condition.getValue();
+                if (value == true){
+                  SetControlProperties(field, value, paramValue, paramElseValue, paramValidationMessage);
+                } else if (Expression.isValidParameter(paramElseValue)){
+                  if (paramElseValue != "U") {
+                    SetControlProperties(field, value, paramValue, paramElseValue, paramValidationMessage);
+                  }
+                } else {
+                  // No else value provided
+                  // Set field to not visible/ non editable/ non mandatory
+                  field.setVisible(false);
+                  field.setMandatory(false);
+                  field.setReadOnly(true);
+                }
+              };
+              events.listen(condition, "change", update);
+              update();
+            } else {
+              // Set to the value
+              paramValue = (paramValueExpression) ? paramValueExpression.getValue() : paramValue;
+              SetControlProperties(field, true, paramValue, undefined, paramValidationMessage);
+            }
+        
+        	}
+        })();
+        /**
+         * Set the control width
+         */
+        (function(){
+        	
+        	if (isOnLoad) {	
+        		(function(){
+              var field = Field.getInstance("FIRSTCAP.RESIDENCE");
+        			window.setControlWidth(field, "0.8", "FIRSTCAP", "RESIDENCE");
+        		})();
+        	}
+        })();
+        /**
+         * Set the label width
+         */
+        (function(){
+        	
+        	if (isOnLoad) {	
+        		window.setTimeout(function(){
+        
+        			var width = window.parseFloat("0.7");
+        			var standardWidth = 165;
+        			if ("{name}" != "{na" + "me}"){
+        				var label = document.getElementById("{name}");
+        				// Walk up the dom, if a co-cell is found use that intead
+        				if (label.parentNode.parentNode.parentNode.className.toLowerCase() == "co-cell")
+        					label = label.parentNode.parentNode.parentNode;
+        			} else {
+        			    var label = document.getElementById("ctl00_cntMainBody_lblFIRSTCAP_RESIDENCE");
+        			    var ele = document.getElementById('ctl00_cntMainBody_FIRSTCAP__RESIDENCE');
+        			    if (ele.firstElementChild != null && ele.firstElementChild.id == 'Controls_FindParty') {
+        			        label = document.getElementById("ctl00_cntMainBody_FIRSTCAP__RESIDENCE_lblFindParty");
+        			    }
+        			}
+        			var bounds = goog.style.getBounds(label);
+        			//if (bounds.width != 0)
+        				//standardWidth = bounds.width;
+        			
+        			//var bounds = window.getBounds(ele);
+        			//if (label != null)
+        				//label.style.width = Math.round(width * standardWidth) + "px";
+        			var sWidthClass2="col-md-4 col-sm-3 control-label";
+        			if (width>=1)
+        		sWidthClass2 = "col-md-4 col-sm-3 control-label";
+        	
+        	if (width>=0.9 && width <1.0)
+        		sWidthClass2 ="col-md-4 col-sm-3 control-label";
+        	
+        	if (width>=0.8 && width <0.9)
+        		sWidthClass2 ="col-md-3 col-sm-2 control-label";
+        	
+        	if (width>=0.7 && width <0.8)
+        		sWidthClass2 ="col-md-3 col-sm-2 control-label";
+        	
+        	if (width>=0.5 && width <0.7)
+        		sWidthClass2 ="col-md-2 col-sm-1 control-label";
+        	if (width>=0.3 && width <0.5 )
+        		sWidthClass2 ="col-md-2 col-sm-1 control-label";
+        	
+        	if (width>=0.1 && width <0.3 )
+        		sWidthClass2 ="col-md-1 col-sm-1 control-label";
+        	
+        	label.className = sWidthClass2;
+        		}, 4);
+        	}
+        })();
+}
+function onValidate_FIRSTCAP__RESIDENCE_CODE(source, args, sender, isOnLoad) {
+        
+        /**
+         * @fileoverview
+         * GeneralValidation
+         */
+        (function(){
+        	GeneralValidationHandler.Validate(isOnLoad, args, "FIRSTCAP", "RESIDENCE_CODE", "Text");
+        })();
+        /**
+         * @fileoverview
+         * NotOnPage. Set field to hidden, hidden doesn't take up space in the document.
+         */
+        (function(){
+        	if (isOnLoad) {		
+        		if ("{name}" != ("{na" + "me}")){
+        			var field = Field.getLabel("{name}");
+        		} else {
+        			var field = Field.getInstance("FIRSTCAP", "RESIDENCE_CODE");
+        		}
+        		var exp = Expression.isValidParameter("{0}") ? new Expression("{0}") : true;
+        
+        		var update = function(){
+        			var isHidden = (exp === true || exp.getValue() == true);
+        			field.setHidden(isHidden);
+        		};
+        		if (Expression.isValidParameter("{0}")){
+        			events.listen(exp, "change",update);
+        			events.listen(exp, "visibilitychange",update);
+        			events.listen(exp, "displaychange",update);
+        		}
+        		update();
+        	};
+        })();
+        /**
+         * @fileoverview
+         * SetValue
+         */
+        (function(){
+        	if (isOnLoad) {		
+        		// Get the field
+        		var field = Field.getWithQuery("type=Text&objectName=FIRSTCAP&propertyName=RESIDENCE_CODE&name={name}");
+        		
+        		var value = new Expression("Code(FIRSTCAP.RESIDENCE)"), 
+        			condition = (Expression.isValidParameter("{1}")) ? new Expression("{1}") : null, 
+        			elseValue = (Expression.isValidParameter("{2}")) ? new Expression("{2}") : null;
+        		
+        		window.setValue(field, value, condition, elseValue);
+        	};
+        })();
+}
+function onValidate_FIRSTCAP__OCCUPANCY(source, args, sender, isOnLoad) {
+        
+        /**
+         * @fileoverview
+         * GeneralValidation
+         */
+        (function(){
+        	GeneralValidationHandler.Validate(isOnLoad, args, "FIRSTCAP", "OCCUPANCY", "List");
+        })();
+        /**
+         * @fileoverview
+         * Set property
+         */
+        (function(){
+        	if (isOnLoad) {	
+        		var field
+        		if ("{name}" != "{na" + "me}"){
+        			field = Field.getLabel("{name}");
+        		} else { 
+        			field = Field.getInstance("FIRSTCAP", "OCCUPANCY");
+        		}
+        		//window.setProperty(field, "V", "{1}", "{2}", "{3}");
+        
+            var paramValue = "V",
+            paramCondition = "{1}",
+            paramElseValue = "{2}",
+            paramValidationMessage = "{3}";
+            
+            paramValidationMessage = (Expression.isValidParameter(paramValidationMessage)) ? paramValidationMessage : undefined;
+            
+            if (paramValue != ""){
+              var paramValueExpression = new Expression(paramValue);
+            }
+            if (Expression.isValidParameter(paramCondition)){
+              // Check for condition
+              
+              var condition = new Expression(paramCondition);
+              var update = function(){
+                paramValue = (paramValueExpression) ? paramValueExpression.getValue() : paramValue;
+                var value = condition.getValue();
+                if (value == true){
+                  SetControlProperties(field, value, paramValue, paramElseValue, paramValidationMessage);
+                } else if (Expression.isValidParameter(paramElseValue)){
+                  if (paramElseValue != "U") {
+                    SetControlProperties(field, value, paramValue, paramElseValue, paramValidationMessage);
+                  }
+                } else {
+                  // No else value provided
+                  // Set field to not visible/ non editable/ non mandatory
+                  field.setVisible(false);
+                  field.setMandatory(false);
+                  field.setReadOnly(true);
+                }
+              };
+              events.listen(condition, "change", update);
+              update();
+            } else {
+              // Set to the value
+              paramValue = (paramValueExpression) ? paramValueExpression.getValue() : paramValue;
+              SetControlProperties(field, true, paramValue, undefined, paramValidationMessage);
+            }
+        
+        	}
+        })();
+        /**
+         * Set the control width
+         */
+        (function(){
+        	
+        	if (isOnLoad) {	
+        		(function(){
+              var field = Field.getInstance("FIRSTCAP.OCCUPANCY");
+        			window.setControlWidth(field, "0.8", "FIRSTCAP", "OCCUPANCY");
+        		})();
+        	}
+        })();
+        /**
+         * Set the label width
+         */
+        (function(){
+        	
+        	if (isOnLoad) {	
+        		window.setTimeout(function(){
+        
+        			var width = window.parseFloat("0.7");
+        			var standardWidth = 165;
+        			if ("{name}" != "{na" + "me}"){
+        				var label = document.getElementById("{name}");
+        				// Walk up the dom, if a co-cell is found use that intead
+        				if (label.parentNode.parentNode.parentNode.className.toLowerCase() == "co-cell")
+        					label = label.parentNode.parentNode.parentNode;
+        			} else {
+        			    var label = document.getElementById("ctl00_cntMainBody_lblFIRSTCAP_OCCUPANCY");
+        			    var ele = document.getElementById('ctl00_cntMainBody_FIRSTCAP__OCCUPANCY');
+        			    if (ele.firstElementChild != null && ele.firstElementChild.id == 'Controls_FindParty') {
+        			        label = document.getElementById("ctl00_cntMainBody_FIRSTCAP__OCCUPANCY_lblFindParty");
+        			    }
+        			}
+        			var bounds = goog.style.getBounds(label);
+        			//if (bounds.width != 0)
+        				//standardWidth = bounds.width;
+        			
+        			//var bounds = window.getBounds(ele);
+        			//if (label != null)
+        				//label.style.width = Math.round(width * standardWidth) + "px";
+        			var sWidthClass2="col-md-4 col-sm-3 control-label";
+        			if (width>=1)
+        		sWidthClass2 = "col-md-4 col-sm-3 control-label";
+        	
+        	if (width>=0.9 && width <1.0)
+        		sWidthClass2 ="col-md-4 col-sm-3 control-label";
+        	
+        	if (width>=0.8 && width <0.9)
+        		sWidthClass2 ="col-md-3 col-sm-2 control-label";
+        	
+        	if (width>=0.7 && width <0.8)
+        		sWidthClass2 ="col-md-3 col-sm-2 control-label";
+        	
+        	if (width>=0.5 && width <0.7)
+        		sWidthClass2 ="col-md-2 col-sm-1 control-label";
+        	if (width>=0.3 && width <0.5 )
+        		sWidthClass2 ="col-md-2 col-sm-1 control-label";
+        	
+        	if (width>=0.1 && width <0.3 )
+        		sWidthClass2 ="col-md-1 col-sm-1 control-label";
+        	
+        	label.className = sWidthClass2;
+        		}, 4);
+        	}
+        })();
+}
+function onValidate_FIRSTCAP__LOCALITY(source, args, sender, isOnLoad) {
+        
+        /**
+         * @fileoverview
+         * GeneralValidation
+         */
+        (function(){
+        	GeneralValidationHandler.Validate(isOnLoad, args, "FIRSTCAP", "LOCALITY", "List");
+        })();
+        /**
+         * @fileoverview
+         * Set property
+         */
+        (function(){
+        	if (isOnLoad) {	
+        		var field
+        		if ("{name}" != "{na" + "me}"){
+        			field = Field.getLabel("{name}");
+        		} else { 
+        			field = Field.getInstance("FIRSTCAP", "LOCALITY");
+        		}
+        		//window.setProperty(field, "V", "{1}", "{2}", "{3}");
+        
+            var paramValue = "V",
+            paramCondition = "{1}",
+            paramElseValue = "{2}",
+            paramValidationMessage = "{3}";
+            
+            paramValidationMessage = (Expression.isValidParameter(paramValidationMessage)) ? paramValidationMessage : undefined;
+            
+            if (paramValue != ""){
+              var paramValueExpression = new Expression(paramValue);
+            }
+            if (Expression.isValidParameter(paramCondition)){
+              // Check for condition
+              
+              var condition = new Expression(paramCondition);
+              var update = function(){
+                paramValue = (paramValueExpression) ? paramValueExpression.getValue() : paramValue;
+                var value = condition.getValue();
+                if (value == true){
+                  SetControlProperties(field, value, paramValue, paramElseValue, paramValidationMessage);
+                } else if (Expression.isValidParameter(paramElseValue)){
+                  if (paramElseValue != "U") {
+                    SetControlProperties(field, value, paramValue, paramElseValue, paramValidationMessage);
+                  }
+                } else {
+                  // No else value provided
+                  // Set field to not visible/ non editable/ non mandatory
+                  field.setVisible(false);
+                  field.setMandatory(false);
+                  field.setReadOnly(true);
+                }
+              };
+              events.listen(condition, "change", update);
+              update();
+            } else {
+              // Set to the value
+              paramValue = (paramValueExpression) ? paramValueExpression.getValue() : paramValue;
+              SetControlProperties(field, true, paramValue, undefined, paramValidationMessage);
+            }
+        
+        	}
+        })();
+        /**
+         * Set the control width
+         */
+        (function(){
+        	
+        	if (isOnLoad) {	
+        		(function(){
+              var field = Field.getInstance("FIRSTCAP.LOCALITY");
+        			window.setControlWidth(field, "0.8", "FIRSTCAP", "LOCALITY");
+        		})();
+        	}
+        })();
+        /**
+         * Set the label width
+         */
+        (function(){
+        	
+        	if (isOnLoad) {	
+        		window.setTimeout(function(){
+        
+        			var width = window.parseFloat("0.7");
+        			var standardWidth = 165;
+        			if ("{name}" != "{na" + "me}"){
+        				var label = document.getElementById("{name}");
+        				// Walk up the dom, if a co-cell is found use that intead
+        				if (label.parentNode.parentNode.parentNode.className.toLowerCase() == "co-cell")
+        					label = label.parentNode.parentNode.parentNode;
+        			} else {
+        			    var label = document.getElementById("ctl00_cntMainBody_lblFIRSTCAP_LOCALITY");
+        			    var ele = document.getElementById('ctl00_cntMainBody_FIRSTCAP__LOCALITY');
+        			    if (ele.firstElementChild != null && ele.firstElementChild.id == 'Controls_FindParty') {
+        			        label = document.getElementById("ctl00_cntMainBody_FIRSTCAP__LOCALITY_lblFindParty");
+        			    }
+        			}
+        			var bounds = goog.style.getBounds(label);
+        			//if (bounds.width != 0)
+        				//standardWidth = bounds.width;
+        			
+        			//var bounds = window.getBounds(ele);
+        			//if (label != null)
+        				//label.style.width = Math.round(width * standardWidth) + "px";
+        			var sWidthClass2="col-md-4 col-sm-3 control-label";
+        			if (width>=1)
+        		sWidthClass2 = "col-md-4 col-sm-3 control-label";
+        	
+        	if (width>=0.9 && width <1.0)
+        		sWidthClass2 ="col-md-4 col-sm-3 control-label";
+        	
+        	if (width>=0.8 && width <0.9)
+        		sWidthClass2 ="col-md-3 col-sm-2 control-label";
+        	
+        	if (width>=0.7 && width <0.8)
+        		sWidthClass2 ="col-md-3 col-sm-2 control-label";
+        	
+        	if (width>=0.5 && width <0.7)
+        		sWidthClass2 ="col-md-2 col-sm-1 control-label";
+        	if (width>=0.3 && width <0.5 )
+        		sWidthClass2 ="col-md-2 col-sm-1 control-label";
+        	
+        	if (width>=0.1 && width <0.3 )
+        		sWidthClass2 ="col-md-1 col-sm-1 control-label";
+        	
+        	label.className = sWidthClass2;
+        		}, 4);
+        	}
+        })();
+}
+function onValidate_FIRSTCAP__SECURITY(source, args, sender, isOnLoad) {
+        
+        /**
+         * @fileoverview
+         * GeneralValidation
+         */
+        (function(){
+        	GeneralValidationHandler.Validate(isOnLoad, args, "FIRSTCAP", "SECURITY", "List");
+        })();
+        /**
+         * @fileoverview
+         * Set property
+         */
+        (function(){
+        	if (isOnLoad) {	
+        		var field
+        		if ("{name}" != "{na" + "me}"){
+        			field = Field.getLabel("{name}");
+        		} else { 
+        			field = Field.getInstance("FIRSTCAP", "SECURITY");
+        		}
+        		//window.setProperty(field, "V", "{1}", "{2}", "{3}");
+        
+            var paramValue = "V",
+            paramCondition = "{1}",
+            paramElseValue = "{2}",
+            paramValidationMessage = "{3}";
+            
+            paramValidationMessage = (Expression.isValidParameter(paramValidationMessage)) ? paramValidationMessage : undefined;
+            
+            if (paramValue != ""){
+              var paramValueExpression = new Expression(paramValue);
+            }
+            if (Expression.isValidParameter(paramCondition)){
+              // Check for condition
+              
+              var condition = new Expression(paramCondition);
+              var update = function(){
+                paramValue = (paramValueExpression) ? paramValueExpression.getValue() : paramValue;
+                var value = condition.getValue();
+                if (value == true){
+                  SetControlProperties(field, value, paramValue, paramElseValue, paramValidationMessage);
+                } else if (Expression.isValidParameter(paramElseValue)){
+                  if (paramElseValue != "U") {
+                    SetControlProperties(field, value, paramValue, paramElseValue, paramValidationMessage);
+                  }
+                } else {
+                  // No else value provided
+                  // Set field to not visible/ non editable/ non mandatory
+                  field.setVisible(false);
+                  field.setMandatory(false);
+                  field.setReadOnly(true);
+                }
+              };
+              events.listen(condition, "change", update);
+              update();
+            } else {
+              // Set to the value
+              paramValue = (paramValueExpression) ? paramValueExpression.getValue() : paramValue;
+              SetControlProperties(field, true, paramValue, undefined, paramValidationMessage);
+            }
+        
+        	}
+        })();
+        /**
+         * Set the control width
+         */
+        (function(){
+        	
+        	if (isOnLoad) {	
+        		(function(){
+              var field = Field.getInstance("FIRSTCAP.SECURITY");
+        			window.setControlWidth(field, "0.8", "FIRSTCAP", "SECURITY");
+        		})();
+        	}
+        })();
+        /**
+         * Set the label width
+         */
+        (function(){
+        	
+        	if (isOnLoad) {	
+        		window.setTimeout(function(){
+        
+        			var width = window.parseFloat("0.7");
+        			var standardWidth = 165;
+        			if ("{name}" != "{na" + "me}"){
+        				var label = document.getElementById("{name}");
+        				// Walk up the dom, if a co-cell is found use that intead
+        				if (label.parentNode.parentNode.parentNode.className.toLowerCase() == "co-cell")
+        					label = label.parentNode.parentNode.parentNode;
+        			} else {
+        			    var label = document.getElementById("ctl00_cntMainBody_lblFIRSTCAP_SECURITY");
+        			    var ele = document.getElementById('ctl00_cntMainBody_FIRSTCAP__SECURITY');
+        			    if (ele.firstElementChild != null && ele.firstElementChild.id == 'Controls_FindParty') {
+        			        label = document.getElementById("ctl00_cntMainBody_FIRSTCAP__SECURITY_lblFindParty");
+        			    }
+        			}
+        			var bounds = goog.style.getBounds(label);
+        			//if (bounds.width != 0)
+        				//standardWidth = bounds.width;
+        			
+        			//var bounds = window.getBounds(ele);
+        			//if (label != null)
+        				//label.style.width = Math.round(width * standardWidth) + "px";
+        			var sWidthClass2="col-md-4 col-sm-3 control-label";
+        			if (width>=1)
+        		sWidthClass2 = "col-md-4 col-sm-3 control-label";
+        	
+        	if (width>=0.9 && width <1.0)
+        		sWidthClass2 ="col-md-4 col-sm-3 control-label";
+        	
+        	if (width>=0.8 && width <0.9)
+        		sWidthClass2 ="col-md-3 col-sm-2 control-label";
+        	
+        	if (width>=0.7 && width <0.8)
+        		sWidthClass2 ="col-md-3 col-sm-2 control-label";
+        	
+        	if (width>=0.5 && width <0.7)
+        		sWidthClass2 ="col-md-2 col-sm-1 control-label";
+        	if (width>=0.3 && width <0.5 )
+        		sWidthClass2 ="col-md-2 col-sm-1 control-label";
+        	
+        	if (width>=0.1 && width <0.3 )
+        		sWidthClass2 ="col-md-1 col-sm-1 control-label";
+        	
+        	label.className = sWidthClass2;
+        		}, 4);
+        	}
+        })();
+}
+function onValidate_FIRSTCAP__DATEOFBIRTH(source, args, sender, isOnLoad) {
+        
+        /**
+         * @fileoverview
+         * GeneralValidation
+         */
+        (function(){
+        	GeneralValidationHandler.Validate(isOnLoad, args, "FIRSTCAP", "DATEOFBIRTH", "Date");
+        })();
+        /**
+         * @fileoverview
+         * Set property
+         */
+        (function(){
+        	if (isOnLoad) {	
+        		var field
+        		if ("{name}" != "{na" + "me}"){
+        			field = Field.getLabel("{name}");
+        		} else { 
+        			field = Field.getInstance("FIRSTCAP", "DATEOFBIRTH");
+        		}
+        		//window.setProperty(field, "V", "{1}", "{2}", "{3}");
+        
+            var paramValue = "V",
+            paramCondition = "{1}",
+            paramElseValue = "{2}",
+            paramValidationMessage = "{3}";
+            
+            paramValidationMessage = (Expression.isValidParameter(paramValidationMessage)) ? paramValidationMessage : undefined;
+            
+            if (paramValue != ""){
+              var paramValueExpression = new Expression(paramValue);
+            }
+            if (Expression.isValidParameter(paramCondition)){
+              // Check for condition
+              
+              var condition = new Expression(paramCondition);
+              var update = function(){
+                paramValue = (paramValueExpression) ? paramValueExpression.getValue() : paramValue;
+                var value = condition.getValue();
+                if (value == true){
+                  SetControlProperties(field, value, paramValue, paramElseValue, paramValidationMessage);
+                } else if (Expression.isValidParameter(paramElseValue)){
+                  if (paramElseValue != "U") {
+                    SetControlProperties(field, value, paramValue, paramElseValue, paramValidationMessage);
+                  }
+                } else {
+                  // No else value provided
+                  // Set field to not visible/ non editable/ non mandatory
+                  field.setVisible(false);
+                  field.setMandatory(false);
+                  field.setReadOnly(true);
+                }
+              };
+              events.listen(condition, "change", update);
+              update();
+            } else {
+              // Set to the value
+              paramValue = (paramValueExpression) ? paramValueExpression.getValue() : paramValue;
+              SetControlProperties(field, true, paramValue, undefined, paramValidationMessage);
+            }
+        
+        	}
+        })();
+        /**
+         * Set the control width
+         */
+        (function(){
+        	
+        	if (isOnLoad) {	
+        		(function(){
+              var field = Field.getInstance("FIRSTCAP.DATEOFBIRTH");
+        			window.setControlWidth(field, "0.8", "FIRSTCAP", "DATEOFBIRTH");
+        		})();
+        	}
+        })();
+        /**
+         * Set the label width
+         */
+        (function(){
+        	
+        	if (isOnLoad) {	
+        		window.setTimeout(function(){
+        
+        			var width = window.parseFloat("0.7");
+        			var standardWidth = 165;
+        			if ("{name}" != "{na" + "me}"){
+        				var label = document.getElementById("{name}");
+        				// Walk up the dom, if a co-cell is found use that intead
+        				if (label.parentNode.parentNode.parentNode.className.toLowerCase() == "co-cell")
+        					label = label.parentNode.parentNode.parentNode;
+        			} else {
+        			    var label = document.getElementById("ctl00_cntMainBody_lblFIRSTCAP_DATEOFBIRTH");
+        			    var ele = document.getElementById('ctl00_cntMainBody_FIRSTCAP__DATEOFBIRTH');
+        			    if (ele.firstElementChild != null && ele.firstElementChild.id == 'Controls_FindParty') {
+        			        label = document.getElementById("ctl00_cntMainBody_FIRSTCAP__DATEOFBIRTH_lblFindParty");
+        			    }
+        			}
+        			var bounds = goog.style.getBounds(label);
+        			//if (bounds.width != 0)
+        				//standardWidth = bounds.width;
+        			
+        			//var bounds = window.getBounds(ele);
+        			//if (label != null)
+        				//label.style.width = Math.round(width * standardWidth) + "px";
+        			var sWidthClass2="col-md-4 col-sm-3 control-label";
+        			if (width>=1)
+        		sWidthClass2 = "col-md-4 col-sm-3 control-label";
+        	
+        	if (width>=0.9 && width <1.0)
+        		sWidthClass2 ="col-md-4 col-sm-3 control-label";
+        	
+        	if (width>=0.8 && width <0.9)
+        		sWidthClass2 ="col-md-3 col-sm-2 control-label";
+        	
+        	if (width>=0.7 && width <0.8)
+        		sWidthClass2 ="col-md-3 col-sm-2 control-label";
+        	
+        	if (width>=0.5 && width <0.7)
+        		sWidthClass2 ="col-md-2 col-sm-1 control-label";
+        	if (width>=0.3 && width <0.5 )
+        		sWidthClass2 ="col-md-2 col-sm-1 control-label";
+        	
+        	if (width>=0.1 && width <0.3 )
+        		sWidthClass2 ="col-md-1 col-sm-1 control-label";
+        	
+        	label.className = sWidthClass2;
+        		}, 4);
+        	}
+        })();
+}
+function onValidate_FIRSTCAP__SUMINSURED(source, args, sender, isOnLoad) {
+        
+        /**
+         * @fileoverview
+         * GeneralValidation
+         */
+        (function(){
+        	GeneralValidationHandler.Validate(isOnLoad, args, "FIRSTCAP", "SUMINSURED", "Currency");
+        })();
+        /**
+         * @fileoverview
+         * Set property
+         */
+        (function(){
+        	if (isOnLoad) {	
+        		var field
+        		if ("{name}" != "{na" + "me}"){
+        			field = Field.getLabel("{name}");
+        		} else { 
+        			field = Field.getInstance("FIRSTCAP", "SUMINSURED");
+        		}
+        		//window.setProperty(field, "V", "{1}", "{2}", "{3}");
+        
+            var paramValue = "V",
+            paramCondition = "{1}",
+            paramElseValue = "{2}",
+            paramValidationMessage = "{3}";
+            
+            paramValidationMessage = (Expression.isValidParameter(paramValidationMessage)) ? paramValidationMessage : undefined;
+            
+            if (paramValue != ""){
+              var paramValueExpression = new Expression(paramValue);
+            }
+            if (Expression.isValidParameter(paramCondition)){
+              // Check for condition
+              
+              var condition = new Expression(paramCondition);
+              var update = function(){
+                paramValue = (paramValueExpression) ? paramValueExpression.getValue() : paramValue;
+                var value = condition.getValue();
+                if (value == true){
+                  SetControlProperties(field, value, paramValue, paramElseValue, paramValidationMessage);
+                } else if (Expression.isValidParameter(paramElseValue)){
+                  if (paramElseValue != "U") {
+                    SetControlProperties(field, value, paramValue, paramElseValue, paramValidationMessage);
+                  }
+                } else {
+                  // No else value provided
+                  // Set field to not visible/ non editable/ non mandatory
+                  field.setVisible(false);
+                  field.setMandatory(false);
+                  field.setReadOnly(true);
+                }
+              };
+              events.listen(condition, "change", update);
+              update();
+            } else {
+              // Set to the value
+              paramValue = (paramValueExpression) ? paramValueExpression.getValue() : paramValue;
+              SetControlProperties(field, true, paramValue, undefined, paramValidationMessage);
+            }
+        
+        	}
+        })();
+        /**
+         * Set the control width
+         */
+        (function(){
+        	
+        	if (isOnLoad) {	
+        		(function(){
+              var field = Field.getInstance("FIRSTCAP.SUMINSURED");
+        			window.setControlWidth(field, "0.8", "FIRSTCAP", "SUMINSURED");
+        		})();
+        	}
+        })();
+        /**
+         * Set the label width
+         */
+        (function(){
+        	
+        	if (isOnLoad) {	
+        		window.setTimeout(function(){
+        
+        			var width = window.parseFloat("0.7");
+        			var standardWidth = 165;
+        			if ("{name}" != "{na" + "me}"){
+        				var label = document.getElementById("{name}");
+        				// Walk up the dom, if a co-cell is found use that intead
+        				if (label.parentNode.parentNode.parentNode.className.toLowerCase() == "co-cell")
+        					label = label.parentNode.parentNode.parentNode;
+        			} else {
+        			    var label = document.getElementById("ctl00_cntMainBody_lblFIRSTCAP_SUMINSURED");
+        			    var ele = document.getElementById('ctl00_cntMainBody_FIRSTCAP__SUMINSURED');
+        			    if (ele.firstElementChild != null && ele.firstElementChild.id == 'Controls_FindParty') {
+        			        label = document.getElementById("ctl00_cntMainBody_FIRSTCAP__SUMINSURED_lblFindParty");
+        			    }
+        			}
+        			var bounds = goog.style.getBounds(label);
+        			//if (bounds.width != 0)
+        				//standardWidth = bounds.width;
+        			
+        			//var bounds = window.getBounds(ele);
+        			//if (label != null)
+        				//label.style.width = Math.round(width * standardWidth) + "px";
+        			var sWidthClass2="col-md-4 col-sm-3 control-label";
+        			if (width>=1)
+        		sWidthClass2 = "col-md-4 col-sm-3 control-label";
+        	
+        	if (width>=0.9 && width <1.0)
+        		sWidthClass2 ="col-md-4 col-sm-3 control-label";
+        	
+        	if (width>=0.8 && width <0.9)
+        		sWidthClass2 ="col-md-3 col-sm-2 control-label";
+        	
+        	if (width>=0.7 && width <0.8)
+        		sWidthClass2 ="col-md-3 col-sm-2 control-label";
+        	
+        	if (width>=0.5 && width <0.7)
+        		sWidthClass2 ="col-md-2 col-sm-1 control-label";
+        	if (width>=0.3 && width <0.5 )
+        		sWidthClass2 ="col-md-2 col-sm-1 control-label";
+        	
+        	if (width>=0.1 && width <0.3 )
+        		sWidthClass2 ="col-md-1 col-sm-1 control-label";
+        	
+        	label.className = sWidthClass2;
+        		}, 4);
+        	}
+        })();
+        /**
+         * Set the field width
+         */
+        (function(){
+        	
+        	if (isOnLoad) {	
+        		window.setTimeout(function(){
+        
+        			var field = Field.getInstance('FIRSTCAP', 'SUMINSURED');
+        			
+        			if (field.setTextAlign){
+        				field.setTextAlign("Right");
+        				return;
+        			}
+        			
+        			if (! (field && field.getInput)) return;
+        			
+        			var textAlign;
+        			switch ("Right".toLowerCase()){
+        				case "right": textAlign = "right";break;
+        				case "centre":
+        				case "center":
+        				case "middle": textAlign = "center";break;
+        				case "left": 
+        				default: textAlign = "left";break;
+        			}
+        			
+        			field.getInput().style.textAlign = textAlign;
+        			// Quick workaround until field exposes a method to get
+        			// the display input or to set the alignment.
+        			if (field.displayInput){
+        				field.displayInput.style.textAlign = textAlign;
+        			}
+        			
+        		}, 4);
+        	}
+        })();
+}
+function onValidate_FIRSTCAP__RI_SUMINSURED(source, args, sender, isOnLoad) {
+        
+        /**
+         * @fileoverview
+         * GeneralValidation
+         */
+        (function(){
+        	GeneralValidationHandler.Validate(isOnLoad, args, "FIRSTCAP", "RI_SUMINSURED", "Currency");
+        })();
+        /**
+         * @fileoverview
+         * Set property
+         */
+        (function(){
+        	if (isOnLoad) {	
+        		var field
+        		if ("{name}" != "{na" + "me}"){
+        			field = Field.getLabel("{name}");
+        		} else { 
+        			field = Field.getInstance("FIRSTCAP", "RI_SUMINSURED");
+        		}
+        		//window.setProperty(field, "R", "{1}", "{2}", "{3}");
+        
+            var paramValue = "R",
+            paramCondition = "{1}",
+            paramElseValue = "{2}",
+            paramValidationMessage = "{3}";
+            
+            paramValidationMessage = (Expression.isValidParameter(paramValidationMessage)) ? paramValidationMessage : undefined;
+            
+            if (paramValue != ""){
+              var paramValueExpression = new Expression(paramValue);
+            }
+            if (Expression.isValidParameter(paramCondition)){
+              // Check for condition
+              
+              var condition = new Expression(paramCondition);
+              var update = function(){
+                paramValue = (paramValueExpression) ? paramValueExpression.getValue() : paramValue;
+                var value = condition.getValue();
+                if (value == true){
+                  SetControlProperties(field, value, paramValue, paramElseValue, paramValidationMessage);
+                } else if (Expression.isValidParameter(paramElseValue)){
+                  if (paramElseValue != "U") {
+                    SetControlProperties(field, value, paramValue, paramElseValue, paramValidationMessage);
+                  }
+                } else {
+                  // No else value provided
+                  // Set field to not visible/ non editable/ non mandatory
+                  field.setVisible(false);
+                  field.setMandatory(false);
+                  field.setReadOnly(true);
+                }
+              };
+              events.listen(condition, "change", update);
+              update();
+            } else {
+              // Set to the value
+              paramValue = (paramValueExpression) ? paramValueExpression.getValue() : paramValue;
+              SetControlProperties(field, true, paramValue, undefined, paramValidationMessage);
+            }
+        
+        	}
+        })();
+        /**
+         * Set the control width
+         */
+        (function(){
+        	
+        	if (isOnLoad) {	
+        		(function(){
+              var field = Field.getInstance("FIRSTCAP.RI_SUMINSURED");
+        			window.setControlWidth(field, "0.8", "FIRSTCAP", "RI_SUMINSURED");
+        		})();
+        	}
+        })();
+        /**
+         * Set the label width
+         */
+        (function(){
+        	
+        	if (isOnLoad) {	
+        		window.setTimeout(function(){
+        
+        			var width = window.parseFloat("0.7");
+        			var standardWidth = 165;
+        			if ("{name}" != "{na" + "me}"){
+        				var label = document.getElementById("{name}");
+        				// Walk up the dom, if a co-cell is found use that intead
+        				if (label.parentNode.parentNode.parentNode.className.toLowerCase() == "co-cell")
+        					label = label.parentNode.parentNode.parentNode;
+        			} else {
+        			    var label = document.getElementById("ctl00_cntMainBody_lblFIRSTCAP_RI_SUMINSURED");
+        			    var ele = document.getElementById('ctl00_cntMainBody_FIRSTCAP__RI_SUMINSURED');
+        			    if (ele.firstElementChild != null && ele.firstElementChild.id == 'Controls_FindParty') {
+        			        label = document.getElementById("ctl00_cntMainBody_FIRSTCAP__RI_SUMINSURED_lblFindParty");
+        			    }
+        			}
+        			var bounds = goog.style.getBounds(label);
+        			//if (bounds.width != 0)
+        				//standardWidth = bounds.width;
+        			
+        			//var bounds = window.getBounds(ele);
+        			//if (label != null)
+        				//label.style.width = Math.round(width * standardWidth) + "px";
+        			var sWidthClass2="col-md-4 col-sm-3 control-label";
+        			if (width>=1)
+        		sWidthClass2 = "col-md-4 col-sm-3 control-label";
+        	
+        	if (width>=0.9 && width <1.0)
+        		sWidthClass2 ="col-md-4 col-sm-3 control-label";
+        	
+        	if (width>=0.8 && width <0.9)
+        		sWidthClass2 ="col-md-3 col-sm-2 control-label";
+        	
+        	if (width>=0.7 && width <0.8)
+        		sWidthClass2 ="col-md-3 col-sm-2 control-label";
+        	
+        	if (width>=0.5 && width <0.7)
+        		sWidthClass2 ="col-md-2 col-sm-1 control-label";
+        	if (width>=0.3 && width <0.5 )
+        		sWidthClass2 ="col-md-2 col-sm-1 control-label";
+        	
+        	if (width>=0.1 && width <0.3 )
+        		sWidthClass2 ="col-md-1 col-sm-1 control-label";
+        	
+        	label.className = sWidthClass2;
+        		}, 4);
+        	}
+        })();
+        /**
+         * @fileoverview
+         * SetValue
+         */
+        (function(){
+        	if (isOnLoad) {		
+        		// Get the field
+        		var field = Field.getWithQuery("type=Currency&objectName=FIRSTCAP&propertyName=RI_SUMINSURED&name={name}");
+        		
+        		var value = new Expression("FIRSTCAP.SUMINSURED"), 
+        			condition = (Expression.isValidParameter("{1}")) ? new Expression("{1}") : null, 
+        			elseValue = (Expression.isValidParameter("{2}")) ? new Expression("{2}") : null;
+        		
+        		window.setValue(field, value, condition, elseValue);
+        	};
+        })();
+        /**
+         * Set the field width
+         */
+        (function(){
+        	
+        	if (isOnLoad) {	
+        		window.setTimeout(function(){
+        
+        			var field = Field.getInstance('FIRSTCAP', 'RI_SUMINSURED');
+        			
+        			if (field.setTextAlign){
+        				field.setTextAlign("Right");
+        				return;
+        			}
+        			
+        			if (! (field && field.getInput)) return;
+        			
+        			var textAlign;
+        			switch ("Right".toLowerCase()){
+        				case "right": textAlign = "right";break;
+        				case "centre":
+        				case "center":
+        				case "middle": textAlign = "center";break;
+        				case "left": 
+        				default: textAlign = "left";break;
+        			}
+        			
+        			field.getInput().style.textAlign = textAlign;
+        			// Quick workaround until field exposes a method to get
+        			// the display input or to set the alignment.
+        			if (field.displayInput){
+        				field.displayInput.style.textAlign = textAlign;
+        			}
+        			
+        		}, 4);
+        	}
+        })();
+}
+function onValidate_FIRSTCAP__SUBLANDSLIP(source, args, sender, isOnLoad) {
+        
+        /**
+         * @fileoverview
+         * GeneralValidation
+         */
+        (function(){
+        	GeneralValidationHandler.Validate(isOnLoad, args, "FIRSTCAP", "SUBLANDSLIP", "Checkbox");
+        })();
+        /**
+         * @fileoverview
+         * Set property
+         */
+        (function(){
+        	if (isOnLoad) {	
+        		var field
+        		if ("{name}" != "{na" + "me}"){
+        			field = Field.getLabel("{name}");
+        		} else { 
+        			field = Field.getInstance("FIRSTCAP", "SUBLANDSLIP");
+        		}
+        		//window.setProperty(field, "V", "{1}", "{2}", "{3}");
+        
+            var paramValue = "V",
+            paramCondition = "{1}",
+            paramElseValue = "{2}",
+            paramValidationMessage = "{3}";
+            
+            paramValidationMessage = (Expression.isValidParameter(paramValidationMessage)) ? paramValidationMessage : undefined;
+            
+            if (paramValue != ""){
+              var paramValueExpression = new Expression(paramValue);
+            }
+            if (Expression.isValidParameter(paramCondition)){
+              // Check for condition
+              
+              var condition = new Expression(paramCondition);
+              var update = function(){
+                paramValue = (paramValueExpression) ? paramValueExpression.getValue() : paramValue;
+                var value = condition.getValue();
+                if (value == true){
+                  SetControlProperties(field, value, paramValue, paramElseValue, paramValidationMessage);
+                } else if (Expression.isValidParameter(paramElseValue)){
+                  if (paramElseValue != "U") {
+                    SetControlProperties(field, value, paramValue, paramElseValue, paramValidationMessage);
+                  }
+                } else {
+                  // No else value provided
+                  // Set field to not visible/ non editable/ non mandatory
+                  field.setVisible(false);
+                  field.setMandatory(false);
+                  field.setReadOnly(true);
+                }
+              };
+              events.listen(condition, "change", update);
+              update();
+            } else {
+              // Set to the value
+              paramValue = (paramValueExpression) ? paramValueExpression.getValue() : paramValue;
+              SetControlProperties(field, true, paramValue, undefined, paramValidationMessage);
+            }
+        
+        	}
+        })();
+        /**
+         * Set the control width
+         */
+        (function(){
+        	
+        	if (isOnLoad) {	
+        		(function(){
+              var field = Field.getInstance("FIRSTCAP.SUBLANDSLIP");
+        			window.setControlWidth(field, "0.8", "FIRSTCAP", "SUBLANDSLIP");
+        		})();
+        	}
+        })();
+        /**
+         * Set the label width
+         */
+        (function(){
+        	
+        	if (isOnLoad) {	
+        		window.setTimeout(function(){
+        
+        			var width = window.parseFloat("0.7");
+        			var standardWidth = 165;
+        			if ("{name}" != "{na" + "me}"){
+        				var label = document.getElementById("{name}");
+        				// Walk up the dom, if a co-cell is found use that intead
+        				if (label.parentNode.parentNode.parentNode.className.toLowerCase() == "co-cell")
+        					label = label.parentNode.parentNode.parentNode;
+        			} else {
+        			    var label = document.getElementById("ctl00_cntMainBody_lblFIRSTCAP_SUBLANDSLIP");
+        			    var ele = document.getElementById('ctl00_cntMainBody_FIRSTCAP__SUBLANDSLIP');
+        			    if (ele.firstElementChild != null && ele.firstElementChild.id == 'Controls_FindParty') {
+        			        label = document.getElementById("ctl00_cntMainBody_FIRSTCAP__SUBLANDSLIP_lblFindParty");
+        			    }
+        			}
+        			var bounds = goog.style.getBounds(label);
+        			//if (bounds.width != 0)
+        				//standardWidth = bounds.width;
+        			
+        			//var bounds = window.getBounds(ele);
+        			//if (label != null)
+        				//label.style.width = Math.round(width * standardWidth) + "px";
+        			var sWidthClass2="col-md-4 col-sm-3 control-label";
+        			if (width>=1)
+        		sWidthClass2 = "col-md-4 col-sm-3 control-label";
+        	
+        	if (width>=0.9 && width <1.0)
+        		sWidthClass2 ="col-md-4 col-sm-3 control-label";
+        	
+        	if (width>=0.8 && width <0.9)
+        		sWidthClass2 ="col-md-3 col-sm-2 control-label";
+        	
+        	if (width>=0.7 && width <0.8)
+        		sWidthClass2 ="col-md-3 col-sm-2 control-label";
+        	
+        	if (width>=0.5 && width <0.7)
+        		sWidthClass2 ="col-md-2 col-sm-1 control-label";
+        	if (width>=0.3 && width <0.5 )
+        		sWidthClass2 ="col-md-2 col-sm-1 control-label";
+        	
+        	if (width>=0.1 && width <0.3 )
+        		sWidthClass2 ="col-md-1 col-sm-1 control-label";
+        	
+        	label.className = sWidthClass2;
+        		}, 4);
+        	}
+        })();
+        /**
+         * @fileoverview
+         * NotOnPage. Set field to hidden, hidden doesn't take up space in the document.
+         */
+        (function(){
+        	if (isOnLoad) {		
+        		if ("{name}" != ("{na" + "me}")){
+        			var field = Field.getLabel("{name}");
+        		} else {
+        			var field = Field.getInstance("FIRSTCAP", "SUBLANDSLIP");
+        		}
+        		var exp = Expression.isValidParameter("{0}") ? new Expression("{0}") : true;
+        
+        		var update = function(){
+        			var isHidden = (exp === true || exp.getValue() == true);
+        			field.setHidden(isHidden);
+        		};
+        		if (Expression.isValidParameter("{0}")){
+        			events.listen(exp, "change",update);
+        			events.listen(exp, "visibilitychange",update);
+        			events.listen(exp, "displaychange",update);
+        		}
+        		update();
+        	};
+        })();
+}
+function onValidate_FIRSTCAP__STD_EXCESS(source, args, sender, isOnLoad) {
+        
+        /**
+         * @fileoverview
+         * GeneralValidation
+         */
+        (function(){
+        	GeneralValidationHandler.Validate(isOnLoad, args, "FIRSTCAP", "STD_EXCESS", "Integer");
+        })();
+        /**
+         * @fileoverview
+         * Set property
+         */
+        (function(){
+        	if (isOnLoad) {	
+        		var field
+        		if ("{name}" != "{na" + "me}"){
+        			field = Field.getLabel("{name}");
+        		} else { 
+        			field = Field.getInstance("FIRSTCAP", "STD_EXCESS");
+        		}
+        		//window.setProperty(field, "V", "{1}", "{2}", "{3}");
+        
+            var paramValue = "V",
+            paramCondition = "{1}",
+            paramElseValue = "{2}",
+            paramValidationMessage = "{3}";
+            
+            paramValidationMessage = (Expression.isValidParameter(paramValidationMessage)) ? paramValidationMessage : undefined;
+            
+            if (paramValue != ""){
+              var paramValueExpression = new Expression(paramValue);
+            }
+            if (Expression.isValidParameter(paramCondition)){
+              // Check for condition
+              
+              var condition = new Expression(paramCondition);
+              var update = function(){
+                paramValue = (paramValueExpression) ? paramValueExpression.getValue() : paramValue;
+                var value = condition.getValue();
+                if (value == true){
+                  SetControlProperties(field, value, paramValue, paramElseValue, paramValidationMessage);
+                } else if (Expression.isValidParameter(paramElseValue)){
+                  if (paramElseValue != "U") {
+                    SetControlProperties(field, value, paramValue, paramElseValue, paramValidationMessage);
+                  }
+                } else {
+                  // No else value provided
+                  // Set field to not visible/ non editable/ non mandatory
+                  field.setVisible(false);
+                  field.setMandatory(false);
+                  field.setReadOnly(true);
+                }
+              };
+              events.listen(condition, "change", update);
+              update();
+            } else {
+              // Set to the value
+              paramValue = (paramValueExpression) ? paramValueExpression.getValue() : paramValue;
+              SetControlProperties(field, true, paramValue, undefined, paramValidationMessage);
+            }
+        
+        	}
+        })();
+        /**
+         * Set the control width
+         */
+        (function(){
+        	
+        	if (isOnLoad) {	
+        		(function(){
+              var field = Field.getInstance("FIRSTCAP.STD_EXCESS");
+        			window.setControlWidth(field, "0.8", "FIRSTCAP", "STD_EXCESS");
+        		})();
+        	}
+        })();
+        /**
+         * Set the label width
+         */
+        (function(){
+        	
+        	if (isOnLoad) {	
+        		window.setTimeout(function(){
+        
+        			var width = window.parseFloat("0.7");
+        			var standardWidth = 165;
+        			if ("{name}" != "{na" + "me}"){
+        				var label = document.getElementById("{name}");
+        				// Walk up the dom, if a co-cell is found use that intead
+        				if (label.parentNode.parentNode.parentNode.className.toLowerCase() == "co-cell")
+        					label = label.parentNode.parentNode.parentNode;
+        			} else {
+        			    var label = document.getElementById("ctl00_cntMainBody_lblFIRSTCAP_STD_EXCESS");
+        			    var ele = document.getElementById('ctl00_cntMainBody_FIRSTCAP__STD_EXCESS');
+        			    if (ele.firstElementChild != null && ele.firstElementChild.id == 'Controls_FindParty') {
+        			        label = document.getElementById("ctl00_cntMainBody_FIRSTCAP__STD_EXCESS_lblFindParty");
+        			    }
+        			}
+        			var bounds = goog.style.getBounds(label);
+        			//if (bounds.width != 0)
+        				//standardWidth = bounds.width;
+        			
+        			//var bounds = window.getBounds(ele);
+        			//if (label != null)
+        				//label.style.width = Math.round(width * standardWidth) + "px";
+        			var sWidthClass2="col-md-4 col-sm-3 control-label";
+        			if (width>=1)
+        		sWidthClass2 = "col-md-4 col-sm-3 control-label";
+        	
+        	if (width>=0.9 && width <1.0)
+        		sWidthClass2 ="col-md-4 col-sm-3 control-label";
+        	
+        	if (width>=0.8 && width <0.9)
+        		sWidthClass2 ="col-md-3 col-sm-2 control-label";
+        	
+        	if (width>=0.7 && width <0.8)
+        		sWidthClass2 ="col-md-3 col-sm-2 control-label";
+        	
+        	if (width>=0.5 && width <0.7)
+        		sWidthClass2 ="col-md-2 col-sm-1 control-label";
+        	if (width>=0.3 && width <0.5 )
+        		sWidthClass2 ="col-md-2 col-sm-1 control-label";
+        	
+        	if (width>=0.1 && width <0.3 )
+        		sWidthClass2 ="col-md-1 col-sm-1 control-label";
+        	
+        	label.className = sWidthClass2;
+        		}, 4);
+        	}
+        })();
+}
+function onValidate_FIRSTCAP__MININGSHK(source, args, sender, isOnLoad) {
+        
+        /**
+         * @fileoverview
+         * GeneralValidation
+         */
+        (function(){
+        	GeneralValidationHandler.Validate(isOnLoad, args, "FIRSTCAP", "MININGSHK", "Checkbox");
+        })();
+        /**
+         * @fileoverview
+         * Set property
+         */
+        (function(){
+        	if (isOnLoad) {	
+        		var field
+        		if ("{name}" != "{na" + "me}"){
+        			field = Field.getLabel("{name}");
+        		} else { 
+        			field = Field.getInstance("FIRSTCAP", "MININGSHK");
+        		}
+        		//window.setProperty(field, "V", "{1}", "{2}", "{3}");
+        
+            var paramValue = "V",
+            paramCondition = "{1}",
+            paramElseValue = "{2}",
+            paramValidationMessage = "{3}";
+            
+            paramValidationMessage = (Expression.isValidParameter(paramValidationMessage)) ? paramValidationMessage : undefined;
+            
+            if (paramValue != ""){
+              var paramValueExpression = new Expression(paramValue);
+            }
+            if (Expression.isValidParameter(paramCondition)){
+              // Check for condition
+              
+              var condition = new Expression(paramCondition);
+              var update = function(){
+                paramValue = (paramValueExpression) ? paramValueExpression.getValue() : paramValue;
+                var value = condition.getValue();
+                if (value == true){
+                  SetControlProperties(field, value, paramValue, paramElseValue, paramValidationMessage);
+                } else if (Expression.isValidParameter(paramElseValue)){
+                  if (paramElseValue != "U") {
+                    SetControlProperties(field, value, paramValue, paramElseValue, paramValidationMessage);
+                  }
+                } else {
+                  // No else value provided
+                  // Set field to not visible/ non editable/ non mandatory
+                  field.setVisible(false);
+                  field.setMandatory(false);
+                  field.setReadOnly(true);
+                }
+              };
+              events.listen(condition, "change", update);
+              update();
+            } else {
+              // Set to the value
+              paramValue = (paramValueExpression) ? paramValueExpression.getValue() : paramValue;
+              SetControlProperties(field, true, paramValue, undefined, paramValidationMessage);
+            }
+        
+        	}
+        })();
+        /**
+         * Set the control width
+         */
+        (function(){
+        	
+        	if (isOnLoad) {	
+        		(function(){
+              var field = Field.getInstance("FIRSTCAP.MININGSHK");
+        			window.setControlWidth(field, "0.8", "FIRSTCAP", "MININGSHK");
+        		})();
+        	}
+        })();
+        /**
+         * Set the label width
+         */
+        (function(){
+        	
+        	if (isOnLoad) {	
+        		window.setTimeout(function(){
+        
+        			var width = window.parseFloat("0.7");
+        			var standardWidth = 165;
+        			if ("{name}" != "{na" + "me}"){
+        				var label = document.getElementById("{name}");
+        				// Walk up the dom, if a co-cell is found use that intead
+        				if (label.parentNode.parentNode.parentNode.className.toLowerCase() == "co-cell")
+        					label = label.parentNode.parentNode.parentNode;
+        			} else {
+        			    var label = document.getElementById("ctl00_cntMainBody_lblFIRSTCAP_MININGSHK");
+        			    var ele = document.getElementById('ctl00_cntMainBody_FIRSTCAP__MININGSHK');
+        			    if (ele.firstElementChild != null && ele.firstElementChild.id == 'Controls_FindParty') {
+        			        label = document.getElementById("ctl00_cntMainBody_FIRSTCAP__MININGSHK_lblFindParty");
+        			    }
+        			}
+        			var bounds = goog.style.getBounds(label);
+        			//if (bounds.width != 0)
+        				//standardWidth = bounds.width;
+        			
+        			//var bounds = window.getBounds(ele);
+        			//if (label != null)
+        				//label.style.width = Math.round(width * standardWidth) + "px";
+        			var sWidthClass2="col-md-4 col-sm-3 control-label";
+        			if (width>=1)
+        		sWidthClass2 = "col-md-4 col-sm-3 control-label";
+        	
+        	if (width>=0.9 && width <1.0)
+        		sWidthClass2 ="col-md-4 col-sm-3 control-label";
+        	
+        	if (width>=0.8 && width <0.9)
+        		sWidthClass2 ="col-md-3 col-sm-2 control-label";
+        	
+        	if (width>=0.7 && width <0.8)
+        		sWidthClass2 ="col-md-3 col-sm-2 control-label";
+        	
+        	if (width>=0.5 && width <0.7)
+        		sWidthClass2 ="col-md-2 col-sm-1 control-label";
+        	if (width>=0.3 && width <0.5 )
+        		sWidthClass2 ="col-md-2 col-sm-1 control-label";
+        	
+        	if (width>=0.1 && width <0.3 )
+        		sWidthClass2 ="col-md-1 col-sm-1 control-label";
+        	
+        	label.className = sWidthClass2;
+        		}, 4);
+        	}
+        })();
+}
+function onValidate_FIRSTCAP__FINAL_RI_SUMINSURED(source, args, sender, isOnLoad) {
+        
+        /**
+         * @fileoverview
+         * GeneralValidation
+         */
+        (function(){
+        	GeneralValidationHandler.Validate(isOnLoad, args, "FIRSTCAP", "FINAL_RI_SUMINSURED", "Currency");
+        })();
+        /**
+         * @fileoverview
+         * NotOnPage. Set field to hidden, hidden doesn't take up space in the document.
+         */
+        (function(){
+        	if (isOnLoad) {		
+        		if ("{name}" != ("{na" + "me}")){
+        			var field = Field.getLabel("{name}");
+        		} else {
+        			var field = Field.getInstance("FIRSTCAP", "FINAL_RI_SUMINSURED");
+        		}
+        		var exp = Expression.isValidParameter("{0}") ? new Expression("{0}") : true;
+        
+        		var update = function(){
+        			var isHidden = (exp === true || exp.getValue() == true);
+        			field.setHidden(isHidden);
+        		};
+        		if (Expression.isValidParameter("{0}")){
+        			events.listen(exp, "change",update);
+        			events.listen(exp, "visibilitychange",update);
+        			events.listen(exp, "displaychange",update);
+        		}
+        		update();
+        	};
+        })();
+}
+function onValidate_FIRSTCAP__NAME(source, args, sender, isOnLoad) {
+        
+        /**
+         * @fileoverview
+         * GeneralValidation
+         */
+        (function(){
+        	GeneralValidationHandler.Validate(isOnLoad, args, "FIRSTCAP", "NAME", "Text");
+        })();
+        /**
+         * @fileoverview
+         * Set property
+         */
+        (function(){
+        	if (isOnLoad) {	
+        		var field
+        		if ("{name}" != "{na" + "me}"){
+        			field = Field.getLabel("{name}");
+        		} else { 
+        			field = Field.getInstance("FIRSTCAP", "NAME");
+        		}
+        		//window.setProperty(field, "V", "{1}", "{2}", "{3}");
+        
+            var paramValue = "V",
+            paramCondition = "{1}",
+            paramElseValue = "{2}",
+            paramValidationMessage = "{3}";
+            
+            paramValidationMessage = (Expression.isValidParameter(paramValidationMessage)) ? paramValidationMessage : undefined;
+            
+            if (paramValue != ""){
+              var paramValueExpression = new Expression(paramValue);
+            }
+            if (Expression.isValidParameter(paramCondition)){
+              // Check for condition
+              
+              var condition = new Expression(paramCondition);
+              var update = function(){
+                paramValue = (paramValueExpression) ? paramValueExpression.getValue() : paramValue;
+                var value = condition.getValue();
+                if (value == true){
+                  SetControlProperties(field, value, paramValue, paramElseValue, paramValidationMessage);
+                } else if (Expression.isValidParameter(paramElseValue)){
+                  if (paramElseValue != "U") {
+                    SetControlProperties(field, value, paramValue, paramElseValue, paramValidationMessage);
+                  }
+                } else {
+                  // No else value provided
+                  // Set field to not visible/ non editable/ non mandatory
+                  field.setVisible(false);
+                  field.setMandatory(false);
+                  field.setReadOnly(true);
+                }
+              };
+              events.listen(condition, "change", update);
+              update();
+            } else {
+              // Set to the value
+              paramValue = (paramValueExpression) ? paramValueExpression.getValue() : paramValue;
+              SetControlProperties(field, true, paramValue, undefined, paramValidationMessage);
+            }
+        
+        	}
+        })();
+        /**
+         * Set the control width
+         */
+        (function(){
+        	
+        	if (isOnLoad) {	
+        		(function(){
+              var field = Field.getInstance("FIRSTCAP.NAME");
+        			window.setControlWidth(field, "0.8", "FIRSTCAP", "NAME");
+        		})();
+        	}
+        })();
+        /**
+         * Set the label width
+         */
+        (function(){
+        	
+        	if (isOnLoad) {	
+        		window.setTimeout(function(){
+        
+        			var width = window.parseFloat("0.7");
+        			var standardWidth = 165;
+        			if ("{name}" != "{na" + "me}"){
+        				var label = document.getElementById("{name}");
+        				// Walk up the dom, if a co-cell is found use that intead
+        				if (label.parentNode.parentNode.parentNode.className.toLowerCase() == "co-cell")
+        					label = label.parentNode.parentNode.parentNode;
+        			} else {
+        			    var label = document.getElementById("ctl00_cntMainBody_lblFIRSTCAP_NAME");
+        			    var ele = document.getElementById('ctl00_cntMainBody_FIRSTCAP__NAME');
+        			    if (ele.firstElementChild != null && ele.firstElementChild.id == 'Controls_FindParty') {
+        			        label = document.getElementById("ctl00_cntMainBody_FIRSTCAP__NAME_lblFindParty");
+        			    }
+        			}
+        			var bounds = goog.style.getBounds(label);
+        			//if (bounds.width != 0)
+        				//standardWidth = bounds.width;
+        			
+        			//var bounds = window.getBounds(ele);
+        			//if (label != null)
+        				//label.style.width = Math.round(width * standardWidth) + "px";
+        			var sWidthClass2="col-md-4 col-sm-3 control-label";
+        			if (width>=1)
+        		sWidthClass2 = "col-md-4 col-sm-3 control-label";
+        	
+        	if (width>=0.9 && width <1.0)
+        		sWidthClass2 ="col-md-4 col-sm-3 control-label";
+        	
+        	if (width>=0.8 && width <0.9)
+        		sWidthClass2 ="col-md-3 col-sm-2 control-label";
+        	
+        	if (width>=0.7 && width <0.8)
+        		sWidthClass2 ="col-md-3 col-sm-2 control-label";
+        	
+        	if (width>=0.5 && width <0.7)
+        		sWidthClass2 ="col-md-2 col-sm-1 control-label";
+        	if (width>=0.3 && width <0.5 )
+        		sWidthClass2 ="col-md-2 col-sm-1 control-label";
+        	
+        	if (width>=0.1 && width <0.3 )
+        		sWidthClass2 ="col-md-1 col-sm-1 control-label";
+        	
+        	label.className = sWidthClass2;
+        		}, 4);
+        	}
+        })();
+}
+function onValidate_FIRSTCAP__INCEPTION_DATE(source, args, sender, isOnLoad) {
+        
+        /**
+         * @fileoverview
+         * GeneralValidation
+         */
+        (function(){
+        	GeneralValidationHandler.Validate(isOnLoad, args, "FIRSTCAP", "INCEPTION_DATE", "Date");
+        })();
+        /**
+         * @fileoverview
+         * Set property
+         */
+        (function(){
+        	if (isOnLoad) {	
+        		var field
+        		if ("{name}" != "{na" + "me}"){
+        			field = Field.getLabel("{name}");
+        		} else { 
+        			field = Field.getInstance("FIRSTCAP", "INCEPTION_DATE");
+        		}
+        		//window.setProperty(field, "V", "{1}", "{2}", "{3}");
+        
+            var paramValue = "V",
+            paramCondition = "{1}",
+            paramElseValue = "{2}",
+            paramValidationMessage = "{3}";
+            
+            paramValidationMessage = (Expression.isValidParameter(paramValidationMessage)) ? paramValidationMessage : undefined;
+            
+            if (paramValue != ""){
+              var paramValueExpression = new Expression(paramValue);
+            }
+            if (Expression.isValidParameter(paramCondition)){
+              // Check for condition
+              
+              var condition = new Expression(paramCondition);
+              var update = function(){
+                paramValue = (paramValueExpression) ? paramValueExpression.getValue() : paramValue;
+                var value = condition.getValue();
+                if (value == true){
+                  SetControlProperties(field, value, paramValue, paramElseValue, paramValidationMessage);
+                } else if (Expression.isValidParameter(paramElseValue)){
+                  if (paramElseValue != "U") {
+                    SetControlProperties(field, value, paramValue, paramElseValue, paramValidationMessage);
+                  }
+                } else {
+                  // No else value provided
+                  // Set field to not visible/ non editable/ non mandatory
+                  field.setVisible(false);
+                  field.setMandatory(false);
+                  field.setReadOnly(true);
+                }
+              };
+              events.listen(condition, "change", update);
+              update();
+            } else {
+              // Set to the value
+              paramValue = (paramValueExpression) ? paramValueExpression.getValue() : paramValue;
+              SetControlProperties(field, true, paramValue, undefined, paramValidationMessage);
+            }
+        
+        	}
+        })();
+        /**
+         * Set the control width
+         */
+        (function(){
+        	
+        	if (isOnLoad) {	
+        		(function(){
+              var field = Field.getInstance("FIRSTCAP.INCEPTION_DATE");
+        			window.setControlWidth(field, "0.8", "FIRSTCAP", "INCEPTION_DATE");
+        		})();
+        	}
+        })();
+        /**
+         * Set the label width
+         */
+        (function(){
+        	
+        	if (isOnLoad) {	
+        		window.setTimeout(function(){
+        
+        			var width = window.parseFloat("0.7");
+        			var standardWidth = 165;
+        			if ("{name}" != "{na" + "me}"){
+        				var label = document.getElementById("{name}");
+        				// Walk up the dom, if a co-cell is found use that intead
+        				if (label.parentNode.parentNode.parentNode.className.toLowerCase() == "co-cell")
+        					label = label.parentNode.parentNode.parentNode;
+        			} else {
+        			    var label = document.getElementById("ctl00_cntMainBody_lblFIRSTCAP_INCEPTION_DATE");
+        			    var ele = document.getElementById('ctl00_cntMainBody_FIRSTCAP__INCEPTION_DATE');
+        			    if (ele.firstElementChild != null && ele.firstElementChild.id == 'Controls_FindParty') {
+        			        label = document.getElementById("ctl00_cntMainBody_FIRSTCAP__INCEPTION_DATE_lblFindParty");
+        			    }
+        			}
+        			var bounds = goog.style.getBounds(label);
+        			//if (bounds.width != 0)
+        				//standardWidth = bounds.width;
+        			
+        			//var bounds = window.getBounds(ele);
+        			//if (label != null)
+        				//label.style.width = Math.round(width * standardWidth) + "px";
+        			var sWidthClass2="col-md-4 col-sm-3 control-label";
+        			if (width>=1)
+        		sWidthClass2 = "col-md-4 col-sm-3 control-label";
+        	
+        	if (width>=0.9 && width <1.0)
+        		sWidthClass2 ="col-md-4 col-sm-3 control-label";
+        	
+        	if (width>=0.8 && width <0.9)
+        		sWidthClass2 ="col-md-3 col-sm-2 control-label";
+        	
+        	if (width>=0.7 && width <0.8)
+        		sWidthClass2 ="col-md-3 col-sm-2 control-label";
+        	
+        	if (width>=0.5 && width <0.7)
+        		sWidthClass2 ="col-md-2 col-sm-1 control-label";
+        	if (width>=0.3 && width <0.5 )
+        		sWidthClass2 ="col-md-2 col-sm-1 control-label";
+        	
+        	if (width>=0.1 && width <0.3 )
+        		sWidthClass2 ="col-md-1 col-sm-1 control-label";
+        	
+        	label.className = sWidthClass2;
+        		}, 4);
+        	}
+        })();
+}
+function DoLogic(isOnLoad) {
+    onValidate_FIRSTCAP__CONSTRUCT(null, null, null, isOnLoad);
+    onValidate_FIRSTCAP__CONSTRUCT_CODE(null, null, null, isOnLoad);
+    onValidate_FIRSTCAP__RESIDENCE(null, null, null, isOnLoad);
+    onValidate_FIRSTCAP__RESIDENCE_CODE(null, null, null, isOnLoad);
+    onValidate_FIRSTCAP__OCCUPANCY(null, null, null, isOnLoad);
+    onValidate_FIRSTCAP__LOCALITY(null, null, null, isOnLoad);
+    onValidate_FIRSTCAP__SECURITY(null, null, null, isOnLoad);
+    onValidate_FIRSTCAP__DATEOFBIRTH(null, null, null, isOnLoad);
+    onValidate_FIRSTCAP__SUMINSURED(null, null, null, isOnLoad);
+    onValidate_FIRSTCAP__RI_SUMINSURED(null, null, null, isOnLoad);
+    onValidate_FIRSTCAP__SUBLANDSLIP(null, null, null, isOnLoad);
+    onValidate_FIRSTCAP__STD_EXCESS(null, null, null, isOnLoad);
+    onValidate_FIRSTCAP__MININGSHK(null, null, null, isOnLoad);
+    onValidate_FIRSTCAP__FINAL_RI_SUMINSURED(null, null, null, isOnLoad);
+    onValidate_FIRSTCAP__NAME(null, null, null, isOnLoad);
+    onValidate_FIRSTCAP__INCEPTION_DATE(null, null, null, isOnLoad);
+}
+</script>
+
+  
+  <div class="risk-screen">
+        <NexusControl:ProgressBar ID="ucProgressBar" runat="server" />
+	 <div class="card">
+        <Nexus:ImprovedTabIndex ID="TabIndex" runat="server" CssClass="TabContainer" TabContainerClass="TabNav" ActiveTabClass="ActiveTab" />
+               
+        <div class="card-footer clearfix">
+            <asp:Button ID="btnBackTop" runat="server" SkinID="buttonSecondary" Text="Back" OnClick="BackButton" CausesValidation="false" />
+			<asp:Button ID="btnNextTop" runat="server" SkinID="buttonPrimary" Text="Next" OnClick="NextButton" />
+        </div>
+		<div class="card-body clearfix">
+			<div id="inner_content" style="">
+				<!-- GeneralLayoutContainer -->
+<div id="id35311bbf8a964e3183ec02903b7dda0c" class="general-layout-container">
+				
+         
+				
+					
+						
+						
+							<div class="clearfix p-xs">
+						
+						
+								<!-- ColumnLayoutContainer -->
+<div id="id5a6b28561d0c47088e05c186f3872581" class="column-layout-container,no-border  ">
+		
+				
+	              <legend><asp:Label ID="lblHeading7" runat="server" Text="Buildings" /></legend>
+				
+				
+				<div data-column-count="2" data-column-ratio="" data-layout="" class="clearfix form-horizontal">
+				
+					<ul class="column-content">
+						
+							
+							
+								
+								
+									<li class="co-cell"  style="width:50%;" >
+								
+								
+										<!-- List -->
+<div class="form-group form-group-sm">
+	<span class="field-container"
+		data-field-type="List" 
+		data-object-name="FIRSTCAP" 
+		data-property-name="CONSTRUCT" 
+		id="pb-container-list-FIRSTCAP-CONSTRUCT">
+		<asp:Label ID="lblFIRSTCAP_CONSTRUCT" runat="server" AssociatedControlID="FIRSTCAP__CONSTRUCT" 
+			Text="Construction" CssClass="col-md-4 col-sm-3 control-label"></asp:Label>
+			<div class="col-md-8 col-sm-9">
+				<NexusProvider:LookupListV2 ID="FIRSTCAP__CONSTRUCT" runat="server" CssClass="form-control" ListType="PMLookup" ListCode="UDL_CONSTRCT" ParentLookupListID="" DataItemValue="Code" DataItemText="Description" DefaultText="--Please Select--" onChange="onValidate_FIRSTCAP__CONSTRUCT(null, null, this);" data-type="List" />
+			<asp:CustomValidator ID="valFIRSTCAP_CONSTRUCT" 
+			runat="server" 
+			Text="*" 
+			ErrorMessage="A validation error occurred for Construction"
+			ClientValidationFunction="onValidate_FIRSTCAP__CONSTRUCT" 
+			ValidationGroup=""
+			Display="None"
+			EnableClientScript="true"/>
+		    </div>
+		  
+	</span>
+</div>
+<!-- /List -->
+								
+									</li>
+							
+							
+						
+							
+							
+								
+								
+									<li class="co-cell"  style="width:50%;" >
+								
+								
+										<!-- Text -->
+
+<div class="form-group form-group-sm">
+	<span class="field-container" 
+		
+		data-field-type="Text" 
+		
+		data-object-name="FIRSTCAP" 
+		data-property-name="CONSTRUCT_CODE" 
+		 
+		
+		 
+		id="pb-container-text-FIRSTCAP-CONSTRUCT_CODE">
+
+		
+		<asp:Label ID="lblFIRSTCAP_CONSTRUCT_CODE" runat="server" AssociatedControlID="FIRSTCAP__CONSTRUCT_CODE" 
+			Text="" CssClass="col-md-4 col-sm-3 control-label"></asp:Label>
+		
+		
+			
+		
+
+		
+		         <div class="col-md-8 col-sm-9">
+					<asp:TextBox ID="FIRSTCAP__CONSTRUCT_CODE" runat="server" CssClass="form-control" data-type="Text" />
+					<asp:CustomValidator ID="valFIRSTCAP_CONSTRUCT_CODE" 
+					runat="server" 
+					Text="*" 
+					ErrorMessage="A validation error occurred for FIRSTCAP.CONSTRUCT_CODE"
+					ClientValidationFunction="onValidate_FIRSTCAP__CONSTRUCT_CODE"
+					ValidationGroup=""
+					Display="None"
+					EnableClientScript="true"
+					/>
+                </div>
+					
+		
+	
+		
+	</span>
+</div>
+        
+<!-- /Text -->
+								
+									</li>
+							
+							
+						
+							
+							
+								
+								
+									<li class="co-cell"  style="width:50%;" >
+								
+								
+										<!-- List -->
+<div class="form-group form-group-sm">
+	<span class="field-container"
+		data-field-type="List" 
+		data-object-name="FIRSTCAP" 
+		data-property-name="RESIDENCE" 
+		id="pb-container-list-FIRSTCAP-RESIDENCE">
+		<asp:Label ID="lblFIRSTCAP_RESIDENCE" runat="server" AssociatedControlID="FIRSTCAP__RESIDENCE" 
+			Text="Residence" CssClass="col-md-4 col-sm-3 control-label"></asp:Label>
+			<div class="col-md-8 col-sm-9">
+				<NexusProvider:LookupListV2 ID="FIRSTCAP__RESIDENCE" runat="server" CssClass="form-control" ListType="PMLookup" ListCode="UDL_RESIDENC" ParentLookupListID="" DataItemValue="Code" DataItemText="Description" DefaultText="--Please Select--" onChange="onValidate_FIRSTCAP__RESIDENCE(null, null, this);" data-type="List" />
+			<asp:CustomValidator ID="valFIRSTCAP_RESIDENCE" 
+			runat="server" 
+			Text="*" 
+			ErrorMessage="A validation error occurred for Residence"
+			ClientValidationFunction="onValidate_FIRSTCAP__RESIDENCE" 
+			ValidationGroup=""
+			Display="None"
+			EnableClientScript="true"/>
+		    </div>
+		  
+	</span>
+</div>
+<!-- /List -->
+								
+									</li>
+							
+							
+						
+							
+							
+								
+								
+									<li class="co-cell"  style="width:50%;" >
+								
+								
+										<!-- Text -->
+
+<div class="form-group form-group-sm">
+	<span class="field-container" 
+		
+		data-field-type="Text" 
+		
+		data-object-name="FIRSTCAP" 
+		data-property-name="RESIDENCE_CODE" 
+		 
+		
+		 
+		id="pb-container-text-FIRSTCAP-RESIDENCE_CODE">
+
+		
+		<asp:Label ID="lblFIRSTCAP_RESIDENCE_CODE" runat="server" AssociatedControlID="FIRSTCAP__RESIDENCE_CODE" 
+			Text="" CssClass="col-md-4 col-sm-3 control-label"></asp:Label>
+		
+		
+			
+		
+
+		
+		         <div class="col-md-8 col-sm-9">
+					<asp:TextBox ID="FIRSTCAP__RESIDENCE_CODE" runat="server" CssClass="form-control" data-type="Text" />
+					<asp:CustomValidator ID="valFIRSTCAP_RESIDENCE_CODE" 
+					runat="server" 
+					Text="*" 
+					ErrorMessage="A validation error occurred for FIRSTCAP.RESIDENCE_CODE"
+					ClientValidationFunction="onValidate_FIRSTCAP__RESIDENCE_CODE"
+					ValidationGroup=""
+					Display="None"
+					EnableClientScript="true"
+					/>
+                </div>
+					
+		
+	
+		
+	</span>
+</div>
+        
+<!-- /Text -->
+								
+									</li>
+							
+							
+						
+							
+							
+								
+								
+									<li class="co-cell"  style="width:50%;" >
+								
+								
+										<!-- List -->
+<div class="form-group form-group-sm">
+	<span class="field-container"
+		data-field-type="List" 
+		data-object-name="FIRSTCAP" 
+		data-property-name="OCCUPANCY" 
+		id="pb-container-list-FIRSTCAP-OCCUPANCY">
+		<asp:Label ID="lblFIRSTCAP_OCCUPANCY" runat="server" AssociatedControlID="FIRSTCAP__OCCUPANCY" 
+			Text="Occupancy" CssClass="col-md-4 col-sm-3 control-label"></asp:Label>
+			<div class="col-md-8 col-sm-9">
+				<NexusProvider:LookupListV2 ID="FIRSTCAP__OCCUPANCY" runat="server" CssClass="form-control" ListType="PMLookup" ListCode="UDL_OCCUPNCY" ParentLookupListID="" DataItemValue="Code" DataItemText="Description" DefaultText="--Please Select--" onChange="onValidate_FIRSTCAP__OCCUPANCY(null, null, this);" data-type="List" />
+			<asp:CustomValidator ID="valFIRSTCAP_OCCUPANCY" 
+			runat="server" 
+			Text="*" 
+			ErrorMessage="A validation error occurred for Occupancy"
+			ClientValidationFunction="onValidate_FIRSTCAP__OCCUPANCY" 
+			ValidationGroup=""
+			Display="None"
+			EnableClientScript="true"/>
+		    </div>
+		  
+	</span>
+</div>
+<!-- /List -->
+								
+									</li>
+							
+							
+						
+							
+							
+								
+								
+									<li class="co-cell"  style="width:50%;" >
+								
+								
+										<!-- List -->
+<div class="form-group form-group-sm">
+	<span class="field-container"
+		data-field-type="List" 
+		data-object-name="FIRSTCAP" 
+		data-property-name="LOCALITY" 
+		id="pb-container-list-FIRSTCAP-LOCALITY">
+		<asp:Label ID="lblFIRSTCAP_LOCALITY" runat="server" AssociatedControlID="FIRSTCAP__LOCALITY" 
+			Text="Locality" CssClass="col-md-4 col-sm-3 control-label"></asp:Label>
+			<div class="col-md-8 col-sm-9">
+				<NexusProvider:LookupListV2 ID="FIRSTCAP__LOCALITY" runat="server" CssClass="form-control" ListType="PMLookup" ListCode="UDL_LOCALITY" ParentLookupListID="" DataItemValue="Code" DataItemText="Description" DefaultText="--Please Select--" onChange="onValidate_FIRSTCAP__LOCALITY(null, null, this);" data-type="List" />
+			<asp:CustomValidator ID="valFIRSTCAP_LOCALITY" 
+			runat="server" 
+			Text="*" 
+			ErrorMessage="A validation error occurred for Locality"
+			ClientValidationFunction="onValidate_FIRSTCAP__LOCALITY" 
+			ValidationGroup=""
+			Display="None"
+			EnableClientScript="true"/>
+		    </div>
+		  
+	</span>
+</div>
+<!-- /List -->
+								
+									</li>
+							
+							
+						
+							
+							
+								
+								
+									<li class="co-cell"  style="width:50%;" >
+								
+								
+										<!-- List -->
+<div class="form-group form-group-sm">
+	<span class="field-container"
+		data-field-type="List" 
+		data-object-name="FIRSTCAP" 
+		data-property-name="SECURITY" 
+		id="pb-container-list-FIRSTCAP-SECURITY">
+		<asp:Label ID="lblFIRSTCAP_SECURITY" runat="server" AssociatedControlID="FIRSTCAP__SECURITY" 
+			Text="Security" CssClass="col-md-4 col-sm-3 control-label"></asp:Label>
+			<div class="col-md-8 col-sm-9">
+				<NexusProvider:LookupListV2 ID="FIRSTCAP__SECURITY" runat="server" CssClass="form-control" ListType="PMLookup" ListCode="UDL_SECURITY" ParentLookupListID="" DataItemValue="Code" DataItemText="Description" DefaultText="--Please Select--" onChange="onValidate_FIRSTCAP__SECURITY(null, null, this);" data-type="List" />
+			<asp:CustomValidator ID="valFIRSTCAP_SECURITY" 
+			runat="server" 
+			Text="*" 
+			ErrorMessage="A validation error occurred for Security"
+			ClientValidationFunction="onValidate_FIRSTCAP__SECURITY" 
+			ValidationGroup=""
+			Display="None"
+			EnableClientScript="true"/>
+		    </div>
+		  
+	</span>
+</div>
+<!-- /List -->
+								
+									</li>
+							
+							
+						
+							
+							
+								
+								
+									<li class="co-cell"  style="width:50%;" >
+								
+								
+										<!-- Date -->
+ <div class="form-group form-group-sm">
+	<span class="field-container"
+		data-field-type="Date" 
+		data-object-name="FIRSTCAP" 
+		data-property-name="DATEOFBIRTH" 
+		id="pb-container-datejquerycompatible-FIRSTCAP-DATEOFBIRTH">
+		<asp:Label ID="lblFIRSTCAP_DATEOFBIRTH" runat="server" AssociatedControlID="FIRSTCAP__DATEOFBIRTH" 
+			Text="Date of Birth" CssClass="col-md-4 col-sm-3 control-label"></asp:Label>
+			 <div class="col-md-8 col-sm-9">
+			  <div class="input-group">
+				<asp:TextBox ID="FIRSTCAP__DATEOFBIRTH" runat="server" CssClass="form-control" data-type="Date" />
+				<uc1:CalendarLookup ID="calFIRSTCAP__DATEOFBIRTH" runat="server" LinkedControl="FIRSTCAP__DATEOFBIRTH" HLevel="1" />
+		     </div>
+			 <asp:CustomValidator ID="valFIRSTCAP_DATEOFBIRTH" 
+			runat="server" 
+			Text="*" 
+			ErrorMessage="A validation error occurred for Date of Birth"
+			ClientValidationFunction="onValidate_FIRSTCAP__DATEOFBIRTH" 
+			ValidationGroup=""
+			Display="None"
+			EnableClientScript="true"/>
+		    </div>
+	</span>
+</div>
+<!-- /Date -->
+
+
+								
+									</li>
+							
+							
+						
+							
+							
+								
+								
+									<li class="co-cell"  style="width:50%;" >
+								
+								
+										<!-- Currency --->
+<div class="form-group form-group-sm">
+	<span class="field-container"
+		data-field-type="Currency" 
+		data-object-name="FIRSTCAP" 
+		data-property-name="SUMINSURED" 
+		id="pb-container-currency-FIRSTCAP-SUMINSURED">
+		<asp:Label ID="lblFIRSTCAP_SUMINSURED" runat="server" AssociatedControlID="FIRSTCAP__SUMINSURED" 
+			Text="Sum Insured" CssClass="col-md-4 col-sm-3 control-label"></asp:Label>
+		   <div class="col-md-8 col-sm-9">
+		     <asp:TextBox ID="FIRSTCAP__SUMINSURED" runat="server" CssClass="form-control" />
+		   </div>
+		<asp:CustomValidator ID="valFIRSTCAP_SUMINSURED" 
+			runat="server" 
+			Text="*" 
+			ErrorMessage="A validation error occurred for Sum Insured"
+			ClientValidationFunction="onValidate_FIRSTCAP__SUMINSURED" 
+			ValidationGroup=""
+			Display="None"
+			EnableClientScript="true"/>
+	</span>
+</div>	
+<!-- /Currency -->
+								
+									</li>
+							
+							
+						
+							
+							
+								
+								
+									<li class="co-cell"  style="width:50%;" >
+								
+								
+										<!-- Label -->
+	<span id="pb-container-label-label2">
+		<span class="label" id="label2"></span>
+	</span>
+<!-- /Label -->
+								
+									</li>
+							
+							
+						
+							
+							
+								
+								
+									<li class="co-cell"  style="width:50%;" >
+								
+								
+										<!-- Currency --->
+<div class="form-group form-group-sm">
+	<span class="field-container"
+		data-field-type="Currency" 
+		data-object-name="FIRSTCAP" 
+		data-property-name="RI_SUMINSURED" 
+		id="pb-container-currency-FIRSTCAP-RI_SUMINSURED">
+		<asp:Label ID="lblFIRSTCAP_RI_SUMINSURED" runat="server" AssociatedControlID="FIRSTCAP__RI_SUMINSURED" 
+			Text="RI Sum Insured" CssClass="col-md-4 col-sm-3 control-label"></asp:Label>
+		   <div class="col-md-8 col-sm-9">
+		     <asp:TextBox ID="FIRSTCAP__RI_SUMINSURED" runat="server" CssClass="form-control" />
+		   </div>
+		<asp:CustomValidator ID="valFIRSTCAP_RI_SUMINSURED" 
+			runat="server" 
+			Text="*" 
+			ErrorMessage="A validation error occurred for RI Sum Insured"
+			ClientValidationFunction="onValidate_FIRSTCAP__RI_SUMINSURED" 
+			ValidationGroup=""
+			Display="None"
+			EnableClientScript="true"/>
+	</span>
+</div>	
+<!-- /Currency -->
+								
+									</li>
+							
+							
+						
+							
+							
+								
+								
+									<li class="co-cell"  style="width:50%;" >
+								
+								
+										 
+ <!-- Checkbox -->
+<div class="form-group form-group-sm">
+<label id="ctl00_cntMainBody_lblFIRSTCAP_SUBLANDSLIP" for="ctl00_cntMainBody_FIRSTCAP__SUBLANDSLIP" class="col-md-4 col-sm-3 control-label">
+		Subsidence and Landslip</label>
+<div class="col-md-8 col-sm-9">
+	<span class="field-container asp-check" 
+		data-field-type="Checkbox" 
+		data-object-name="FIRSTCAP" 
+		data-property-name="SUBLANDSLIP" 
+		id="pb-container-checkbox-FIRSTCAP-SUBLANDSLIP">	
+		
+		<asp:TextBox ID="FIRSTCAP__SUBLANDSLIP" runat="server" CssClass="form-control hidden" />
+		<asp:CustomValidator ID="valFIRSTCAP_SUBLANDSLIP" 
+			runat="server" 
+			Text="*" 
+			ErrorMessage="A validation error occurred for Subsidence and Landslip"
+			ClientValidationFunction="onValidate_FIRSTCAP__SUBLANDSLIP" 
+			ValidationGroup=""
+			Display="None"
+			EnableClientScript="true"/>
+		
+	</span>
+	</div>
+</div>
+<!-- /Checkbox -->
+								
+									</li>
+							
+							
+						
+							
+							
+								
+								
+									<li class="co-cell"  style="width:50%;" >
+								
+								
+										<!-- Integer -->
+<div class="form-group form-group-sm">
+	<span class="field-container"
+		data-field-type="Integer" 
+		data-object-name="FIRSTCAP" 
+		data-property-name="STD_EXCESS" 
+		id="pb-container-integer-FIRSTCAP-STD_EXCESS">
+		<asp:Label ID="lblFIRSTCAP_STD_EXCESS" runat="server" AssociatedControlID="FIRSTCAP__STD_EXCESS" 
+			Text="Standard Excess" CssClass="col-md-4 col-sm-3 control-label"></asp:Label>
+			<div class="col-md-8 col-sm-9">
+		       <asp:TextBox ID="FIRSTCAP__STD_EXCESS" runat="server" CssClass="form-control" />
+			   <asp:CustomValidator ID="valFIRSTCAP_STD_EXCESS" 
+			runat="server" 
+			Text="*" 
+			ErrorMessage="A validation error occurred for Standard Excess"
+			ClientValidationFunction="onValidate_FIRSTCAP__STD_EXCESS" 
+			ValidationGroup=""
+			Display="None"
+			EnableClientScript="true"/>
+		    </div>
+		
+	</span>
+</div>
+<!-- /Integer -->
+								
+									</li>
+							
+							
+						
+							
+							
+								
+								
+									<li class="co-cell"  style="width:50%;" >
+								
+								
+										 
+ <!-- Checkbox -->
+<div class="form-group form-group-sm">
+<label id="ctl00_cntMainBody_lblFIRSTCAP_MININGSHK" for="ctl00_cntMainBody_FIRSTCAP__MININGSHK" class="col-md-4 col-sm-3 control-label">
+		Mining Shock</label>
+<div class="col-md-8 col-sm-9">
+	<span class="field-container asp-check" 
+		data-field-type="Checkbox" 
+		data-object-name="FIRSTCAP" 
+		data-property-name="MININGSHK" 
+		id="pb-container-checkbox-FIRSTCAP-MININGSHK">	
+		
+		<asp:TextBox ID="FIRSTCAP__MININGSHK" runat="server" CssClass="form-control hidden" />
+		<asp:CustomValidator ID="valFIRSTCAP_MININGSHK" 
+			runat="server" 
+			Text="*" 
+			ErrorMessage="A validation error occurred for Mining Shock"
+			ClientValidationFunction="onValidate_FIRSTCAP__MININGSHK" 
+			ValidationGroup=""
+			Display="None"
+			EnableClientScript="true"/>
+		
+	</span>
+	</div>
+</div>
+<!-- /Checkbox -->
+								
+									</li>
+							
+							
+						
+							
+							
+								
+								
+									<li class="co-cell"  style="width:50%;" >
+								
+								
+										<!-- Currency --->
+<div class="form-group form-group-sm">
+	<span class="field-container"
+		data-field-type="Currency" 
+		data-object-name="FIRSTCAP" 
+		data-property-name="FINAL_RI_SUMINSURED" 
+		id="pb-container-currency-FIRSTCAP-FINAL_RI_SUMINSURED">
+		<asp:Label ID="lblFIRSTCAP_FINAL_RI_SUMINSURED" runat="server" AssociatedControlID="FIRSTCAP__FINAL_RI_SUMINSURED" 
+			Text="Final Sum Insured" CssClass="col-md-4 col-sm-3 control-label"></asp:Label>
+		   <div class="col-md-8 col-sm-9">
+		     <asp:TextBox ID="FIRSTCAP__FINAL_RI_SUMINSURED" runat="server" CssClass="form-control" />
+		   </div>
+		<asp:CustomValidator ID="valFIRSTCAP_FINAL_RI_SUMINSURED" 
+			runat="server" 
+			Text="*" 
+			ErrorMessage="A validation error occurred for Final Sum Insured"
+			ClientValidationFunction="onValidate_FIRSTCAP__FINAL_RI_SUMINSURED" 
+			ValidationGroup=""
+			Display="None"
+			EnableClientScript="true"/>
+	</span>
+</div>	
+<!-- /Currency -->
+								
+									</li>
+							
+							
+						
+					</ul>
+				
+				</div>
+				
+			
+</div>
+
+
+<script type="text/javascript">
+	var labelAlign = "";
+	var textAlign = "";
+	var labelWidth = "";	
+	
+	$(document).ready(function(){
+		var liElementHeight = 0;	
+		var liMaxHeight = 0;
+		var liMinHeight = 46;
+		var liRowElement = 0;
+		var recordArray = new Array();
+		var arrayCount = 0;
+		if ($("#id5a6b28561d0c47088e05c186f3872581 div").attr("data-column-count") != "undefined")
+		{
+			columnCount = $("#id5a6b28561d0c47088e05c186f3872581 div").attr("data-column-count");		
+		}
+		
+		if (columnCount > 1)
+		{
+			$("#id5a6b28561d0c47088e05c186f3872581 div ul li").each(function(){		  
+			  liElementHeight = $(this).height();	
+				
+			  if (liElementHeight < liMinHeight)
+			  {
+				  liElementHeight = liMinHeight;			  
+			  }
+			  
+			  if (liMaxHeight != 0 && liMaxHeight > liMinHeight)
+			  {
+				  if (liElementHeight > liMaxHeight)
+				  {
+					  liElementHeight = liMaxHeight;			  
+				  }	
+			  }			 
+
+			  if (liRowElement == (columnCount -1))
+			  {
+				  liRowElement = 0;			 
+				  recordArray[arrayCount] = liElementHeight;		  
+				  arrayCount++;
+				  liElementHeight = 0;
+				  
+			  }
+			  else{
+				  liRowElement++;
+			  }		
+			  
+			});
+			
+			liRowElement =0;
+			arrayCount= 0;
+			$("#id5a6b28561d0c47088e05c186f3872581 div ul li").each(function(){		  
+			  $(this).height(recordArray[arrayCount]);
+			  if (liRowElement == (columnCount -1))
+			   {
+				liRowElement = 0;
+				arrayCount++;
+			   }
+			  else{
+				liRowElement++;
+			  } 		  
+			});
+			}
+	});	
+	
+	var styleString = "";
+	if (labelWidth != ""){
+		if ((new Expression("IsNumeric('" + labelWidth + "')")).valueOf()){
+			labelWidth = labelWidth + "px";
+		}
+		styleString += "#id5a6b28561d0c47088e05c186f3872581 label{width: " + labelWidth + ";}";
+	}
+	if (labelAlign != ""){
+		switch (labelAlign.toLowerCase()){
+			case "right": styleString += "#id5a6b28561d0c47088e05c186f3872581 label{text-align:right;}"; break;
+			case "centre":
+			case "center":
+			case "middle": styleString += "#id5a6b28561d0c47088e05c186f3872581 label{text-align:center;}"; break;
+			case "left": 
+			default: styleString += "#id5a6b28561d0c47088e05c186f3872581 label{text-align:left;}"; break;
+		}
+	}
+	if (textAlign != ""){
+		switch (textAlign.toLowerCase()){
+			case "right": styleString += "#id5a6b28561d0c47088e05c186f3872581 input{text-align:right;}"; break;
+			case "centre":
+			case "center":
+			case "middle": styleString += "#id5a6b28561d0c47088e05c186f3872581 input{text-align:center;}"; break;
+			case "left": 
+			default: styleString += "#id5a6b28561d0c47088e05c186f3872581 input{text-align:left;}"; break;
+		}
+	}
+	
+	if (styleString != ""){
+		goog.style.installStyles(styleString);
+	}
+</script>
+<!-- /ColumnLayoutContainer -->	
+							
+							</div>
+					 
+					
+						
+						
+							<div class="clearfix p-xs">
+						
+						
+								<!-- ColumnLayoutContainer -->
+<div id="frmLoad" class="column-layout-container,no-border  ">
+		
+				
+	              <legend><asp:Label ID="lblHeading8" runat="server" Text="Interest Party" /></legend>
+				
+				
+				<div data-column-count="2" data-column-ratio="" data-layout="" class="clearfix form-horizontal">
+				
+					<ul class="column-content">
+						
+							
+							
+								
+								
+									<li class="co-cell"  style="width:50%;" >
+								
+								
+										<!-- Text -->
+
+<div class="form-group form-group-sm">
+	<span class="field-container" 
+		
+		data-field-type="Text" 
+		
+		data-object-name="FIRSTCAP" 
+		data-property-name="NAME" 
+		 
+		
+		 
+		id="pb-container-text-FIRSTCAP-NAME">
+
+		
+		<asp:Label ID="lblFIRSTCAP_NAME" runat="server" AssociatedControlID="FIRSTCAP__NAME" 
+			Text="Name" CssClass="col-md-4 col-sm-3 control-label"></asp:Label>
+		
+		
+			
+		
+
+		
+		         <div class="col-md-8 col-sm-9">
+					<asp:TextBox ID="FIRSTCAP__NAME" runat="server" CssClass="form-control" data-type="Text" />
+					<asp:CustomValidator ID="valFIRSTCAP_NAME" 
+					runat="server" 
+					Text="*" 
+					ErrorMessage="A validation error occurred for Name"
+					ClientValidationFunction="onValidate_FIRSTCAP__NAME"
+					ValidationGroup=""
+					Display="None"
+					EnableClientScript="true"
+					/>
+                </div>
+					
+		
+	
+		
+	</span>
+</div>
+        
+<!-- /Text -->
+								
+									</li>
+							
+							
+						
+							
+							
+								
+								
+									<li class="co-cell"  style="width:50%;" >
+								
+								
+										<!-- Date -->
+ <div class="form-group form-group-sm">
+	<span class="field-container"
+		data-field-type="Date" 
+		data-object-name="FIRSTCAP" 
+		data-property-name="INCEPTION_DATE" 
+		id="pb-container-datejquerycompatible-FIRSTCAP-INCEPTION_DATE">
+		<asp:Label ID="lblFIRSTCAP_INCEPTION_DATE" runat="server" AssociatedControlID="FIRSTCAP__INCEPTION_DATE" 
+			Text="Date" CssClass="col-md-4 col-sm-3 control-label"></asp:Label>
+			 <div class="col-md-8 col-sm-9">
+			  <div class="input-group">
+				<asp:TextBox ID="FIRSTCAP__INCEPTION_DATE" runat="server" CssClass="form-control" data-type="Date" />
+				<uc1:CalendarLookup ID="calFIRSTCAP__INCEPTION_DATE" runat="server" LinkedControl="FIRSTCAP__INCEPTION_DATE" HLevel="1" />
+		     </div>
+			 <asp:CustomValidator ID="valFIRSTCAP_INCEPTION_DATE" 
+			runat="server" 
+			Text="*" 
+			ErrorMessage="A validation error occurred for Date"
+			ClientValidationFunction="onValidate_FIRSTCAP__INCEPTION_DATE" 
+			ValidationGroup=""
+			Display="None"
+			EnableClientScript="true"/>
+		    </div>
+	</span>
+</div>
+<!-- /Date -->
+
+
+								
+									</li>
+							
+							
+						
+					</ul>
+				
+				</div>
+				
+			
+</div>
+
+
+<script type="text/javascript">
+	var labelAlign = "";
+	var textAlign = "";
+	var labelWidth = "";	
+	
+	$(document).ready(function(){
+		var liElementHeight = 0;	
+		var liMaxHeight = 0;
+		var liMinHeight = 46;
+		var liRowElement = 0;
+		var recordArray = new Array();
+		var arrayCount = 0;
+		if ($("#frmLoad div").attr("data-column-count") != "undefined")
+		{
+			columnCount = $("#frmLoad div").attr("data-column-count");		
+		}
+		
+		if (columnCount > 1)
+		{
+			$("#frmLoad div ul li").each(function(){		  
+			  liElementHeight = $(this).height();	
+				
+			  if (liElementHeight < liMinHeight)
+			  {
+				  liElementHeight = liMinHeight;			  
+			  }
+			  
+			  if (liMaxHeight != 0 && liMaxHeight > liMinHeight)
+			  {
+				  if (liElementHeight > liMaxHeight)
+				  {
+					  liElementHeight = liMaxHeight;			  
+				  }	
+			  }			 
+
+			  if (liRowElement == (columnCount -1))
+			  {
+				  liRowElement = 0;			 
+				  recordArray[arrayCount] = liElementHeight;		  
+				  arrayCount++;
+				  liElementHeight = 0;
+				  
+			  }
+			  else{
+				  liRowElement++;
+			  }		
+			  
+			});
+			
+			liRowElement =0;
+			arrayCount= 0;
+			$("#frmLoad div ul li").each(function(){		  
+			  $(this).height(recordArray[arrayCount]);
+			  if (liRowElement == (columnCount -1))
+			   {
+				liRowElement = 0;
+				arrayCount++;
+			   }
+			  else{
+				liRowElement++;
+			  } 		  
+			});
+			}
+	});	
+	
+	var styleString = "";
+	if (labelWidth != ""){
+		if ((new Expression("IsNumeric('" + labelWidth + "')")).valueOf()){
+			labelWidth = labelWidth + "px";
+		}
+		styleString += "#frmLoad label{width: " + labelWidth + ";}";
+	}
+	if (labelAlign != ""){
+		switch (labelAlign.toLowerCase()){
+			case "right": styleString += "#frmLoad label{text-align:right;}"; break;
+			case "centre":
+			case "center":
+			case "middle": styleString += "#frmLoad label{text-align:center;}"; break;
+			case "left": 
+			default: styleString += "#frmLoad label{text-align:left;}"; break;
+		}
+	}
+	if (textAlign != ""){
+		switch (textAlign.toLowerCase()){
+			case "right": styleString += "#frmLoad input{text-align:right;}"; break;
+			case "centre":
+			case "center":
+			case "middle": styleString += "#frmLoad input{text-align:center;}"; break;
+			case "left": 
+			default: styleString += "#frmLoad input{text-align:left;}"; break;
+		}
+	}
+	
+	if (styleString != ""){
+		goog.style.installStyles(styleString);
+	}
+</script>
+<!-- /ColumnLayoutContainer -->	
+							
+							</div>
+					 
+					
+				
+         
+		
+</div>
+
+
+<!-- /GeneralLayoutContainer -->
+				
+			</div>
+		</div>	
+        <div class="card-footer clearfix">
+            <asp:Button ID="btnBack" runat="server" SkinID="buttonSecondary" Text="Back" OnClick="BackButton" CausesValidation="false" />
+			<asp:Button ID="btnNext" runat="server" SkinID="buttonPrimary" Text="Next" OnClick="NextButton" />
+            
+        </div>
+    </div>
+     <asp:ValidationSummary ID="validationSummeryBox" runat="server" DisplayMode="BulletList" HeaderText="Correct the below given errors" EnableClientScript="true" CssClass="validation-summary" /> 
+   </div>
+</div>
+</asp:Content>

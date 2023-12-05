@@ -1,0 +1,8 @@
+Good Day, 
+
+Please note that [!PolicyNumber!] on [!ProductName!] for [!InsuredName!] has been cancelled due to [!CancelReason!], effective [!CancelDate!].
+
+
+Regards,
+
+[!LoggedInUserFullName!]

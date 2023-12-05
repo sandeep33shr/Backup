@@ -1,0 +1,177 @@
+.thickbox {
+	margin-top: 0 !important;
+	width: 165px !important;
+}
+
+.picklist {
+	padding-right: 20px;
+}
+
+.FindResultContainer {
+	width: 100% !important;
+}
+
+/*-------------------   testing css for PB2 tools --------------*/
+.zippy {
+    background-color: #F5F5F5;
+    border: 1px solid #E0E0E0;
+    border-radius: 2px;
+}
+
+
+.goog-zippy-header {
+    background-color: #f5f5f5;
+    border-color: #ddd;
+    margin: 0px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+    .goog-zippy-header:hover {
+    }
+
+.goog-zippy-content {
+    padding: 10px 10px!important;
+    background-color: #fff;
+}
+
+.zippy .icon {
+    font-weight: normal;
+    font-style: normal;
+    display: inline-block;
+    font: normal normal normal 14px/1 FontAwesome;
+    font-size: 16px;
+    text-rendering: auto;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    margin-right: 10px;
+}
+
+.zippy-open .icon:before {
+    content: "\f068";
+}
+
+.zippy-closed .icon:before {
+    content: "\f067";
+}
+
+.excel:before {
+    content: "\f1c3";
+    color: #2e7d32;
+}
+
+
+div[data-column-count] ul {
+    display: block;
+    flex-flow: row wrap;
+    width: 100%;
+    clear: both;
+    margin: 0px;
+    padding: 0px;
+}
+
+    div[data-column-count] ul li {
+        display: inline-block;
+        float: left;
+        list-style: none;
+        padding: 2px 2px;
+        vertical-align:top;
+    }
+/*div[data-column-count="4"] ul li *,
+div[data-column-count="5"] ul li *,
+div[data-column-count="6"] ul li *,
+div[data-column-count="7"] ul li *,
+div[data-column-count="8"] ul li *,
+div[data-column-count="9"] ul li *,
+div[data-column-count="10"] ul li *,
+div[data-column-count="11"] ul li *,
+div[data-column-count="12"] ul li *,
+div[data-column-count="13"] ul li *,*/
+div[data-column-count="14"] ul li * {
+   margin:0px!important;
+   padding:0px!important;
+   width:100%!important;
+}
+/*div[data-column-count="15"] ul li *,*/
+
+div[data-column-count="2"] ul li {
+    width: 100%!important;
+}
+/* Small devices (tablets, 768px and up) */
+@media (min-width: 768px) {
+    div[data-column-count="2"] ul li {
+        width: 100%!important;
+    }
+}
+
+/* Medium devices (desktops, 992px and up) */
+@media (min-width: 992px) {
+    div[data-column-count="2"] ul li {
+        width: 50%!important;
+    }
+}
+
+/* Large devices (large desktops, 1200px and up) */
+@media (min-width: 1200px) {
+    div[data-column-count="2"] ul li {
+        width: 50%!important;
+    }
+}
+
+
+
+div[data-column-count] ul li .form-control {
+    width: 100%!important;
+}
+
+div[data-column-count] ul li .field-container label:empty {
+    display: none;
+}
+
+div[data-column-count] ul li .pb-label,
+div[data-column-count] ul li .label {
+    white-space: normal!important;
+    padding: 0!important;
+    background-color: transparent;
+    font-weight: bold;
+    color: #475069;
+    display: inline-block!important;
+}
+
+.goog-checkbox.goog-checkbox-disabled {
+    background-color: #656565 !important;
+    border: none!important;
+}
+.asp-check,
+.asp-radio {
+    display:inline-block;
+    position:relative;
+}
+input[type=radio][disabled] + label:before,
+input[type="checkbox"][disabled] + label:before,
+.goog-checkbox-disabled:before {
+   cursor: not-allowed!important;
+    filter: alpha(opacity=65);
+    -webkit-box-shadow: none;
+    box-shadow: none;
+    opacity: .65;
+}
+.general-layout-container .p-xs { 
+    padding: 0px !important; 
+}  
+.column-layout-container { 
+    padding: 0px 5px; 
+    margin-bottom: 5px; 
+} 
+.column-layout-container legend { 
+        margin: 0px !important; 
+        padding: 0px !important; 
+    } 
+.pb-label { 
+    text-align: left !important; 
+    font-size: 12px !important; 
+    color: #333 !important; 
+    font-weight: normal !important; 
+}
+

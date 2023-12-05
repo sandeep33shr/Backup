@@ -1,0 +1,7 @@
+﻿Good Day, 
+
+This serves as confirmation that an amount of N$ [!ProductName!] has been paid to [!InsuredName!].
+
+Regards,
+
+[!LoggedInUserFullName!]

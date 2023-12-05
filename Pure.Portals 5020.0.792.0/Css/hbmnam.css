@@ -1,0 +1,194 @@
+﻿
+html
+{
+    background-color: #efefef;
+}
+
+body
+{
+    font-family: 'Antartida Rounded' , Calibri;
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.42857143;
+    color: rgba(0,0,0,0.87);
+    background-color: transparent;
+}
+
+.card-heading
+{
+    background-color: #442359;
+    border-top: 2px solid #E64E00;
+    padding: 7px 15px;
+    border-left: 1px solid #442359 !important;
+    border-right: 1px solid #442359 !important;
+    margin-left: -1px;
+    margin-right: -1px;
+    margin-top: -1px;
+}
+
+.card-heading h1
+{
+    font-size: 16px !important;
+    color: #fff;
+    text-transform: uppercase !important;
+    font-family: 'Antartida Rounded' , Calibri;
+    font-weight: 700;
+}
+
+.rowMenu ol li a
+{
+    color: #442359;
+    border-color: #442359;
+}
+
+.rowMenu ol li a:hover
+{
+    color: #fff !important;
+    background-color: #442359 !important;
+    border-color: #442359 !important;
+}
+
+.btn-primary
+{
+    color: #fff !important;
+    background-color: #694F7A;
+    border-color: #442359;
+}
+
+.btn-primary:hover, .btn-primary:focus, .btn-primary:active, .btn-primary.active, .btn-primary.btn-stroke:hover, .btn-primary.btn-stroke:focus, .btn-primary.btn-stroke:active, .btn-primary.btn-stroke.active, .open .dropdown-toggle.btn-primary
+{
+    color: #fff !important;
+    background-color: #442359 !important;
+    border-color: #442359 !important;
+}
+
+.field-mandatory
+{
+    border-left: 2px solid #E64E00 !important;
+}
+
+.b-danger
+{
+    border-color: #E64E00;
+}
+
+.grid-hdr th, .grid-table tr th
+{
+    border-width: 0 1px 1px 0;
+    background: #694F7A;
+    color: #FFF;
+    font-size: 14px;
+    font-weight: normal;
+    border-left: 1px solid #a0a0a0;
+    border-bottom: 1px solid #694F7A;
+    padding: 3px 8px;
+    height: auto;
+}
+
+.app-aside
+{
+    display: block;
+    top: auto;
+}
+
+.form-group-sm
+{
+    min-height: auto;
+}
+
+.sidenav .nav-header
+{
+    display: none;
+}
+
+.nav-caret
+{
+    display: none;
+}
+
+@media (max-width:991.99px)
+{
+    .app-aside > *
+    {
+        width: 14rem;
+    }    
+}
+
+@media (min-width:992px) 
+{
+    .folded .show-text .nav > li > a .nav-text {
+        display: block;
+        margin-top: -0.7rem;
+        font-size: 1em;
+    }
+    
+    .folded.nav-dropdown .nav > li .nav-mega, .nav-dropup .nav > li .nav-mega   
+    {
+        border: none;
+    }
+    
+    .folded .nav > li > a .nav-icon
+    {
+        float: none;
+        line-height: 2.5rem;
+        font-size: 1.3rem;
+        margin: 0 auto;
+        position: relative;
+        width: 2.5rem;
+        height: 2.5rem;
+    }
+
+/*     .app-aside {
+        display:none !important;
+    } */
+
+}
+
+.sidenav .nav li 
+{
+    border: none;
+}
+
+.sidenav .nav-text 
+{
+    line-height: 0.8rem;
+}
+
+.nav-stacked .nav > li > a {
+    color: #442359;
+}
+
+@media (max-width:1024px)
+{
+    .app-aside
+    {
+        display: none;
+    }
+}
+
+legend 
+{
+    font-size: 14px;
+}
+
+.picklist-table tr td input[type="button"]
+{
+	background-color: #694F7A !important;
+    border-color: #442359;
+}
+
+.grid-card {
+	background-color: rgba(0, 0, 0, 0);
+}
+
+/*Fix for dropdown height inconsistency which caused controls to skip allocated div space*/
+/*Apply this fix to \app_themes\Standard\internal-differences.css */
+
+.goog-combobox.goog-combobox-disabled {
+    border: none;
+}
+
+.goog-combobox.goog-combobox-disabled input {
+    border-right: 1px solid #cfd1d4;
+}
+

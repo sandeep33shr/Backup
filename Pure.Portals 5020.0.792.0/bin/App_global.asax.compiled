@@ -1,0 +1,6 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<preserve resultType="8" virtualPath="/Pure.Portals/global.asax" hash="ffffffffba880de6" filehash="fffffbf05cc98d84" flags="150000" assembly="Pure.Portals" type="ASP.global_asax">
+  <filedeps>
+    <filedep name="/Pure.Portals/global.asax" />
+  </filedeps>
+</preserve>

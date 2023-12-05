@@ -1,0 +1,726 @@
+.goog-modalpopup, .goog-modalpopup .model-overlay {
+    left: 0;
+    top: 0;
+    right: 0;
+    position: absolute;
+    bottom: 0;
+}
+
+.horizontal-grid-lines > div > div > fieldset > .column-content > ul > .co-cell label, .vertical-grid-lines > div > div > fieldset > .column-content > ul > .co-cell label {
+    padding-left: 10px;
+}
+
+.goog-combobox-button, .goog-date-picker td, .goog-date-picker th, .goog-date-picker-head td, td.goog-date-picker-none-cont, td.goog-date-picker-today-cont {
+    text-align: center;
+}
+
+.goog-modalpopup .model-overlay {
+    background: #666;
+    opacity: .5;
+    filter: alpha(opacity=50);
+    -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity = 50)";
+    z-index: 101;
+}
+
+.goog-modalpopup .loader-container {
+    display: table;
+    width: 100%;
+    height: 100%;
+}
+
+    .goog-modalpopup .loader-container .loading-summary-container {
+        display: table-cell;
+        vertical-align: middle;
+        text-align: center;
+        position: relative;
+        z-index: 102;
+    }
+
+        .goog-modalpopup .loader-container .loading-summary-container .loading-note {
+            color: #fff;
+            font-size: 30px;
+        }
+
+.goog-checkbox.goog-checkbox-disabled {
+    background-color: #D8D8D8;
+    border: 1px solid #B6B6B6;
+}
+
+div[data-column-count] ul {
+    width: 100%;
+    float: left;
+    clear: both;
+}
+
+div[data-column-count] .validation-errors ul {
+    float: none;
+}
+
+.column-layout-container .column-content td > ul > li {
+    float: none;
+    min-height: inherit;
+    width: auto;
+    margin: 0 5px;
+}
+
+.column-layout-container .column-content .column-organiser .co-row:nth-child(even) {
+    background-color: inherit;
+}
+
+.column-organiser {
+    border: none;
+    margin-bottom: 5px;
+}
+
+.vertical-grid-lines > div > div > fieldset > .column-content > ul > .co-cell {
+    border-left: 1px solid #ccc;
+    box-sizing: border-box;
+}
+
+    .vertical-grid-lines > div > div > fieldset > .column-content > ul > .co-cell:first-child {
+        border-left: none;
+    }
+
+.horizontal-grid-lines > div > div > fieldset > .column-content > ul > .co-cell {
+    border-top: 1px solid #ccc;
+    box-sizing: border-box;
+}
+
+    .horizontal-grid-lines > div > div > fieldset > .column-content > ul > .co-cell:first-child {
+        border-top: none;
+    }
+
+.horizontal-grid-lines > div > div > fieldset > .column-content > .column-organiser > .co-row > .co-cell > ul > li, .vertical-grid-lines > div > div > fieldset > .column-content > .column-organiser > .co-row > .co-cell > ul > li {
+    margin-left: 10px;
+}
+
+.co-row {
+    clear: both;
+}
+
+.goog-combobox.goog-combobox-disabled {
+    /*    border: 1px solid #bdbebd;   */
+}
+
+    .goog-combobox.goog-combobox-disabled input {
+        border-right: 1px solid #E9E9E9;
+        color: #acacac !important;
+        background-color: #e0e0e0;
+    }
+
+.goog-combobox {
+    border: none;
+    width: 100%;
+    /*margin-right: 5px;
+    height: 24px;
+    position: relative;*/
+}
+
+    .goog-combobox input {
+        /*color: #292929 !important;
+        border: 0;
+        margin: 0;
+        height: 20px;
+        padding: 2px 0px 2px 4px;
+        width: 159px;*/
+    }
+
+        .goog-combobox input.label-input-label {
+            color: #aaa;
+        }
+
+    .goog-combobox .goog-menu {
+        margin-top: -1px;
+        z-index: 1000;
+        overflow-y: auto;
+        max-height: 500px;
+    }
+
+.goog-combobox-button:before {
+    content: "\f0d7";
+    font-family: FontAwesome;
+}
+
+.goog-combobox .goog-combobox-button {
+    position: absolute;
+    top: 5px;
+    right: 25px;
+}
+
+.goog-combobox-active .goog-combobox-button {
+    position: absolute;
+    top: 5px;
+    right: 25px;
+}
+
+.goog-combobox-disabled .goog-combobox-button {
+    background-position-y: -36px !important;
+    cursor: default;
+}
+
+.goog-combobox-button:active {
+    background-position-y: -18px;
+}
+
+* html .goog-combobox-button {
+    padding: 0 3px;
+}
+
+.goog-combobox-disabled .goog-combobox-button:active {
+    background-position-y: 0;
+}
+
+
+
+
+
+
+
+#content {
+    height: 100%;
+}
+
+div[id$='_Results'] {
+    overflow-x: auto;
+    max-height: 600px;
+    clear: both;
+}
+
+.goog-combobox {
+    display: inline-block;
+}
+
+
+
+.goog-inline-block {
+    position: relative;
+    display: -moz-inline-box;
+    display: inline-block;
+}
+
+* html .goog-inline-block {
+    display: inline;
+}
+/*-------- fancy checkbox ----------*/
+[type="checkbox"], [type="radio"] {
+     width: 20px;
+    height: 20px;
+    opacity: 0;
+    position: absolute;
+    z-index: 999;
+}
+
+    [type="checkbox"], [type="checkbox"] + label, [type="radio"], [type="radio"] + label,
+    .goog-checkbox {
+        /*display: inline-block; ------ Control was moving to another row or column*/ 
+         display: inline-block;
+        vertical-align: middle;
+        margin: 2px 5px 5px 0px!important;
+        cursor: pointer;
+        font-size: 12px;
+    }
+
+        [type="checkbox"] + label, [type="radio"] + label,
+        .goog-checkbox {
+             position: relative;
+            margin-right: 20px!important;
+        }
+
+            [type="checkbox"] + label:before, [type="radio"] + label:before,
+            .goog-checkbox:before {
+                 content: '';
+                background: #fff;
+                border: 1px solid #999!important;
+                background-color: #fff;
+                border-radius: 2px;
+                transition: border 0.15s ease-in-out, color 0.15s ease-in-out;
+                display: inline-block;
+                vertical-align: middle;
+                width: 20px;
+                height: 20px;
+                padding: 2px;                
+                text-align: center;
+            }
+
+        [type="checkbox"]:checked + label:before,
+        .goog-checkbox-checked:before,
+        .goog-checkbox-undetermined:before {
+        background-color: #66A4A9!important;
+        /*box-shadow: inset 0px 0px 0px 4px #fff;*/
+        color: #fff;
+        content: "\f00c";
+        font-family: FontAwesome;
+        padding: 0px;
+        }
+
+.goog-checkbox-undetermined:before {
+    content: "\f068";
+}
+
+[type="radio"] + label:before {
+    border-radius: 50%;
+}
+
+[type="radio"]:checked + label:before {
+     background-color: #66A4A9!important;
+    box-shadow: inset 0px 0px 0px 4px #fff;
+}
+
+[type="checkbox"]:focus + label:before,
+.goog-checkbox-checked:focus:before {
+    border: 1px solid #000!important;
+}
+
+[type="radio"]:focus + label:before {
+    border-radius: 50%;
+    border: 1px solid #9c9d9e;
+}
+
+.goog-checkbox-disabled {    
+	cursor: not-allowed!important;
+    filter: alpha(opacity=65);
+    -webkit-box-shadow: none;
+    box-shadow: none;
+    opacity: .65;
+	margin-right: 0px;
+}
+
+/*---------------*/
+
+
+
+
+.radio-container > div {
+    float: left;
+    width: 60px;
+}
+
+.radio-container input {
+    width: 16px;
+}
+
+.inline-child-screen {
+    position: relative;
+}
+
+    .inline-child-screen > fieldset > div > .standard-form > .fieldset-wrapper > ol li, .inline-child-screen > fieldset > div > .standard-form > .fieldset-wrapper > ul > li {
+        width: 100%;
+    }
+
+.goog-combobox > input {
+    float: none !important;
+}
+
+.validation-errors > ul > li {
+    width: auto !important;
+    float: none !important;
+    margin: 0 !important;
+    min-height: inherit !important;
+}
+
+.validation-errors {
+    color: red;
+    background-color: #fbe3e4;
+    padding: 10px;
+    border: 2px solid #fbc2c4;
+    margin: 10px 0;
+}
+
+    .validation-errors > ul {
+        list-style: disc inside !important;
+    }
+
+
+.hidden {
+    display: none !important;
+}
+
+.itl fieldset ol li, .itl fieldset ul li {
+    width: 100%;
+}
+
+.itl fieldset .nexus-tabs ul li {
+    width: inherit;
+}
+
+
+
+.goog-date-picker td div {
+    float: left;
+}
+
+textarea {
+    font-family: 'Segoe UI',verdana,arial,sans-serif;
+}
+
+.co-cell ul li {
+    width: 100%;
+}
+
+.goog-date-picker, .goog-date-picker td, .goog-date-picker th {
+    font: 13px Arial,sans-serif;
+}
+
+.goog-date-picker {
+    -moz-user-focus: normal;
+    -moz-user-select: none;
+    border: 1px solid #B9B9B9;
+    float: left;
+    padding: 2px;
+    color: #000;
+    background: #c3d9ff;
+    cursor: default;
+    z-index: 1;
+}
+
+    .goog-date-picker td {
+        vertical-align: middle;
+        padding: 1px 3px;
+    }
+
+.goog-date-picker-menu {
+    position: absolute;
+    background: threedface;
+    border: 1px solid gray;
+    -moz-user-focus: normal;
+    z-index: 1;
+    outline: 0;
+}
+
+    .goog-date-picker-menu ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+        .goog-date-picker-menu ul li {
+            cursor: default;
+        }
+
+.goog-date-picker-menu-selected {
+    background: #ccf;
+}
+
+.goog-date-picker button {
+    padding: 0;
+    margin: 1px 0;
+    border: 0;
+    color: #736E8D;
+    font-weight: 700;
+    background: 0 0;
+}
+
+.goog-date-picker-date {
+    background: #fff;
+}
+
+.goog-date-picker-wday, .goog-date-picker-week {
+    padding: 1px 3px;
+    border: 0 solid #a2bbdd;
+}
+
+.goog-date-picker-week {
+    border-right-width: 1px;
+}
+
+.goog-date-picker-wday {
+    border-bottom-width: 1px;
+}
+
+.goog-date-picker-month {
+    width: 11ex;
+}
+
+.goog-date-picker-year {
+    width: 6ex;
+}
+
+.goog-date-picker table {
+    border-collapse: collapse;
+    margin-bottom: 0;
+}
+
+.goog-date-picker-other-month {
+    color: #888;
+}
+
+.goog-date-picker-wkend-end, .goog-date-picker-wkend-start {
+    background: #eee;
+}
+
+td.goog-date-picker-selected {
+    background: #c3d9ff;
+}
+
+.goog-date-picker-today {
+    background: #9ab;
+    font-weight: 700 !important;
+    border-color: #246 #9bd #9bd #246;
+    color: #fff;
+}
+
+.goog-date-picker table, .goog-date-picker td, .goog-date-picker th {
+    border: none;
+}
+
+.goog-date-picker th {
+    font-size: .9em;
+    padding: 0;
+}
+
+/*.modal-dialog {
+	background: #FFF;
+	border: 1px solid #3a5774;
+	color: #000;
+	padding: 4px;
+	position: absolute;
+}
+
+	.modal-dialog a, .modal-dialog a:link, .modal-dialog a:visited {
+		cursor: pointer;
+	}
+
+.modal-dialog-bg {
+	background: #666;
+	left: 0;
+	position: absolute;
+	top: 0;
+}
+
+.modal-dialog-title {
+	background: #E9E9E9;
+	color: #000;
+	cursor: pointer;
+	font-size: 120%;
+	font-weight: 700;
+	padding: 8px 31px 8px 8px;
+	position: relative;
+}
+
+.modal-dialog-title-close {
+	background: url(//ssl.gstatic.com/editor/editortoolbar.png)-528px 0 no-repeat #e0edfe;
+	cursor: default;
+	height: 15px;
+	position: absolute;
+	right: 10px;
+	top: 8px;
+	width: 15px;
+	vertical-align: middle;
+}
+
+.modal-dialog-buttons, .modal-dialog-content {
+	background-color: #fff;
+	padding: 8px;
+}*/
+
+.goog-buttonset-default {
+    font-weight: 700;
+}
+
+.pb-field .hidden, .pb-field.hidden {
+    display: none;
+}
+
+.pb-field .readonly, .pb-field .readonly .goog-checkbox {
+    background-color: #e9e9e9 !important;
+}
+
+.readonly {
+    color: #656565;
+}
+
+.pb-field .valid {
+    background-color: #EAFFEA !important;
+}
+
+.pb-field .not-valid {
+    background-color: #FFEAEA !important;
+}
+
+.linkbutton.disabled {
+    color: #BDBDBD;
+    border-color: silver;
+    background-color: #E6E3E3;
+}
+
+ .goog-menuitem-content {
+   font-size:12px;
+   font-weight:normal;
+}
+
+.pb-label {
+    padding: 1px 0;
+    display: inline-block;
+}
+
+.infoIcon {
+    width: 16px;
+    height: 18px;
+    display: block;
+    position: absolute;
+    right: -5px;
+    top: 2px;
+    background-image: url(images/help.png);
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.infoIconLabel {
+    padding-right: 11px;
+}
+
+.infoIconContainer {
+    position: relative;
+}
+
+.goog-menu {
+    background-color: #fff;
+    /*-webkit-box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.15);*/
+    min-width:200px;
+    border: 1px solid #1E90FF;
+    margin: 0px;
+    padding: 0px;
+    position: absolute;
+    z-index: 20000;
+    
+}
+
+.goog-menu-vertical {
+    max-height: 300px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.goog-menuitem {
+    list-style: none;
+    margin: 0;
+    padding: 2px 5px 2px 10px;
+    white-space: nowrap;
+}
+
+    .goog-menuitem.goog-menuitem-rtl {
+        padding-left: 7em;
+        padding-right: 28px;
+    }
+
+.goog-menu-nocheckbox .goog-menuitem, .goog-menu-noicon .goog-menuitem {
+    padding-left: 12px;
+}
+
+.goog-menu-noaccel .goog-menuitem {
+    padding-right: 20px;
+}
+
+.goog-menuitem-disabled .goog-menuitem-accel, .goog-menuitem-disabled .goog-menuitem-content {
+    color: #ccc !important;
+}
+
+.goog-menuitem-disabled .goog-menuitem-icon {
+    opacity: .3;
+    -moz-opacity: .3;
+    filter: alpha(opacity=30);
+}
+
+.goog-menuitem-highlight, .goog-menuitem-hover {
+    background-color: #1E90FF;
+    color:#fff!important;
+}
+
+.goog-menuitem-checkbox, .goog-menuitem-icon {
+    background-repeat: no-repeat;
+    height: 16px;
+    left: 6px;
+    position: absolute;
+    right: auto;
+    vertical-align: middle;
+    width: 16px;
+}
+
+.goog-menuitem-rtl .goog-menuitem-checkbox, .goog-menuitem-rtl .goog-menuitem-icon {
+    left: auto;
+    right: 6px;
+}
+
+.goog-option-selected .goog-menuitem-checkbox, .goog-option-selected .goog-menuitem-icon {
+    background: url(//ssl.gstatic.com/editor/editortoolbar.png)-512px 0 no-repeat;
+}
+
+.goog-menuitem-accel {
+    color: #999;
+    direction: ltr;
+    left: auto;
+    padding: 0 6px;
+    position: absolute;
+    right: 0;
+    text-align: right;
+}
+
+.goog-menuitem-rtl .goog-menuitem-accel {
+    left: 0;
+    right: auto;
+    text-align: left;
+}
+
+.goog-menuitem-mnemonic-hint {
+    text-decoration: underline;
+}
+
+.goog-menuitem-mnemonic-separator {
+    color: #999;
+    font-size: 12px;
+    padding-left: 4px;
+}
+
+.goog-menuseparator {
+    border-top: 1px solid #ccc;
+    margin: 4px 0;
+    padding: 0;
+}
+
+.pb-mode-indicator {
+    display: block;
+    border: 1px solid #6593CF;
+    float: right;
+    text-align: center;
+    font-weight: 700;
+    color: #15428B;
+    text-transform: uppercase;
+    border-radius: 3px;
+    -moz-border-radius: 3px;
+    -webkit-border-radius: 3px;
+    height: 22px;
+    line-height: 22px;
+    padding: 0 15px;
+    margin: 0 5px;
+    background-color: #fff;
+}
+
+#pb-mode-indicator-overview {
+    position: relative;
+    border-top: 0;
+    border-bottom: 0;
+    height: 26px;
+    line-height: 26px;
+    border-radius: 0;
+    -moz-border-radius: 0;
+    -webkit-border-radius: 0;
+}
+
+.goog-date-picker {
+    position: absolute;
+}
+
+.goog-tooltip {
+    background: #ffe;
+    border: 1px solid #999;
+    padding: 0 2px;
+    z-index: 30000;
+    font-family: Arial;
+}
+
+.zippy-closed fieldset {
+    border: none !important;
+}
+
+

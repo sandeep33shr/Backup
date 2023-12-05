@@ -1,0 +1,248 @@
+
+/* Nullify some settings */
+/*li ul, li ol {margin: inherit !important;}
+ul, ol {margin:inherit !important;}*/
+
+.TabContainer ul
+{
+	/* Is previously set to 30px which prevents tabs wrapping properly */
+	height: inherit !important;
+}
+
+
+/*fieldset ol li table, fieldset ol li td,
+fieldset ul li table, fieldset ul li td
+{
+	border: inherit !important;
+}
+
+fieldset ol li td input, fieldset ul li td input
+{
+	width: inherit !important;
+}
+
+table{
+	border-left: inherit;
+	border-bottom: inherit;
+}
+
+td
+{
+	border-right: inherit;
+}*/
+
+/* Have to add specific selector so the margins are not added to inline child screen controls */
+/*#content>div>.standard-form>.fieldset-wrapper li ul, #content>div>.standard-form>.fieldset-wrapper li ol {margin:0 1.5em;}*/
+/*#content > div > .standard-form > .fieldset-wrapper > ul, #content > div > .standard-form > .fieldset-wrapper > ol {margin: 0 1.5em 1.5em 1.5em;}*/
+
+/* Extras */
+/*fieldset ul
+{
+    list-style:none;
+    padding:0;
+    margin:0;
+}
+fieldset ul li
+{
+    margin:0 0 5px 0;
+    float:left;
+	margin:0 0 5px;
+	min-height:26px;
+	
+	width:48%;
+}*/
+
+.itl fieldset ul li {
+	/* With change to html to fix whitespace issue this is now commented out. */
+	width:100%;
+}
+
+fieldset ul.half-left
+{
+    float:left;
+    width:50%;
+}
+fieldset ul.half-left-compact
+{
+    float:left;
+    width:40%;
+    margin-right:50px;
+}
+fieldset ul.half-right
+{
+    clear:right;
+    float:right;
+    width:50%;
+}
+fieldset ul.half-right-compact
+{
+    clear:right;
+    float:right;
+    width:40%;
+}
+fieldset ul.half-left-compact label, fieldset ul.half-right-compact label
+{
+    width:90px;
+}
+/*fieldset ul li>.pb-field>label
+{
+    float:left;
+	width:165px;
+    margin:0 10px 0 0;
+    font-weight:normal;
+}*/
+fieldset ul li>.pb-field[data-field-type="BooleanRadio"]>div
+{
+    display: inline-block;
+    margin-right: 5px;
+}
+fieldset ul li>.pb-field[data-field-type="BooleanRadio"]>div label{
+    width: auto !important;
+}
+fieldset ul li label em{    color: Red;}
+
+fieldset ul li label.requiredbold {
+	font-weight: bold;
+}
+/*fieldset ul li input, fieldset ul li select, fieldset ul li textarea
+{
+    margin:0;
+    float:left;
+    width:165px;
+    font-family:Segoe UI,verdana,arial,sans-serif;
+    font-size:1em;
+	height:18px;
+}*/
+fieldset ul li input[type="radio"] {
+    width: auto;
+}
+/*fieldset ol li input, fieldset ul li input {
+	border: 1px solid rgb(204, 204, 204);
+	padding-bottom: 0px;
+	padding-top: 0px;
+}*/
+fieldset ul li textarea.modal-fullwidth
+{
+    clear:both;
+    margin-top:5px;
+    width:875px;
+}
+/*fieldset ul li input[type="checkbox"]:focus .ui-autocomplete-input:focus, select:focus
+{
+	border:1px solid #6593CF;
+	background:#FFFFCC;
+	
+}*/
+
+fieldset ul li input.short
+{
+    width:80px;
+}
+
+fieldset ul li.checkbox input
+{
+    width:auto;
+    margin-top:2px;
+}
+
+/*fieldset ul li select
+{
+    width:168px;
+    height:20px;
+    font-size:1em;
+    line-height:1.1em;
+    border: 1px solid #6593CF;
+    margin-right:5px;
+}*/
+
+/*fieldset ul li textarea
+{
+    width:193px;
+    height:70px;
+    margin-bottom:10px;
+}*/
+fieldset ul li textarea.full-width
+{
+    width:580px;
+}
+
+/*fieldset
+{
+	overflow: hidden;
+}*/
+
+
+/* Added to change button colours system wide - AK */
+/*button, input[type="button"], input[type="submit"]
+{
+    display: inline-block;
+    border: 1px solid;
+    border-color: #6593CF;
+    height: 2em;
+    background-color: #BDDAFF;
+    -moz-border-radius: 0.333em;
+    -webkit-border-radius: 0.333em;
+    -webkit-background-clip: padding-box;
+    border-radius: 0.333em;
+    -webkit-box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+	box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+	font-weight: inherit;
+    font-style: inherit;
+    font-size: 100%;
+    font-family: inherit;
+    font-weight: bold;
+    color: #15428B;
+    cursor: pointer;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+button[disabled="disabled"],
+input[type="button"][disabled="disabled"],
+input[type="submit"][disabled="disabled"],
+button[disabled="disabled"]:hover,
+input[type="button"][disabled="disabled"]:hover,
+input[type="submit"][disabled="disabled"]:hover
+{
+  background-color: rgb(212, 212, 212);
+  color: rgb(172, 169, 169);
+  border-color: rgb(166, 166, 166);
+}
+
+button[disabled="disabled"]{
+	background-color: #E7E7E7;
+	color: #B9B9B9;
+	border-color: #C2C2C2;
+}
+ 
+button:hover, input[type="button"]:hover, input[type="submit"]:hover
+{
+		background: #dce9fa;
+}*/
+
+
+.label-btn
+{
+    width: 45%;
+    float: left;
+    margin-right: 10px;
+}
+.label-btn input
+{
+    width: auto;
+    height: 25px;
+}
+ 
+/* END OF - Added to change button colours system wide - AK */
+
+/* Override fixed width button */
+/*input.modal {
+	width: inherit !important;
+}*/
+
+
+/* Make IE8 tables and above have a width of 100% 
+   Overrides float in ie.css */
+.table-wrapper {
+	float: inherit !important;
+}

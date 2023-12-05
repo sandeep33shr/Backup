@@ -1,0 +1,18 @@
+<%@ master language="VB" inherits="Nexus.Masterpages_default, Pure.Portals" %>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head id="Head1" runat="server">
+    <title>Unbranded</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=9" />
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+</head>
+<body class="nobg">
+    <form id="aspNetForm" runat="server">
+        <asp:Literal ID="ltMetaTags" runat="server" />
+        <asp:ContentPlaceHolder ID="ScriptIncludes" runat="server" />
+        <asp:ContentPlaceHolder ID="cntLeftContent" runat="server" />
+        <asp:ContentPlaceHolder ID="cntProgressBar" runat="server" />
+        <asp:ContentPlaceHolder ID="cntMainBody" runat="server" />
+    </form>
+</body>
+</html>

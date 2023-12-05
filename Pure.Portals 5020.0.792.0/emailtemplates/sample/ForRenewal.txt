@@ -1,0 +1,9 @@
+Good Day, 
+
+Please note that policy [!PolicyNumber!] on [!ProductName!] for [!InsuredName!]has been renewed effective [!RenewalDate!]. 
+We thank you for your support.
+
+
+Regards,
+
+[!LoggedInUserFullName!]

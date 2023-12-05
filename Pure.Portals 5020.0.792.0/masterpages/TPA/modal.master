@@ -1,0 +1,70 @@
+<%@ Master Language="VB" CodeFile="modal.master.vb" Inherits="Nexus.MasterPages_External_Modal" %>
+
+<%@ Register TagPrefix="Nexus" Namespace="Nexus" %>
+<!DOCTYPE html>
+<html lang="en" style="background-color: #fff;">
+<head id="Head1" runat="server">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>SSP - Pure Insurance</title>
+    <!-- Bootstrap css files and othres css plugins -->
+    <link rel="stylesheet" href="../../css/bootstrap/bootstrap.min.css" type="text/css" />
+    <link rel="stylesheet" href="../../css/bootstrap-datepicker/bootstrap-datepicker.min.css" />
+    <link rel="stylesheet" href="../../css/font-awesome/font-awesome.min.css" type="text/css" />
+    <!-- SSP core css-->
+    <link rel="stylesheet" href="../../css/ssp-global.css" type="text/css" />
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <asp:ContentPlaceHolder ID="ScriptIncludes" runat="server" />
+    <asp:ContentPlaceHolder ID="ContentPlaceHolder1" runat="server" />
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script type="text/javascript" src="<%# ResolveClientUrl("~/js/libs/jquery-1.11.3/jquery.min.js")%>"></script>
+    <!-- Bootstrap js files and othres plugins -->
+    <script type="text/javascript" src="<%# ResolveClientUrl("~/js/libs/bootstrap-3.3.6/bootstrap.min.js")%>"></script>
+    <script type="text/javascript" src="<%# ResolveClientUrl("~/js/libs/bootstrap-datepicker-1.6.0/bootstrap-datepicker.min.js")%>"></script>
+    <script type="text/javascript" src="<%# ResolveClientUrl("~/js/libs/bootstrap-dialog/bootstrap-dialog.js")%>"></script>
+    <!-- Include all individual js files as needed -->
+    <script type="text/javascript" src="<%# ResolveClientUrl("~/js/Common.js")%>"></script>
+    <script type="text/javascript" src="<%# ResolveClientUrl("~/js/CommonFunctions.js") %>"></script>
+    <script type="text/javascript" src="<%# ResolveClientUrl("~/js/modal.js") %>"></script>
+
+    <script type="text/javascript" src="<%# ResolveClientUrl("~/js/tiny_mce/tiny_mce.js") %>"></script>
+    <script type="text/javascript">
+        var loadingAnimation = "<%# ResolveClientUrl("~/App_Themes/External/images/ajax-loader.gif") %>";
+        var IsBlockUIEnabled = "false";
+    </script>
+    <script type="text/javascript">
+        function EndRequestHandlerForUpdatePanel(sender, args) {
+            // Check to see if there's an error on this request.
+            if (args.get_error() != undefined) {
+                var msg = args.get_error().message.replace("Sys.WebForms.PageRequestManagerServerErrorException: ", "");
+                // Show the custom error. 
+                // Here you can be creative and do whatever you want
+                // with the exception (i.e. call a modalpopup and show 
+                // a nicer error window). I will simply use 'alert'
+                alert(msg);
+                // Let the framework know that the error is handled, 
+                //  so it doesn't throw the JavaScript alert.
+                args.set_errorHandled(true);
+            }
+
+        }
+    </script>
+
+</head>
+<body style="overflow: auto; padding: 2px 2px 0px 2px">
+    <form id="aspNetForm" runat="server">
+        <div id="MasterPages_Internal_modal">
+            <asp:ContentPlaceHolder ID="cntProgressBar" runat="server" />
+            <asp:ContentPlaceHolder ID="cntLeftContent" runat="server" />
+            <asp:ContentPlaceHolder ID="cntMainBody" runat="server" />
+        </div>
+    </form>
+</body>
+</html>
