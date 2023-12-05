@@ -1,0 +1,416 @@
+        Dim iObjectInstanceCount
+        
+        Sub FindObjectInstanceCount(strScreenObjectName)
+        	iObjectInstanceCount = 1
+        
+        	' strScreenObjectName is the object that is associate with this screen (if a child), or "" if the root screen.
+        	If strScreenObjectName <> ""  Then
+        		Dim instanceCount
+        		
+        		' How many instance of this object exist?
+        		instanceCount = engine.count(strScreenObjectName)
+        		
+        		Dim i
+        		for i = 1 to instanceCount
+        			if engine.item(strScreenObjectName, i).item("OI").value = vAdditionalData(cAdditionalData_OIKey) then
+        				iObjectInstanceCount = i
+        			end if
+        		next
+        	End If
+        End Sub
+
+        Sub DefaultTextTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultCommentTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultIntegerTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CLng(strValue)
+        End Sub
+
+        
+        Sub DefaultCheckboxTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanListTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanRadioTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	If InStr(1, LCase(strValue), "code:", 1) = 1 Then
+        		' The default value has been specified as a code (code:<thecode>).
+        		Dim code
+        		Dim effectiveDate
+        		Dim version
+        		
+        		code = Mid(strValue, Len("code:")+1)
+        		effectiveDate = Now()
+        		version = 1
+        		
+        		Dim listItemId
+        		listItemId = Extras.GetField(strListCode, strListCode + "_Id", code, effectiveDate, version)
+        		
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(listItemId)
+        	Else
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        	End If
+        End Sub
+
+        
+        Sub DefaultRateListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	' TODO.
+        End Sub
+
+        
+        Sub DefaultDateTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	
+        	Dim location
+        	Dim Interval
+        	Dim Duration
+        	Dim DateValue
+        	
+        	'Upper case the input
+        	DateValue = UCase(strValue)
+        	'Check to see if we want data AND  Time
+        	location = InStr(1,DateValue,"DATETIME")
+        	if location > 0 then
+        		DateValue=  CDate(FormatDateTime(Now,0)) 'use the standard vb datetime
+        	End If
+        	'Check to see if TODAY is specified as a modifier
+        	location  = InStr(1,DateValue,"TODAY")
+        	If location > 0 Then
+        		'Determine if we are adding values
+        		location  = InStr(1,DateValue,"+")
+        		If location > 0 Then 
+        			Interval = Mid(DateValue,location + 1,1)
+        			
+        			If Interval = "Y" Then
+        				Interval = "YYYY"
+        			End If
+        			
+        			If Interval <> "" Then 
+        				Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        				DateValue = DateAdd(Interval,Duration,CDate(FormatDateTime(Now,2)))	
+        				
+        			Else
+        				'No Interval specified 
+        				'Need an error here!!!!
+        			End If	
+        		Else 
+        			'Check to see if we are subtracting values
+        			location  =InStr(1,DateValue,"-")
+        			If location > 0  Then 
+        				Interval = Mid(DateValue,location + 1,1)
+        				
+        				If Interval <> "" Then 
+        					Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        					DateValue = DateAdd(Interval, Duration * -1,CDate(FormatDateTime(Now,2)))	
+        				Else
+        					'No Interval specified 
+        					'Need an error here!!!!
+        				End If
+        			Else
+        				'No Function specified, so assume we are just using today's date as a shortdate
+        				DateValue = CDate(FormatDateTime(Now,2))
+        			End If
+        			
+        		End If
+        		
+        	End If	
+        	
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDate(DateValue)
+        End Sub
+
+        
+        Sub DefaultCurrencyTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+        
+        Sub DefaultPercentageTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+Sub WebRequired(bIsOnStart)
+	If bIsOnStart = True Then
+		Engine.NewObject("MACBRKCLAIM")
+		Engine.NewObject("MACBRKEXTCLM")
+		Engine.NewObject("MACBRKCLEXTCLM")
+		Engine.NewObject("MACBRKCLM")
+	End If
+End Sub
+
+Sub onScreenLogic(bIsOnStart)
+        If bIsOnStart = True Then
+        
+        		 'Instantiate Risk object(s)
+        		Extras.RiskDataEngine.NewObject("RISK_DETAILS")
+        		Extras.RiskDataEngine.NewObject("RISK_EXTENSIONS")
+        		Extras.RiskDataEngine.NewObject("CL_EXTENSIONS")
+        
+        		'Instantiate Claims object(s)
+        		Engine.NewObject("MACBRKCLAIM")
+        		Engine.NewObject("MACBRKEXTCLM")
+        		Engine.NewObject("MACBRKCLEXTCLM")
+        
+        		Dim RiskObject, ClaimObject
+        		Dim ClaimChild, Cnt, nIndex
+        
+        		'---------------------------------------------------
+        		'---START: Non-child screen properties population---	
+        		'---------------------------------------------------
+        		
+        					'---Risk Details Tab---'
+        		RiskObject = "MBCDETS"
+        		ClaimObject = "MACBRKCLAIM"
+        		ClaimChild = "MACBRKCHLDCLM"
+        		Cnt = Extras.RiskDataEngine.Count(RiskObject)
+        
+        		For nIndex = 1 to Cnt
+        			Engine.Item(ClaimObject).NewObject(ClaimChild)
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"IS_CONSE_LOSS")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"IS_DETER_STOCK")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"DESCRIPTION_OF_MACHINERY")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"SUMINSURED")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"RATE")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"PREMIUM")
+        
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"ITEM_SUMINSURED")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"BOI")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"ITEM_RATE")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"ITEM_PREMIUM")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"DEDUCT_PERC")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"MINIMUM_AMOUNT")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"MAXIMUM_AMOUNT")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"BOD")
+        
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"IS_GROSS_PROFIT_BASIS")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"GROSS_PROFIT_INDEMNITY_PERIOD")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"GROSS_PROFIT_INDEMNITY_UNIT")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"GROSS_PROFIT_TIME_UNIT")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"GROSS_PROFIT_TIME_DEDU")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"IS_GROSS_REVENUE")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"GROSS_REVENUE_INDEMNITY_PERIOD")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"GROSS_REVENUE_INDEMNITY_UNIT")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"GROSS_REVENUE_TIME_UNIT")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"GROSS_REVENUE_TIME_DEDU")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"IS_INC_COST_WORKING")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"COST_WORKING_INDEMNITY_PERIOD")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"COST_WORKING_INDEMNITY_UNIT")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"COST_WORKING_TIME_UNIT")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"COST_WORKING_TIME_DEDU")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"IS_AICOW")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"AICOW_INDEMNITY_PERIOD")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"AICOW_INDEMNITY_UNIT")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"AICOW_TIME_UNIT")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"AICOW_TIME_DEDU")
+        		Next
+        
+        		RiskObject = "RISK_DETAILS"
+        
+        		Call ToClaim(RiskObject,ClaimObject,"TOTAL_SUMINSURED")
+        		Call ToClaim(RiskObject,ClaimObject,"TOTAL_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"TOTAL_PREMIUM")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_GROSS_PROFIT_BASIS")
+        		Call ToClaim(RiskObject,ClaimObject,"GROSS_PROFIT_TYPE")
+        		Call ToClaim(RiskObject,ClaimObject,"ANNUAL_GROSS_PROFIT")
+        		Call ToClaim(RiskObject,ClaimObject,"GROSS_PROFIT_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"GROSS_PROFIT_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"IS_GROSS_REVENUE")
+        		Call ToClaim(RiskObject,ClaimObject,"GROSS_REVENUE_SUMINSURED")
+        		Call ToClaim(RiskObject,ClaimObject,"GROSS_REVENUE_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"GROSS_REVENUE_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"MACHINERY_TOTAL_SUMINSURED")
+        		Call ToClaim(RiskObject,ClaimObject,"IS_DETER_STOCK")
+        		Call ToClaim(RiskObject,ClaimObject,"DETER_STOCK_SUMINSURED")
+        		Call ToClaim(RiskObject,ClaimObject,"DETER_STOCK_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"DETER_STOCK_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"DETER_STOCK_DEDU_PERC")
+        		Call ToClaim(RiskObject,ClaimObject,"DETER_STOCK_DEDU_AMNT")
+        		Call ToClaim(RiskObject,ClaimObject,"DETER_STOCK_MAX_AMNT")
+        
+        					'---Machinery Extensions Tab---'
+        
+        		RiskObject = "RISK_EXTENSIONS"
+        		ClaimObject = "MACBRKEXTCLM"
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_CLAIMS_COST")
+        		Call ToClaim(RiskObject,ClaimObject,"SUMINSURED")
+        		Call ToClaim(RiskObject,ClaimObject,"RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLE_PERCENT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLE_MIN_AMOUNT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLE_MAX_AMOUNT")
+        		Call ToClaim(RiskObject,ClaimObject,"IS_PROF_FEES")
+        		Call ToClaim(RiskObject,ClaimObject,"PRO_FEES_SUMINSURED")
+        		Call ToClaim(RiskObject,ClaimObject,"PRO_FEES_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PRO_FEES_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"PRO_FEES_DEDUCTIBLE_PERCENT")
+        		Call ToClaim(RiskObject,ClaimObject,"PRO_FEES_DEDUCTIBLE_MIN_AMOUNT")
+        		Call ToClaim(RiskObject,ClaimObject,"PRO_FEES_DEDUCTIBLE_MAX_AMOUNT")
+        		Call ToClaim(RiskObject,ClaimObject,"IS_ADDITIONAL_EXTENSIONS")
+        		Call ToClaim(RiskObject,ClaimObject,"OTHER_EXTENSIONS_SUMINSURED")
+        		Call ToClaim(RiskObject,ClaimObject,"OTHER_EXTENSIONS_PREMIUM")
+        
+        		RiskObject = "OTHER_EXTENSIONS"
+        		ClaimChild = "MEXTCLM"
+        
+        		Cnt = Extras.RiskDataEngine.Count(RiskObject)
+        
+        		For nIndex = 1 to Cnt
+        			Engine.Item(ClaimObject).NewObject(ClaimChild)
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"DESCRIPTION")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"SUMINSURED")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"RATE")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"PREMIUM")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"DEDUCTIBLE_PERCENTAGE")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"MINIMUM_AMOUNT")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"MAXIMUM_AMOUNT")
+        		Next
+        		
+        					'---Consequential Loss Extensions Tab---'
+        
+        		RiskObject = "CL_EXTENSIONS"
+        		ClaimObject = "MACBRKCLEXTCLM"
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_CLAIMS_COST")
+        		Call ToClaim(RiskObject,ClaimObject,"SUMINSURED")
+        		Call ToClaim(RiskObject,ClaimObject,"RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLE_PERCENT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLE_MIN_AMOUNT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLE_MAX_AMOUNT")
+        		Call ToClaim(RiskObject,ClaimObject,"IS_PROF_FEES")
+        		Call ToClaim(RiskObject,ClaimObject,"PRO_FEES_SUMINSURED")
+        		Call ToClaim(RiskObject,ClaimObject,"PRO_FEES_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PRO_FEES_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"PRO_FEES_DEDUCTIBLE_PERCENT")
+        		Call ToClaim(RiskObject,ClaimObject,"PRO_FEES_DEDUCTIBLE_MIN_AMOUNT")
+        		Call ToClaim(RiskObject,ClaimObject,"PRO_FEES_DEDUCTIBLE_MAX_AMOUNT")
+        		Call ToClaim(RiskObject,ClaimObject,"IS_ADDITIONAL_EXTENSIONS")
+        		Call ToClaim(RiskObject,ClaimObject,"OTHER_EXTENSIONS_SUMINSURED")
+        		Call ToClaim(RiskObject,ClaimObject,"OTHER_EXTENSIONS_PREMIUM")
+        
+        		RiskObject = "CL_OTHER_EXTENSIONS"
+        		ClaimChild = "CLEXTCLM"
+        
+        		Cnt = Extras.RiskDataEngine.Count(RiskObject)
+        
+        		For nIndex = 1 to Cnt
+        			Engine.Item(ClaimObject).NewObject(ClaimChild)
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"DESCRIPTION")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"SUMINSURED")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"RATE")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"PREMIUM")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"DEDUCTIBLE_PERCENTAGE")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"MINIMUM_AMOUNT")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"MAXIMUM_AMOUNT")
+        		Next
+        
+        		Call DoInstanceCount
+         End If
+        End Sub
+
+        
+        Function ToClaim(RObject, CObject, PropName)
+        	Dim Val	
+        	Val = Extras.RiskDataEngine.Item(RObject).Item(PropName).Value
+        	Engine.Item(CObject).Item(PropName).Value = Val
+        End Function
+        
+        Function ToChildClaim(RChild, CParent, Cobject, Index, PropName)
+        	Dim Val
+        	Val = Extras.RiskDataEngine.Item(RChild,Index).Item(PropName).Value
+        	Engine.Item(CParent).Item(CObject, Index).Item(PropName).Value = Val
+        End Function
+        
+        Sub DoInstanceCount
+        ' The ScreenMain rule is added to every screen automatically.
+        
+        
+        Call FindObjectInstanceCount("")
+End Sub
+
+Sub onValidate_MACBRKCLAIM__THIRDPARTY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MACBRKCLAIM", "THIRDPARTY", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MACBRKCLAIM__IS_THRDTLS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MACBRKCLAIM", "IS_THRDTLS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MACBRKCLAIM__IS_ASSESSDETAIL(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MACBRKCLAIM", "IS_ASSESSDETAIL", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MACBRKCLAIM__IS_NAMAPP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MACBRKCLAIM", "IS_NAMAPP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MACBRKCLAIM__IS_EXGRAT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MACBRKCLAIM", "IS_EXGRAT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MACBRKCLM__ASSESSOR(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MACBRKCLM", "ASSESSOR", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MACBRKCLM__LAWYRS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MACBRKCLM", "LAWYRS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MACBRKCLM__WITNESS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MACBRKCLM", "WITNESS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub DoDefaults(bIsOnStart)
+    Call WebRequired(bIsOnStart)
+    Call onScreenLogic(bIsOnStart)
+    Call onValidate_MACBRKCLAIM__THIRDPARTY(bIsOnStart)
+    Call onValidate_MACBRKCLAIM__IS_THRDTLS(bIsOnStart)
+    Call onValidate_MACBRKCLAIM__IS_ASSESSDETAIL(bIsOnStart)
+    Call onValidate_MACBRKCLAIM__IS_NAMAPP(bIsOnStart)
+    Call onValidate_MACBRKCLAIM__IS_EXGRAT(bIsOnStart)
+    Call onValidate_MACBRKCLM__ASSESSOR(bIsOnStart)
+    Call onValidate_MACBRKCLM__LAWYRS(bIsOnStart)
+    Call onValidate_MACBRKCLM__WITNESS(bIsOnStart)
+End Sub
+
+Sub Start()
+    Call DoDefaults(True)
+End Sub
+
+Sub Main()
+    Call DoDefaults(False)
+End Sub
+

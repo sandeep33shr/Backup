@@ -1,0 +1,3 @@
+Sub Start()
+	Engine.Item("GENERAL").Item("EFFECTIVEDATE").Value = Extras.CoverStartDate
+End Sub

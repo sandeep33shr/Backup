@@ -1,0 +1,1397 @@
+        Dim iObjectInstanceCount
+        
+        Sub FindObjectInstanceCount(strScreenObjectName)
+        	iObjectInstanceCount = 1
+        
+        	' strScreenObjectName is the object that is associate with this screen (if a child), or "" if the root screen.
+        	If strScreenObjectName <> ""  Then
+        		Dim instanceCount
+        		
+        		' How many instance of this object exist?
+        		instanceCount = engine.count(strScreenObjectName)
+        		
+        		Dim i
+        		for i = 1 to instanceCount
+        			if engine.item(strScreenObjectName, i).item("OI").value = vAdditionalData(cAdditionalData_OIKey) then
+        				iObjectInstanceCount = i
+        			end if
+        		next
+        	End If
+        End Sub
+
+        Sub DefaultTextTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultCommentTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultIntegerTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CLng(strValue)
+        End Sub
+
+        
+        Sub DefaultCheckboxTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanListTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanRadioTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	If InStr(1, LCase(strValue), "code:", 1) = 1 Then
+        		' The default value has been specified as a code (code:<thecode>).
+        		Dim code
+        		Dim effectiveDate
+        		Dim version
+        		
+        		code = Mid(strValue, Len("code:")+1)
+        		effectiveDate = Now()
+        		version = 1
+        		
+        		Dim listItemId
+        		listItemId = Extras.GetField(strListCode, strListCode + "_Id", code, effectiveDate, version)
+        		
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(listItemId)
+        	Else
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        	End If
+        End Sub
+
+        
+        Sub DefaultRateListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	' TODO.
+        End Sub
+
+        
+        Sub DefaultDateTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	
+        	Dim location
+        	Dim Interval
+        	Dim Duration
+        	Dim DateValue
+        	
+        	'Upper case the input
+        	DateValue = UCase(strValue)
+        	'Check to see if we want data AND  Time
+        	location = InStr(1,DateValue,"DATETIME")
+        	if location > 0 then
+        		DateValue=  CDate(FormatDateTime(Now,0)) 'use the standard vb datetime
+        	End If
+        	'Check to see if TODAY is specified as a modifier
+        	location  = InStr(1,DateValue,"TODAY")
+        	If location > 0 Then
+        		'Determine if we are adding values
+        		location  = InStr(1,DateValue,"+")
+        		If location > 0 Then 
+        			Interval = Mid(DateValue,location + 1,1)
+        			
+        			If Interval = "Y" Then
+        				Interval = "YYYY"
+        			End If
+        			
+        			If Interval <> "" Then 
+        				Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        				DateValue = DateAdd(Interval,Duration,CDate(FormatDateTime(Now,2)))	
+        				
+        			Else
+        				'No Interval specified 
+        				'Need an error here!!!!
+        			End If	
+        		Else 
+        			'Check to see if we are subtracting values
+        			location  =InStr(1,DateValue,"-")
+        			If location > 0  Then 
+        				Interval = Mid(DateValue,location + 1,1)
+        				
+        				If Interval <> "" Then 
+        					Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        					DateValue = DateAdd(Interval, Duration * -1,CDate(FormatDateTime(Now,2)))	
+        				Else
+        					'No Interval specified 
+        					'Need an error here!!!!
+        				End If
+        			Else
+        				'No Function specified, so assume we are just using today's date as a shortdate
+        				DateValue = CDate(FormatDateTime(Now,2))
+        			End If
+        			
+        		End If
+        		
+        	End If	
+        	
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDate(DateValue)
+        End Sub
+
+        
+        Sub DefaultCurrencyTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+        
+        Sub DefaultPercentageTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+Sub WebRequired(bIsOnStart)
+	If bIsOnStart = True Then
+		Engine.NewObject("CWORKCLAIM")
+		Engine.NewObject("RISKDETCLM")
+		Engine.NewObject("NONBANDCLM")
+		Engine.NewObject("EXT_ADDCLM")
+		Engine.NewObject("EXT_ADDDCLM")
+		Engine.NewObject("EXT_RECCLM")
+		Engine.NewObject("EXT_CONCLM")
+		Engine.NewObject("EXT_DEFCLM")
+		Engine.NewObject("EXT_EXCCLM")
+		Engine.NewObject("EXT_ESCCLM")
+		Engine.NewObject("EXT_EXPCLM")
+		Engine.NewObject("EXT_MITCLM")
+		Engine.NewObject("EX_OPENCLM")
+		Engine.NewObject("OPENTRENCLM")
+		Engine.NewObject("POSTLSCLM")
+		Engine.NewObject("EXT_PRINCLM")
+		Engine.NewObject("EXT_PROFCLM")
+		Engine.NewObject("EXT_SURRCLM")
+		Engine.NewObject("EXT_TEMPCLM")
+		Engine.NewObject("EXT_TRANCLM")
+		Engine.NewObject("EXT_ADDITCLM")
+		Engine.NewObject("CONEXTCLM")
+		Engine.NewObject("CWORKCLM")
+	End If
+End Sub
+
+Sub onScreenLogic(bIsOnStart)
+        If bIsOnStart = True Then
+        	Dim x,cnt,nIndex
+        	
+        	Extras.RiskDataEngine.NewObject("CONTWORKS")
+        	Extras.RiskDataEngine.NewObject("RISKDETAILS")
+        	Extras.RiskDataEngine.NewObject("COREINSURA")
+        
+        	Engine.NewObject("CWORKCLAIM")
+        	Engine.NewObject("RISKDETCLM")
+        	
+        	'---------------------------------------------------
+        	'---START: Non-child screen properties population---	
+        	'---------------------------------------------------
+        	Dim contWork, contAllRisks , patentDef, inwards, erectRisks, pubLiab, cvrDescr
+        
+        	'Collect data from Policy risk
+        	contWork  = Extras.RiskDataEngine.Item("CONTWORKS").Item("INSURED").Value
+        	contAllRisks  = Extras.RiskDataEngine.Item("CONTWORKS").Item("CONTALLRKS").Value
+        	erectRisks  = Extras.RiskDataEngine.Item("CONTWORKS").Item("ERECALLRKS").Value
+        	pubLiab  = Extras.RiskDataEngine.Item("CONTWORKS").Item("CONPUBLIA").Value
+        	patentDef = Extras.RiskDataEngine.Item("CONTWORKS").Item("PATDEF").Value
+        	cvrDescr = Extras.RiskDataEngine.Item("CONTWORKS").Item("DESCRIPTION").Value
+        				
+        	'Main Business Classification Risk Data
+        	Dim buildInd, damsInd, factInd, miningInd, pipeInd, shopInd, concrInd, domestInd, masshInd, offBlocks, roadsInd, steelInd
+        	buildInd  = Extras.RiskDataEngine.Item("CONTWORKS").Item("BUILD_IND").Value
+        	damsInd  = Extras.RiskDataEngine.Item("CONTWORKS").Item("DAMS_IND").Value
+        	factInd  = Extras.RiskDataEngine.Item("CONTWORKS").Item("FACT_IND").Value
+        	miningInd  = Extras.RiskDataEngine.Item("CONTWORKS").Item("MINING_IND").Value
+        	pipeInd = Extras.RiskDataEngine.Item("CONTWORKS").Item("PIPE_IND").Value
+        	shopInd = Extras.RiskDataEngine.Item("CONTWORKS").Item("SHOP_IND").Value
+        	concrInd  = Extras.RiskDataEngine.Item("CONTWORKS").Item("CONCR_IND").Value
+        	domestInd  = Extras.RiskDataEngine.Item("CONTWORKS").Item("DOMEST_IND").Value
+        	masshInd  = Extras.RiskDataEngine.Item("CONTWORKS").Item("MASSH_IND").Value
+        	offBlocks  = Extras.RiskDataEngine.Item("CONTWORKS").Item("OFFBLK_IND").Value
+        	roadsInd = Extras.RiskDataEngine.Item("CONTWORKS").Item("ROADS_IND").Value
+        	steelInd = Extras.RiskDataEngine.Item("CONTWORKS").Item("STEEL_IND").Value
+        				
+        	'Collect data from Policy risk. Risk Details
+        	Dim maxVal, maxPeriod , depPremInd
+        	Dim ownInd, estAnnTurn, rate, premiumLim, pciInd, pciEstAnnTur , pcirate, pciPremiumLim
+        	Dim totalEstTurn, totPremiumLim, miniPrem, finalPrem
+        	Dim minPrem, overrMinPremInd, overrMinPrem, minPremOverr, depPremAppl, depPremPer, depPrem
+        				
+        	'Collect data from Policy risk. Any One Contract Limits
+        	maxVal  = Extras.RiskDataEngine.Item("RISKDETAILS").Item("MAX_VAL").Value
+        	maxPeriod  = Extras.RiskDataEngine.Item("RISKDETAILS").Item("MAXPERIOD").Value
+        	depPremInd  = Extras.RiskDataEngine.Item("RISKDETAILS").Item("DEP_PREM_IND").Value
+        	
+        	'Collect data from Policy risk. Premium Details
+        	ownInd  = Extras.RiskDataEngine.Item("RISKDETAILS").Item("OWNIND").Value
+        	estAnnTurn  = Extras.RiskDataEngine.Item("RISKDETAILS").Item("ESTANNTUR").Value
+        	rate = Extras.RiskDataEngine.Item("RISKDETAILS").Item("RATE").Value
+        	premiumLim = Extras.RiskDataEngine.Item("RISKDETAILS").Item("PREMIUM_LIM").Value
+        	pciInd  = Extras.RiskDataEngine.Item("RISKDETAILS").Item("PCIIND").Value
+        	pciEstAnnTur  = Extras.RiskDataEngine.Item("RISKDETAILS").Item("PCIESTANNTUR").Value
+        	pcirate  = Extras.RiskDataEngine.Item("RISKDETAILS").Item("PCIRATE").Value
+        	pciPremiumLim  = Extras.RiskDataEngine.Item("RISKDETAILS").Item("PCIPREMIUM_LIM").Value
+        	
+        	'Collect data from Policy risk. Estimated Turnover
+        	totalEstTurn = Extras.RiskDataEngine.Item("RISKDETAILS").Item("TOTAL_EST_TURN").Value
+        	totPremiumLim = Extras.RiskDataEngine.Item("RISKDETAILS").Item("TOTPREMIUM_LIM").Value
+        	miniPrem  = Extras.RiskDataEngine.Item("RISKDETAILS").Item("MINI_PREM").Value
+        	finalPrem  = Extras.RiskDataEngine.Item("RISKDETAILS").Item("FINAL_PREM").Value
+        			
+        	'Collect data from Policy risk. Minimum & Deposit Premium
+        	depPremPer = Extras.RiskDataEngine.Item("RISKDETAILS").Item("DEP_PREM_PER").Value
+        	depPrem = Extras.RiskDataEngine.Item("RISKDETAILS").Item("DEP_PREM").Value
+        				
+        					
+        	'Send data to the claim screen
+        	Engine.Item("CWORKCLAIM").Item("C_INSURED").Value = contWork
+        	Engine.Item("CWORKCLAIM").Item("CONTALLRKS").Value = contAllRisks
+        	Engine.Item("CWORKCLAIM").Item("ERECALLRKS").Value = erectRisks
+        	'Engine.Item("CWORKCLAIM").Item("COREINSINW").Value = inwards
+        	Engine.Item("CWORKCLAIM").Item("CONPUBLIA").Value = pubLiab
+        	Engine.Item("CWORKCLAIM").Item("PATDEF").Value = patentDef
+        	Engine.Item("CWORKCLAIM").Item("CON_DESCRIPTION").Value = cvrDescr
+        			
+        	'Main Business Classification Claims Data
+        	Engine.Item("CWORKCLAIM").Item("BUILD_IND").Value = buildInd
+        	Engine.Item("CWORKCLAIM").Item("DAMS_IND").Value = damsInd
+        	Engine.Item("CWORKCLAIM").Item("FACT_IND").Value = factInd
+        	Engine.Item("CWORKCLAIM").Item("MINING_IND").Value = miningInd
+        	Engine.Item("CWORKCLAIM").Item("PIPE_IND").Value = pipeInd
+        	Engine.Item("CWORKCLAIM").Item("SHOP_IND").Value = shopInd
+        	Engine.Item("CWORKCLAIM").Item("CONCR_IND").Value = concrInd
+        	Engine.Item("CWORKCLAIM").Item("DOMEST_IND").Value = domestInd
+        	Engine.Item("CWORKCLAIM").Item("MASSH_IND").Value = masshInd
+        	Engine.Item("CWORKCLAIM").Item("OFFBLK_IND").Value = offBlocks
+        	Engine.Item("CWORKCLAIM").Item("ROADS_IND").Value = roadsInd
+        	Engine.Item("CWORKCLAIM").Item("STEEL_IND").Value = steelInd
+        
+        	'-----------------------------------------------
+        	'---START: Child screen properties population---
+        	'-----------------------------------------------
+        	cnt = Extras.RiskDataEngine.Count("CONTPERIOD")
+        	'Testing Period Child Screen
+        	x = 1
+        	For nIndex = x to cnt
+        			Dim contDescr,contPeriod,contDeduc, contMin ,contMax, contBasis
+        				Engine.Item("CWORKCLAIM").NewObject("CPERIODCLM")   
+        	
+        			contDescr = Extras.RiskDataEngine.Item("CONTPERIOD",nIndex).Item("DESCRIPTION").Value
+        			contPeriod = Extras.RiskDataEngine.Item("CONTPERIOD",nIndex).Item("PERIOD").Value
+        			contDeduc = Extras.RiskDataEngine.Item("CONTPERIOD",nIndex).Item("DEDUCTIBLE").Value
+        			contMin = Extras.RiskDataEngine.Item("CONTPERIOD",nIndex).Item("MIN_AMT").Value
+        			contMax = Extras.RiskDataEngine.Item("CONTPERIOD",nIndex).Item("MAX_AMT").Value
+        			contBasis = Extras.RiskDataEngine.Item("CONTPERIOD",nIndex).Item("BASIS_DED").Value
+        	
+        				'Send data to claim child object
+        		Engine.Item("CWORKCLAIM").Item("CPERIODCLM",x).Item("DESCRIPTION").Value = contDescr
+        		Engine.Item("CWORKCLAIM").Item("CPERIODCLM",x).Item("PERIOD").Value = contPeriod
+        		Engine.Item("CWORKCLAIM").Item("CPERIODCLM",x).Item("DEDUCTIBLE").Value = contDeduc
+        		Engine.Item("CWORKCLAIM").Item("CPERIODCLM",x).Item("MIN_AMT").Value = contMin
+        		Engine.Item("CWORKCLAIM").Item("CPERIODCLM",x).Item("MAX_AMT").Value = contMax 
+        		Engine.Item("CWORKCLAIM").Item("CPERIODCLM",x).Item("BASIS_DED").Value = contBasis
+        		
+        	x = x + 1
+        	Next
+        
+        	'Send data to the claim screen. Any One Contract Limits
+        	Engine.Item("RISKDETCLM").Item("MAX_VAL").Value = maxVal
+        	Engine.Item("RISKDETCLM").Item("MAXPERIOD").Value = maxPeriod
+        	Engine.Item("RISKDETCLM").Item("DEP_PREM_IND").Value = depPremInd
+        	
+        	'Send data to the claim screen. Premium Details
+        	Engine.Item("RISKDETCLM").Item("OWNIND").Value = ownInd
+        	Engine.Item("RISKDETCLM").Item("ESTANNTUR").Value = estAnnTurn
+        	Engine.Item("RISKDETCLM").Item("RATE").Value = rate
+        	Engine.Item("RISKDETCLM").Item("PREMIUM_LIM").Value = premiumLim
+        	Engine.Item("RISKDETCLM").Item("PCIIND").Value = pciInd
+        	Engine.Item("RISKDETCLM").Item("PCIESTANNTUR").Value = pciEstAnnTur
+        	Engine.Item("RISKDETCLM").Item("PCIRATE").Value = pcirate
+        	Engine.Item("RISKDETCLM").Item("PCIPREMIUM_LIM").Value = pciPremiumLim
+        	
+        	'Send data to the claim screen. Estimated Turnover
+        	Engine.Item("RISKDETCLM").Item("TOTAL_EST_TURN").Value = totalEstTurn
+        	Engine.Item("RISKDETCLM").Item("TOTPREMIUM_LIM").Value = totPremiumLim
+        	Engine.Item("RISKDETCLM").Item("MINI_PREM").Value = miniPrem
+        	Engine.Item("RISKDETCLM").Item("FINAL_PREM").Value = finalPrem
+        	
+        	'Send data to the claim screen. Minimum & Deposit Premium
+        	'Engine.Item("RISKDETCLM").Item("MIN_PREM").Value = minPrem
+        	'Engine.Item("RISKDETCLM").Item("OVERR_MINPREM_IND").Value = overrMinPremInd
+        	'Engine.Item("RISKDETCLM").Item("OVERR_MIN_PREM").Value = overrMinPrem
+        	'Engine.Item("RISKDETCLM").Item("MIN_PREM_OVERR").Value = minPremOverr
+        	'Engine.Item("RISKDETCLM").Item("DEP_PREM_APPL").Value = depPremAppl
+        	Engine.Item("RISKDETCLM").Item("DEP_PREM_PER").Value = depPremPer
+        	Engine.Item("RISKDETCLM").Item("DEP_PREM").Value = depPrem	
+        	
+        
+        	'Value Band Deductibles
+        
+        	Extras.RiskDataEngine.NewObject("DED_IND")	
+        	Engine.NewObject("RISKDETCLM")
+        
+        	Dim CntVal, xVal, nIndexVal
+        	CntVal = Extras.RiskDataEngine.Count("MAJPERILS")
+        		
+        	xVal = 1
+        	For nIndexVal = xVal to CntVal
+        
+        		Dim is_majPerils, is_minPerils, is_theft, is_transit, is_surr, is_fire ,is_allper, is_other
+        		Dim contExcee, contNonEcxee
+        		'Value Band Checkboxes
+        		is_majPerils = Extras.RiskDataEngine.Item("MAJPERILS").Item("MAJORPERILS").Value
+        		is_minPerils = Extras.RiskDataEngine.Item("MAJPERILS").Item("MINORPERIL").Value
+        		is_theft = Extras.RiskDataEngine.Item("MAJPERILS").Item("THEFTMALDAM").Value
+        		is_transit = Extras.RiskDataEngine.Item("MAJPERILS").Item("TRANSIT").Value
+        		is_surr = Extras.RiskDataEngine.Item("MAJPERILS").Item("SURRPROP").Value
+        		is_fire = Extras.RiskDataEngine.Item("MAJPERILS").Item("FIREPERILS").Value
+        		is_allper = Extras.RiskDataEngine.Item("MAJPERILS").Item("ALLPERIL").Value
+        		is_other = Extras.RiskDataEngine.Item("MAJPERILS").Item("OTHER").Value
+        		
+        		Engine.Item("RISKDETCLM").NewObject("CONTRVALCLM")   
+        		
+        		contExcee = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("CONT_EXCEE").Value
+        		contNonEcxee = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("CONT_NOT_EX").Value
+        	
+        		'Send data to claim child object
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("CONT_EXCEE").Value = contExcee
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("CONT_NOT_EX").Value = contNonEcxee 
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("MAJORPERILS").Value = is_majPerils
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("MINORPERIL").Value = is_minPerils
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("THEFTMALDAM").Value = is_theft
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("TRANSIT").Value = is_transit
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("SURRPROP").Value = is_surr
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("FIREPERILS").Value = is_fire
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("ALLPERIL").Value = is_allper
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("OTHER").Value = is_other
+        		
+        		Dim mpDeduc, mpMinAmt, mpMaxAmt, mpBasis, is_MajPer
+        		
+        		mpDeduc = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("DEDU_CTIBLE").Value
+        		mpMinAmt = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("MIN_AMT").Value
+        		mpMaxAmt = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("MAX_AMT").Value
+        		mpBasis = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("BASIS_DED").Value
+        		'is_MajPer = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("IS_MAJPER").Value
+        		
+        		'Send data to claim child object
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("DEDU_CTIBLE").Value = mpDeduc
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("MIN_AMT").Value = mpMinAmt 
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("MAX_AMT").Value = mpMaxAmt
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("BASIS_DED").Value = mpBasis 
+        		'Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("IS_MAJPER").Value = is_MajPer
+        		'Send data to the claim screen. Major Perils
+        		'Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("MAJORPERILS").Value = is_majPerils
+        		
+        
+        		
+        		Dim minDeduc, minMinAmt, minMaxAmt, minBasis, is_MinPer
+        		
+        		minDeduc = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("DEDU_CTIBLE_MINPERILS").Value
+        		minMinAmt = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("MIN_AMT_MINPERILS").Value
+        		minMaxAmt = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("MAX_AMT_MINPERILS").Value
+        		minBasis = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("BASIS_DED_MINPERILS").Value
+        		'is_MinPer = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("IS_MINPER").Value
+        		
+        		'Send data to claim child object
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("DEDU_CTIBLE_MINPERILS").Value = minDeduc
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("MIN_AMT_MINPERILS").Value = minMinAmt 
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("MAX_AMT_MINPERILS").Value = minMaxAmt
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("BASIS_DED_MINPERILS").Value = minBasis 
+        		'Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("IS_MINPER").Value = is_MinPer
+        		'Send data to the claim screen. Major Perils
+        		'Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("MINORPERIL").Value = is_minPerils
+        		
+        
+        		
+        		Dim thftDeduc, thftMinAmt, thftMaxAmt, thftBasis, is_thf
+        		
+        		thftDeduc = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("DEDU_CTIBLE_THEFTMALDAM").Value
+        		thftMinAmt = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("MIN_AMT_THEFTMALDAM").Value
+        		thftMaxAmt = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("MAX_AMT_THEFTMALDAM").Value
+        		thftBasis = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("BASIS_DED_THEFTMALDAM").Value
+        		'is_thf = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("IS_THEFT").Value
+        		
+        		'Send data to claim child object. Theft
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("DEDU_CTIBLE_THEFTMALDAM").Value = thftDeduc
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("MIN_AMT_THEFTMALDAM").Value = thftMinAmt 
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("MAX_AMT_THEFTMALDAM").Value = thftMaxAmt
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("BASIS_DED_THEFTMALDAM").Value = thftBasis 
+        		'Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("IS_THEFT").Value = is_thf
+        		'Send data to the claim screen. Theft
+        		'Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("THEFTMALDAM").Value =  is_theft
+        		
+        		
+        		Dim tranDeduc, tranMinAmt, tranMaxAmt, tranBasis, is_tran
+        		
+        		tranDeduc = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("DEDU_CTIBLE_TRANSIT").Value
+        		tranMinAmt = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("MIN_AMT_TRANSIT").Value
+        		tranMaxAmt = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("MAX_AMT_TRANSIT").Value
+        		tranBasis = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("BASIS_DED_TRANSIT").Value
+        		'is_tran = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("IS_TRANSIT").Value
+        		
+        		'Send data to claim child object. Transit
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("DEDU_CTIBLE_TRANSIT").Value = tranDeduc
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("MIN_AMT_TRANSIT").Value = tranMinAmt 
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("MAX_AMT_TRANSIT").Value = tranMaxAmt
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("BASIS_DED_TRANSIT").Value = tranBasis 
+        		'Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("IS_TRANSIT").Value = is_tran
+        		'Send data to the claim screen. Transit
+        		'Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("TRANSIT").Value =  is_transit
+        	
+        	
+        		Dim surrDeduc, surrMinAmt, surrMaxAmt, surrBasis, is_surround
+        		
+        		surrDeduc = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("DEDU_CTIBLE_SURRPROP").Value
+        		surrMinAmt = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("MIN_AMT_SURRPROP").Value
+        		surrMaxAmt = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("MAX_AMT_SURRPROP").Value
+        		surrBasis = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("BASIS_DED_SURRPROP").Value
+        		'is_surround = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("IS_SURR").Value
+        		
+        		'Send data to claim child object. Transit
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("DEDU_CTIBLE_SURRPROP").Value = surrDeduc
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("MIN_AMT_SURRPROP").Value = surrMinAmt 
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("MAX_AMT_SURRPROP").Value = surrMaxAmt
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("BASIS_DED_SURRPROP").Value = surrBasis 
+        		'Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("IS_SURR").Value = is_surround
+        		'Send data to the claim screen. Transit
+        		'Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("SURRPROP").Value = is_surr
+        	
+        		Dim fireDeduc, fireMinAmt, fireMaxAmt, fireBasis, is_firePer
+        		
+        		fireDeduc = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("DEDU_CTIBLE_FIREPERILS").Value
+        		fireMinAmt = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("MIN_AMT_FIREPERILS").Value
+        		fireMaxAmt = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("MAX_AMT_FIREPERILS").Value
+        		fireBasis = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("BASIS_DED_FIREPERILS").Value
+        		'is_firePer = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("IS_FIRE").Value
+        		
+        		'Send data to claim child object. Fire Perils
+        
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("DEDU_CTIBLE_FIREPERILS").Value = fireDeduc
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("MIN_AMT_FIREPERILS").Value = fireMinAmt 
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("MAX_AMT_FIREPERILS").Value = fireMaxAmt
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("BASIS_DED_FIREPERILS").Value = fireBasis 
+        		'Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("IS_FIRE").Value = is_firePer
+        		'Send data to the claim screen. Fire Perils
+        		'Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("FIREPERILS").Value =  is_fire
+        	
+        	
+        		Dim allPerDeduc, allPerMinAmt, allPerMaxAmt, allPerBasis, is_allPeril
+        		
+        		allPerDeduc = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("DEDU_CTIBLE_ALLPERIL").Value
+        		allPerMinAmt = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("MIN_AMT_ALLPERIL").Value
+        		allPerMaxAmt = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("MAX_AMT_ALLPERIL").Value
+        		allPerBasis = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("BASIS_DED_ALLPERIL").Value
+        		'is_allPeril = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("IS_ALLPER").Value
+        		
+        		'Send data to claim child object. All Perils
+        
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("DEDU_CTIBLE_ALLPERIL").Value = allPerDeduc
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("MIN_AMT_ALLPERIL").Value = allPerMinAmt 
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("MAX_AMT_ALLPERIL").Value = allPerMaxAmt
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("BASIS_DED_ALLPERIL").Value = allPerBasis 
+        		'Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("IS_ALLPER").Value = is_allPeril	
+        		'Send data to the claim screen. All Perils
+        		'Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("ALLPERIL").Value =  is_allper
+        	
+        		Dim otherDeduc, otherMinAmt, otherMaxAmt, otherBasis, is_otherPer
+        		
+        		otherDeduc = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("DEDU_CTIBLE_OTHER").Value
+        		otherMinAmt = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("MIN_AMT_OTHER").Value
+        		otherMaxAmt = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("MAX_AMT_OTHER").Value
+        		otherBasis = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("BASIS_DED_OTHER").Value
+        		'is_otherPer = Extras.RiskDataEngine.Item("MAJPERILS",nIndexVal).Item("IS_OTHER").Value
+        		
+        		'Send data to claim child object. Other
+        
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("DEDU_CTIBLE_OTHER").Value = otherDeduc
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("MIN_AMT_OTHER").Value = otherMinAmt 
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("MAX_AMT_OTHER").Value = otherMaxAmt
+        		Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("BASIS_DED_OTHER").Value = otherBasis 
+        		'Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("IS_OTHER").Value = is_otherPer
+        		
+        		'Send data to the claim screen. Other
+        		'Engine.Item("RISKDETCLM").Item("CONTRVALCLM",xVal).Item("OTHER").Value =  is_other
+        		
+        		xVal = xVal + 1
+        	Next
+        
+        	'Non Value Band Deductibles
+        	'Extras.RiskDataEngine.NewObject("DED_IND")
+        	Extras.RiskDataEngine.NewObject("NONBANDEDS")
+        	Engine.NewObject("NONBANDCLM")
+        	
+        	'Checkbox variables
+        	Dim is_majPerils_, is_minPerils_, is_theft_, is_transit_, is_surr_, is_fire_ ,is_allper_, is_other_, is_addition_, isAdditional
+        	
+        	'Additional Child Screen
+        	Dim q,cntNval, nIndex2
+        	
+        	'Collect data from Policy risk. Non Band Deductibles/Checkboxes
+        	is_majPerils_  = Extras.RiskDataEngine.Item("NONBANDEDS").Item("MAJORPERILS").Value
+        	is_minPerils_  = Extras.RiskDataEngine.Item("NONBANDEDS").Item("MINORPERIL").Value
+        	is_theft_  = Extras.RiskDataEngine.Item("NONBANDEDS").Item("THEFTMALDAM").Value
+        	is_transit_  = Extras.RiskDataEngine.Item("NONBANDEDS").Item("TRANSIT").Value
+        	is_surr_  = Extras.RiskDataEngine.Item("NONBANDEDS").Item("SURRPROP").Value
+        	is_fire_  = Extras.RiskDataEngine.Item("NONBANDEDS").Item("FIREPERILS").Value
+        	is_allper_  = Extras.RiskDataEngine.Item("NONBANDEDS").Item("ALLPERIL").Value
+        	is_other_  = Extras.RiskDataEngine.Item("NONBANDEDS").Item("OTHER").Value
+        	is_addition_  = Extras.RiskDataEngine.Item("NONBANDEDS").Item("ADDITION").Value
+        	isAdditional = Extras.RiskDataEngine.Item("NONBANDEDS").Item("ADDITIONAL").Value
+        		
+        	'Send data to the claim screen. Non Band Deductibles/Checkboxes
+        	Engine.Item("NONBANDCLM").Item("MAJORPERILS").Value = is_majPerils_
+        	Engine.Item("NONBANDCLM").Item("MINORPERIL").Value = is_minPerils_
+        	Engine.Item("NONBANDCLM").Item("THEFTMALDAM").Value = is_theft_
+        	Engine.Item("NONBANDCLM").Item("TRANSIT").Value = is_transit_
+        	Engine.Item("NONBANDCLM").Item("SURRPROP").Value = is_surr_
+        	Engine.Item("NONBANDCLM").Item("FIREPERILS").Value = is_fire_
+        	Engine.Item("NONBANDCLM").Item("ALLPERIL").Value = is_allper_
+        	Engine.Item("NONBANDCLM").Item("OTHER").Value = is_other_
+        	Engine.Item("NONBANDCLM").Item("ADDITION").Value = is_addition_
+        	Engine.Item("NONBANDCLM").Item("ADDITIONAL").Value = isAdditional
+        		
+        			
+        	Dim deducMp, minAmtMp, maxAmtMp, basisMp, maxPerEventMp
+        	
+        	deducMp = Extras.RiskDataEngine.Item("NONBANDEDS").Item("DEDU_CTIBLE").Value
+        	minAmtMp = Extras.RiskDataEngine.Item("NONBANDEDS").Item("MIN_AMT").Value
+        	maxAmtMp = Extras.RiskDataEngine.Item("NONBANDEDS").Item("MAX_AMT").Value
+        	basisMp = Extras.RiskDataEngine.Item("NONBANDEDS").Item("BASIS_DED").Value
+        	maxPerEventMp = Extras.RiskDataEngine.Item("NONBANDEDS").Item("MAX_PER_EVENT").Value
+        	
+        	'Send data to claim child object
+        	Engine.Item("NONBANDCLM").Item("DEDU_CTIBLE").Value = deducMp
+        	Engine.Item("NONBANDCLM").Item("MIN_AMT").Value = minAmtMp
+        	Engine.Item("NONBANDCLM").Item("MAX_AMT").Value = maxAmtMp
+        	Engine.Item("NONBANDCLM").Item("BASIS_DED").Value = basisMp
+        	Engine.Item("NONBANDCLM").Item("MAX_PER_EVENT").Value = maxPerEventMp
+        			
+        			
+        	Dim deducMin, minAmtMin, maxAmtMin, basisMin, maxPerEventMin
+        	
+        	deducMin = Extras.RiskDataEngine.Item("NONBANDEDS").Item("DEDU_CTIBLE_MP").Value
+        	minAmtMin = Extras.RiskDataEngine.Item("NONBANDEDS").Item("MIN_AMT_MP").Value
+        	maxAmtMin = Extras.RiskDataEngine.Item("NONBANDEDS").Item("MAX_AMT_MP").Value
+        	basisMin = Extras.RiskDataEngine.Item("NONBANDEDS").Item("BASIS_DED_MP").Value
+        	maxPerEventMin = Extras.RiskDataEngine.Item("NONBANDEDS").Item("MAX_PER_EVENT_MP").Value
+        	
+        	'Send data to claim child object
+        	Engine.Item("NONBANDCLM").Item("DEDU_CTIBLE_MP").Value = deducMin
+        	Engine.Item("NONBANDCLM").Item("MIN_AMT_MP").Value = minAmtMin
+        	Engine.Item("NONBANDCLM").Item("MAX_AMT_MP").Value = maxAmtMin
+        	Engine.Item("NONBANDCLM").Item("BASIS_DED_MP").Value = basisMin
+        	Engine.Item("NONBANDCLM").Item("MAX_PER_EVENT_MP").Value = maxPerEventMin
+        
+        		
+        			
+        	Dim deducThf, minAmtThf, maxAmtThf, basisThf, maxPerEventThf
+        	
+        	deducThf = Extras.RiskDataEngine.Item("NONBANDEDS").Item("DEDU_CTIBLE_TMD").Value
+        	minAmtThf = Extras.RiskDataEngine.Item("NONBANDEDS").Item("MIN_AMT_TMD").Value
+        	maxAmtThf = Extras.RiskDataEngine.Item("NONBANDEDS").Item("MAX_AMT_TMD").Value
+        	basisThf = Extras.RiskDataEngine.Item("NONBANDEDS").Item("BASIS_DED_TMD").Value
+        	maxPerEventThf = Extras.RiskDataEngine.Item("NONBANDEDS").Item("MAX_PER_EVENT_TMD").Value
+        	
+        	'Send data to claim child object
+        	Engine.Item("NONBANDCLM").Item("DEDU_CTIBLE_TMD").Value = deducThf
+        	Engine.Item("NONBANDCLM").Item("MIN_AMT_TMD").Value = minAmtThf
+        	Engine.Item("NONBANDCLM").Item("MAX_AMT_TMD").Value = maxAmtThf
+        	Engine.Item("NONBANDCLM").Item("BASIS_DED_TMD").Value = basisThf
+        	Engine.Item("NONBANDCLM").Item("MAX_PER_EVENT_TMD").Value = maxPerEventThf
+        			
+        			
+        	Dim deducTrn, minAmtTrn, maxAmtTrn, basisTrn, maxPerEventTrn
+        	
+        	deducTrn = Extras.RiskDataEngine.Item("NONBANDEDS").Item("DEDU_CTIBLE_TRAN").Value
+        	minAmtTrn = Extras.RiskDataEngine.Item("NONBANDEDS").Item("MIN_AMT_TRAN").Value
+        	maxAmtTrn = Extras.RiskDataEngine.Item("NONBANDEDS").Item("MAX_AMT_TRAN").Value
+        	basisTrn = Extras.RiskDataEngine.Item("NONBANDEDS").Item("BASIS_DED_TRAN").Value
+        	maxPerEventTrn = Extras.RiskDataEngine.Item("NONBANDEDS").Item("MAX_PER_EVENT_TRAN").Value
+        	
+        	'Send data to claim child object
+        	Engine.Item("NONBANDCLM").Item("DEDU_CTIBLE_TRAN").Value = deducTrn
+        	Engine.Item("NONBANDCLM").Item("MIN_AMT_TRAN").Value = minAmtTrn
+        	Engine.Item("NONBANDCLM").Item("MAX_AMT_TRAN").Value = maxAmtTrn
+        	Engine.Item("NONBANDCLM").Item("BASIS_DED_TRAN").Value = basisTrn
+        	Engine.Item("NONBANDCLM").Item("MAX_PER_EVENT_TRAN").Value = maxPerEventTrn
+        			
+        			
+        	Dim deducSurr, minAmtSurr, maxAmtSurr, basisSurr, maxPerEventSurr
+        	
+        	deducSurr = Extras.RiskDataEngine.Item("NONBANDEDS").Item("DEDU_CTIBLE_SURR").Value
+        	minAmtSurr = Extras.RiskDataEngine.Item("NONBANDEDS").Item("MIN_AMT_SURR").Value
+        	maxAmtSurr = Extras.RiskDataEngine.Item("NONBANDEDS").Item("MAX_AMT_SURR").Value
+        	basisSurr = Extras.RiskDataEngine.Item("NONBANDEDS").Item("BASIS_DED_SURR").Value
+        	maxPerEventSurr = Extras.RiskDataEngine.Item("NONBANDEDS").Item("MAX_PER_EVENT_SURR").Value
+        	
+        	'Send data to claim child object
+        	Engine.Item("NONBANDCLM").Item("DEDU_CTIBLE_SURR").Value = deducSurr
+        	Engine.Item("NONBANDCLM").Item("MIN_AMT_SURR").Value = minAmtSurr
+        	Engine.Item("NONBANDCLM").Item("MAX_AMT_SURR").Value = maxAmtSurr
+        	Engine.Item("NONBANDCLM").Item("BASIS_DED_SURR").Value = basisSurr
+        	Engine.Item("NONBANDCLM").Item("MAX_PER_EVENT_SURR").Value = maxPerEventSurr
+        			
+        			
+        	Dim deducFire, minAmtFire, maxAmtFire, basisFire, maxPerEventFire
+        	
+        	deducFire = Extras.RiskDataEngine.Item("NONBANDEDS").Item("DEDU_CTIBLE_FIRE").Value
+        	minAmtFire = Extras.RiskDataEngine.Item("NONBANDEDS").Item("MIN_AMT_FIRE").Value
+        	maxAmtFire = Extras.RiskDataEngine.Item("NONBANDEDS").Item("MAX_AMT_FIRE").Value
+        	basisFire = Extras.RiskDataEngine.Item("NONBANDEDS").Item("BASIS_DED_FIRE").Value
+        	maxPerEventFire = Extras.RiskDataEngine.Item("NONBANDEDS").Item("MAX_PER_EVENT_FIRE").Value
+        	
+        	'Send data to claim child object
+        	Engine.Item("NONBANDCLM").Item("DEDU_CTIBLE_FIRE").Value = deducFire
+        	Engine.Item("NONBANDCLM").Item("MIN_AMT_FIRE").Value = minAmtFire
+        	Engine.Item("NONBANDCLM").Item("MAX_AMT_FIRE").Value = maxAmtFire
+        	Engine.Item("NONBANDCLM").Item("BASIS_DED_FIRE").Value = basisFire
+        	Engine.Item("NONBANDCLM").Item("MAX_PER_EVENT_FIRE").Value = maxPerEventFire
+        			
+        
+        
+        	Dim deducAllPer, minAmtAllPer, maxAmtAllPer, basisAllPer, maxPerEventAllPer
+        	
+        	deducAllPer = Extras.RiskDataEngine.Item("NONBANDEDS").Item("DEDU_CTIBLE_ALLP").Value
+        	minAmtAllPer = Extras.RiskDataEngine.Item("NONBANDEDS").Item("MIN_AMT_ALLP").Value
+        	maxAmtAllPer = Extras.RiskDataEngine.Item("NONBANDEDS").Item("MAX_AMT_ALLP").Value
+        	basisAllPer = Extras.RiskDataEngine.Item("NONBANDEDS").Item("BASIS_DED_ALLP").Value
+        	maxPerEventAllPer = Extras.RiskDataEngine.Item("NONBANDEDS").Item("MAX_PER_EVENT_ALLP").Value
+        	
+        	'Send data to claim child object
+        	Engine.Item("NONBANDCLM").Item("DEDU_CTIBLE_ALLP").Value = deducAllPer
+        	Engine.Item("NONBANDCLM").Item("MIN_AMT_ALLP").Value = minAmtAllPer
+        	Engine.Item("NONBANDCLM").Item("MAX_AMT_ALLP").Value = maxAmtAllPer
+        	Engine.Item("NONBANDCLM").Item("BASIS_DED_ALLP").Value = basisAllPer
+        	Engine.Item("NONBANDCLM").Item("MAX_PER_EVENT_ALLP").Value = maxPerEventAllPer
+        			
+        			
+        	Dim deducOther, minAmtOther, maxAmtOther, basisOther, maxPerEventOther
+        	
+        	deducOther = Extras.RiskDataEngine.Item("NONBANDEDS").Item("DEDU_CTIBLE_OTHER").Value
+        	minAmtOther = Extras.RiskDataEngine.Item("NONBANDEDS").Item("MIN_AMT_OTHER").Value
+        	maxAmtOther = Extras.RiskDataEngine.Item("NONBANDEDS").Item("MAX_AMT_OTHER").Value
+        	basisOther = Extras.RiskDataEngine.Item("NONBANDEDS").Item("BASIS_DED_OTHER").Value
+        	maxPerEventOther = Extras.RiskDataEngine.Item("NONBANDEDS").Item("MAX_PER_EVENT_OTHER").Value
+        	
+        	'Send data to claim child object
+        	Engine.Item("NONBANDCLM").Item("DEDU_CTIBLE_OTHER").Value = deducOther
+        	Engine.Item("NONBANDCLM").Item("MIN_AMT_OTHER").Value = minAmtOther
+        	Engine.Item("NONBANDCLM").Item("MAX_AMT_OTHER").Value = maxAmtOther
+        	Engine.Item("NONBANDCLM").Item("BASIS_DED_OTHER").Value = basisOther
+        	Engine.Item("NONBANDCLM").Item("MAX_PER_EVENT_OTHER").Value = maxPerEventOther
+        			
+        			
+        	Dim deducAdd, minAmtAdd, maxAmtAdd, basisAdd, maxPerEventAdd
+        	
+        	deducAdd = Extras.RiskDataEngine.Item("NONBANDEDS").Item("DEDU_CTIBLE_ADD").Value
+        	minAmtAdd = Extras.RiskDataEngine.Item("NONBANDEDS").Item("MIN_AMT_ADD").Value
+        	maxAmtAdd = Extras.RiskDataEngine.Item("NONBANDEDS").Item("MAX_AMT_ADD").Value
+        	basisAdd = Extras.RiskDataEngine.Item("NONBANDEDS").Item("BASIS_DED_ADD").Value
+        	maxPerEventAdd = Extras.RiskDataEngine.Item("NONBANDEDS").Item("MAX_PER_EVENT_ADD").Value
+        	
+        	'Send data to claim child object
+        	Engine.Item("NONBANDCLM").Item("DEDU_CTIBLE_ADD").Value = deducAdd
+        	Engine.Item("NONBANDCLM").Item("MIN_AMT_ADD").Value = minAmtAdd
+        	Engine.Item("NONBANDCLM").Item("MAX_AMT_ADD").Value = maxAmtAdd
+        	Engine.Item("NONBANDCLM").Item("BASIS_DED_ADD").Value = basisAdd
+        	Engine.Item("NONBANDCLM").Item("MAX_PER_EVENT_ADD").Value = maxPerEventAdd
+        			
+        			
+        	'-----------------------------------------------
+        	'---START: Child screen properties population---
+        	'-----------------------------------------------
+        	cntNval = Extras.RiskDataEngine.Count("NOND")
+        	'Testing Period Child Screen
+        	q = 1
+        	For nIndex2 = q to cntNval
+        		Dim descr, deduct, minAmt ,maxAmt, basisDed, maxPrevent
+        			
+        		Engine.Item("NONBANDCLM").NewObject("NONDCLM")   
+        	
+        		descr = Extras.RiskDataEngine.Item("NOND",nIndex2).Item("DESCRIPTION1").Value
+        		deduct = Extras.RiskDataEngine.Item("NOND",nIndex2).Item("DEDUCTIBLE1").Value
+        		minAmt = Extras.RiskDataEngine.Item("NOND",nIndex2).Item("MINAMOUNT1").Value
+        		maxAmt = Extras.RiskDataEngine.Item("NOND",nIndex2).Item("MAXAMOUNT1").Value
+        		basisDed = Extras.RiskDataEngine.Item("NOND",nIndex2).Item("BASISDED1").Value
+        		maxPrevent = Extras.RiskDataEngine.Item("NOND",nIndex2).Item("MAXPEREVENT1").Value
+        	
+        				'Send data to claim child object
+        		Engine.Item("NONBANDCLM").Item("NONDCLM",q).Item("DESCRIPTION").Value = descr
+        		Engine.Item("NONBANDCLM").Item("NONDCLM",q).Item("DEDUCTIBLE").Value = deduct
+        		Engine.Item("NONBANDCLM").Item("NONDCLM",q).Item("MINAMOUNT").Value = minAmt
+        		Engine.Item("NONBANDCLM").Item("NONDCLM",q).Item("MAXAMOUNT").Value = maxAmt
+        		Engine.Item("NONBANDCLM").Item("NONDCLM",q).Item("BASISDED").Value = basisDed 
+        		Engine.Item("NONBANDCLM").Item("NONDCLM",q).Item("MAXPEREVENT").Value = maxPrevent
+        		
+        	'q = q + 1
+        	Next
+        			
+        	'Extensions
+        	
+        	Extras.RiskDataEngine.NewObject("EXT_ADDCP")
+        	Extras.RiskDataEngine.NewObject("EXT_ADDDR")
+        	Extras.RiskDataEngine.NewObject("EXT_ADDREC")
+        	Extras.RiskDataEngine.NewObject("EXT_CONDEF")
+        	Extras.RiskDataEngine.NewObject("EXT_DEFCON")
+        	Extras.RiskDataEngine.NewObject("EXT_DEFEXC")
+        	Extras.RiskDataEngine.NewObject("EXT_ESC")
+        	Extras.RiskDataEngine.NewObject("EXT_EXPEXP")
+        	Extras.RiskDataEngine.NewObject("EXT_MITEXP")
+        	Extras.RiskDataEngine.NewObject("EXT_OPENL")
+        	Extras.RiskDataEngine.NewObject("EXT_OPENT")
+        	Extras.RiskDataEngine.NewObject("EXT_POSTL")
+        	Extras.RiskDataEngine.NewObject("EXT_PRINC")
+        	Extras.RiskDataEngine.NewObject("EXT_PROF")
+        	Extras.RiskDataEngine.NewObject("EXT_SURR")
+        	Extras.RiskDataEngine.NewObject("EXT_TEMPS")
+        	Extras.RiskDataEngine.NewObject("EXT_TRANSIT")
+        	Extras.RiskDataEngine.NewObject("EXT_ADDIT")
+        	
+        	Engine.NewObject("EXT_ADDCLM")
+        	Engine.NewObject("EXT_ADDDCLM")
+        	Engine.NewObject("EXT_RECCLM")
+        	Engine.NewObject("EXT_CONCLM")
+        	Engine.NewObject("EXT_DEFCLM")
+        	Engine.NewObject("EXT_EXCCLM")
+        	Engine.NewObject("EXT_ESCCLM")
+        	Engine.NewObject("EXT_EXPCLM")
+        	Engine.NewObject("EXT_MITCLM")
+        	Engine.NewObject("EX_OPENCLM")
+        	Engine.NewObject("OPENTRENCLM")
+        	Engine.NewObject("POSTLSCLM")
+        	Engine.NewObject("EXT_PRINCLM")
+        	Engine.NewObject("EXT_PROFCLM")
+        	Engine.NewObject("EXT_SURRCLM")
+        	Engine.NewObject("EXT_TEMPCLM")
+        	Engine.NewObject("EXT_TRANCLM")
+        	Engine.NewObject("EXT_ADDITCLM")
+        	
+        	'Checkbox variables
+        	Dim is_addClaim, is_addDebris, is_addRecon, is_contDef, is_diffCond, is_diffExc ,is_escal, is_expediting, is_mitigExp, is_openLayer, is_openTrench, is_postLoss, is_princOwn, is_profFees, is_extSurr, is_tempStor, is_tranLiab, is_OtherExt, is_addExt
+        	
+        	'Collect data from Policy risk. Non Band Deductibles/Checkboxes
+        	is_addClaim  = Extras.RiskDataEngine.Item("EXT_ADDCP").Item("ADDCLAIMSPREP").Value
+        	is_addDebris  = Extras.RiskDataEngine.Item("EXT_ADDDR").Item("ADDDEBRISREM").Value
+        	is_addRecon  = Extras.RiskDataEngine.Item("EXT_ADDREC").Item("ADDRECONST").Value
+        	is_contDef  = Extras.RiskDataEngine.Item("EXT_CONDEF").Item("CONTINGENCY").Value
+        	is_diffCond  = Extras.RiskDataEngine.Item("EXT_DEFCON").Item("DIFFCONDITIONS").Value
+        	is_diffExc  = Extras.RiskDataEngine.Item("EXT_DEFEXC").Item("DIFFEXCESS").Value
+        	is_escal  = Extras.RiskDataEngine.Item("EXT_ESC").Item("ESCALATION").Value
+        	is_expediting  = Extras.RiskDataEngine.Item("EXT_EXPEXP").Item("EXPEDITINGEXP").Value
+        	is_mitigExp  = Extras.RiskDataEngine.Item("EXT_MITEXP").Item("MITIGATIONEXP").Value
+        	is_openLayer = Extras.RiskDataEngine.Item("EXT_OPENL").Item("OPENLAYERLIM").Value
+        	is_openTrench  = Extras.RiskDataEngine.Item("EXT_OPENT").Item("OPENTRENCHLIM").Value
+        	is_postLoss  = Extras.RiskDataEngine.Item("EXT_POSTL").Item("POSTLOSSESC").Value
+        	is_princOwn  = Extras.RiskDataEngine.Item("EXT_PRINC").Item("PRINCOWNSURR").Value
+        	is_profFees  = Extras.RiskDataEngine.Item("EXT_PROF").Item("PROFESSIONALFEE").Value
+        	is_extSurr  = Extras.RiskDataEngine.Item("EXT_SURR").Item("SURROUNDINGPROP").Value
+        	is_tempStor  = Extras.RiskDataEngine.Item("EXT_TEMPS").Item("TEMPSTORAGE").Value
+        	is_tranLiab = Extras.RiskDataEngine.Item("EXT_TRANSIT").Item("TRANSITLIABILTIY").Value
+        	is_OtherExt  = Extras.RiskDataEngine.Item("EXT_ADDIT").Item("ADDITIONAL").Value
+        	'is_addExt = Extras.RiskDataEngine.Item("EXT_ADDIT").Item("ADDITDED").Value
+        		
+        	'Send data to the claim screen. Non Band Deductibles/Checkboxes
+        	Engine.Item("EXT_ADDCLM").Item("ADDCLAIMSPREP").Value = is_addClaim
+        	Engine.Item("EXT_ADDDCLM").Item("ADDDEBRISREM").Value = is_addDebris
+        	Engine.Item("EXT_RECCLM").Item("ADDRECONST").Value = is_addRecon
+        	Engine.Item("EXT_CONCLM").Item("CONTINGENCY").Value = is_contDef
+        	Engine.Item("EXT_DEFCLM").Item("DIFFCONDITIONS").Value = is_diffCond
+        	Engine.Item("EXT_EXCCLM").Item("DIFFEXCESS").Value = is_diffExc
+        	Engine.Item("EXT_ESCCLM").Item("ESCALATION").Value = is_escal
+        	Engine.Item("EXT_EXPCLM").Item("EXPEDITINGEXP").Value = is_expediting
+        	Engine.Item("EXT_MITCLM").Item("MITIGATIONEXP").Value = is_mitigExp
+        	Engine.Item("EX_OPENCLM").Item("OPENLAYERLIM").Value = is_openLayer
+        	Engine.Item("OPENTRENCLM").Item("OPENTRENCHLIM").Value = is_openTrench
+        	Engine.Item("POSTLSCLM").Item("POSTLOSSESC").Value = is_postLoss
+        	Engine.Item("EXT_PRINCLM").Item("PRINCOWNSURR").Value = is_princOwn
+        	Engine.Item("EXT_PROFCLM").Item("PROFESSIONALFEE").Value = is_profFees
+        	Engine.Item("EXT_SURRCLM").Item("SURROUNDINGPROP").Value = is_extSurr
+        	Engine.Item("EXT_TEMPCLM").Item("TEMPSTORAGE").Value = is_tempStor
+        	Engine.Item("EXT_TRANCLM").Item("TRANSITLIABILTIY").Value = is_tranLiab
+        	Engine.Item("EXT_ADDITCLM").Item("ADDITIONAL").Value = is_OtherExt
+        	'Engine.Item("EXT_ADDITCLM").Item("ADDITDED").Value = is_addExt
+        		
+        	
+        	Dim claimContr, claimLOI, claimRate, claimPremium
+        	
+        	claimContr = Extras.RiskDataEngine.Item("EXT_ADDCP").Item("CONTVALUE").Value
+        	claimLOI = Extras.RiskDataEngine.Item("EXT_ADDCP").Item("LOL").Value
+        	claimRate = Extras.RiskDataEngine.Item("EXT_ADDCP").Item("RATE").Value
+        	claimPremium = Extras.RiskDataEngine.Item("EXT_ADDCP").Item("PREMIUM").Value
+        	
+        	'Send data to claim child object
+        	Engine.Item("EXT_ADDCLM").Item("CONTVALUE").Value = claimContr
+        	Engine.Item("EXT_ADDCLM").Item("LOL").Value = claimLOI
+        	Engine.Item("EXT_ADDCLM").Item("RATE").Value = claimRate
+        	Engine.Item("EXT_ADDCLM").Item("PREMIUM").Value = claimPremium
+        	
+        
+        			
+        	Dim debrisContr, debrisLOI, debrisRate, debrisPremium
+        	
+        	debrisContr = Extras.RiskDataEngine.Item("EXT_ADDDR").Item("CONTVALUE").Value
+        	debrisLOI = Extras.RiskDataEngine.Item("EXT_ADDDR").Item("LOL").Value
+        	debrisRate = Extras.RiskDataEngine.Item("EXT_ADDDR").Item("RATE").Value
+        	debrisPremium = Extras.RiskDataEngine.Item("EXT_ADDDR").Item("PREMIUM").Value
+        	
+        	'Send data to claim child object
+        	Engine.Item("EXT_ADDDCLM").Item("CONTVALUE").Value = debrisContr
+        	Engine.Item("EXT_ADDDCLM").Item("LOL").Value = debrisLOI
+        	Engine.Item("EXT_ADDDCLM").Item("RATE").Value = debrisRate
+        	Engine.Item("EXT_ADDDCLM").Item("PREMIUM").Value = debrisPremium
+        	
+        	
+        	Dim reconContr, reconLOI, reconRate, reconPremium
+        	
+        	reconContr = Extras.RiskDataEngine.Item("EXT_ADDREC").Item("CONTVALUE").Value
+        	reconLOI = Extras.RiskDataEngine.Item("EXT_ADDREC").Item("LOL").Value
+        	reconRate = Extras.RiskDataEngine.Item("EXT_ADDREC").Item("RATE").Value
+        	reconPremium = Extras.RiskDataEngine.Item("EXT_ADDREC").Item("PREMIUM").Value
+        	
+        	'Send data to claim child object
+        	Engine.Item("EXT_RECCLM").Item("CONTVALUE").Value = reconContr
+        	Engine.Item("EXT_RECCLM").Item("LOL").Value = reconLOI
+        	Engine.Item("EXT_RECCLM").Item("RATE").Value = reconRate
+        	Engine.Item("EXT_RECCLM").Item("PREMIUM").Value = reconPremium
+        	
+        	
+        	Dim contDefContr, contDefLOI, contDefRate, contDefPremium
+        	
+        	contDefContr = Extras.RiskDataEngine.Item("EXT_CONDEF").Item("CONTVALUE").Value
+        	contDefLOI = Extras.RiskDataEngine.Item("EXT_CONDEF").Item("LOL").Value
+        	contDefRate = Extras.RiskDataEngine.Item("EXT_CONDEF").Item("RATE").Value
+        	contDefPremium = Extras.RiskDataEngine.Item("EXT_CONDEF").Item("PREMIUM").Value
+        	
+        	'Send data to claim child object
+        	Engine.Item("EXT_CONCLM").Item("CONTVALUE").Value = contDefContr
+        	Engine.Item("EXT_CONCLM").Item("LOL").Value = contDefLOI
+        	Engine.Item("EXT_CONCLM").Item("RATE").Value = contDefRate
+        	Engine.Item("EXT_CONCLM").Item("PREMIUM").Value = contDefPremium
+        	
+        	
+        	Dim diffCondContr, diffCondLOI, diffCondRate, diffCondPremium
+        	
+        	diffCondContr = Extras.RiskDataEngine.Item("EXT_DEFCON").Item("CONTVALUE").Value
+        	diffCondLOI = Extras.RiskDataEngine.Item("EXT_DEFCON").Item("LOL").Value
+        	diffCondRate = Extras.RiskDataEngine.Item("EXT_DEFCON").Item("RATE").Value
+        	diffCondPremium = Extras.RiskDataEngine.Item("EXT_DEFCON").Item("PREMIUM").Value
+        	
+        	'Send data to claim child object
+        	Engine.Item("EXT_DEFCLM").Item("CONTVALUE").Value = diffCondContr
+        	Engine.Item("EXT_DEFCLM").Item("LOL").Value = diffCondLOI
+        	Engine.Item("EXT_DEFCLM").Item("RATE").Value = diffCondRate
+        	Engine.Item("EXT_DEFCLM").Item("PREMIUM").Value = diffCondPremium
+        	
+        	
+        	Dim diffExcContr, diffExcLOI, diffExcRate, diffExcPremium
+        	
+        	diffExcContr = Extras.RiskDataEngine.Item("EXT_DEFEXC").Item("CONTVALUE").Value
+        	diffExcLOI = Extras.RiskDataEngine.Item("EXT_DEFEXC").Item("LOL").Value
+        	diffExcRate = Extras.RiskDataEngine.Item("EXT_DEFEXC").Item("RATE").Value
+        	diffExcPremium = Extras.RiskDataEngine.Item("EXT_DEFEXC").Item("PREMIUM").Value
+        	
+        	'Send data to claim child object
+        	Engine.Item("EXT_EXCCLM").Item("CONTVALUE").Value = diffExcContr
+        	Engine.Item("EXT_EXCCLM").Item("LOL").Value = diffExcLOI
+        	Engine.Item("EXT_EXCCLM").Item("RATE").Value = diffExcRate
+        	Engine.Item("EXT_EXCCLM").Item("PREMIUM").Value = diffExcPremium
+        	
+        	
+        	Dim escalContr, escalLOI, escalRate, escalPremium
+        	
+        	escalContr = Extras.RiskDataEngine.Item("EXT_ESC").Item("CONTVALUE").Value
+        	escalLOI = Extras.RiskDataEngine.Item("EXT_ESC").Item("LOL").Value
+        	escalRate = Extras.RiskDataEngine.Item("EXT_ESC").Item("RATE").Value
+        	escalPremium = Extras.RiskDataEngine.Item("EXT_ESC").Item("PREMIUM").Value
+        	
+        	'Send data to claim child object
+        	Engine.Item("EXT_ESCCLM").Item("CONTVALUE").Value = escalContr
+        	Engine.Item("EXT_ESCCLM").Item("LOL").Value = escalLOI
+        	Engine.Item("EXT_ESCCLM").Item("RATE").Value = escalRate
+        	Engine.Item("EXT_ESCCLM").Item("PREMIUM").Value = escalPremium
+        	
+        	
+        	Dim expeditContr, expeditLOI, expeditRate, expeditPremium
+        	
+        	expeditContr = Extras.RiskDataEngine.Item("EXT_EXPEXP").Item("CONTVALUE").Value
+        	expeditLOI = Extras.RiskDataEngine.Item("EXT_EXPEXP").Item("LOL").Value
+        	expeditRate = Extras.RiskDataEngine.Item("EXT_EXPEXP").Item("RATE").Value
+        	expeditPremium = Extras.RiskDataEngine.Item("EXT_EXPEXP").Item("PREMIUM").Value
+        	
+        	'Send data to claim child object
+        	Engine.Item("EXT_EXPCLM").Item("CONTVALUE").Value = expeditContr
+        	Engine.Item("EXT_EXPCLM").Item("LOL").Value = expeditLOI
+        	Engine.Item("EXT_EXPCLM").Item("RATE").Value = expeditRate
+        	Engine.Item("EXT_EXPCLM").Item("PREMIUM").Value = expeditPremium
+        	
+        	
+        	Dim mitExpContr, mitExpLOI, mitExpRate, mitExpPremium
+        	
+        	mitExpContr = Extras.RiskDataEngine.Item("EXT_MITEXP").Item("CONTVALUE").Value
+        	mitExpLOI = Extras.RiskDataEngine.Item("EXT_MITEXP").Item("LOL").Value
+        	mitExpRate = Extras.RiskDataEngine.Item("EXT_MITEXP").Item("RATE").Value
+        	mitExpPremium = Extras.RiskDataEngine.Item("EXT_MITEXP").Item("PREMIUM").Value
+        	
+        	'Send data to claim child object
+        	Engine.Item("EXT_MITCLM").Item("CONTVALUE").Value = mitExpContr
+        	Engine.Item("EXT_MITCLM").Item("LOL").Value = mitExpLOI
+        	Engine.Item("EXT_MITCLM").Item("RATE").Value = mitExpRate
+        	Engine.Item("EXT_MITCLM").Item("PREMIUM").Value = mitExpPremium
+        	
+        	
+        	Dim distanceOpen
+        	
+        	distanceOpen = Extras.RiskDataEngine.Item("EXT_OPENL").Item("DISTANCE").Value
+        	
+        	'Send data to claim child object
+        	Engine.Item("EX_OPENCLM").Item("DISTANCE").Value = distanceOpen
+        	
+        	
+        	Dim distanceTrench
+        	
+        	distanceTrench = Extras.RiskDataEngine.Item("EXT_OPENT").Item("DISTANCE").Value
+        	
+        	'Send data to claim child object
+        	Engine.Item("OPENTRENCLM").Item("DISTANCE").Value = distanceTrench
+        	
+        	
+        	Dim postLContr, postLLOI, postLRate, postLPremium
+        	
+        	postLContr = Extras.RiskDataEngine.Item("EXT_POSTL").Item("CONTVALUE").Value
+        	postLLOI = Extras.RiskDataEngine.Item("EXT_POSTL").Item("LOL").Value
+        	postLRate = Extras.RiskDataEngine.Item("EXT_POSTL").Item("RATE").Value
+        	postLPremium = Extras.RiskDataEngine.Item("EXT_POSTL").Item("PREMIUM").Value
+        	
+        	'Send data to claim child object
+        	Engine.Item("POSTLSCLM").Item("CONTVALUE").Value = postLContr
+        	Engine.Item("POSTLSCLM").Item("LOL").Value = postLLOI
+        	Engine.Item("POSTLSCLM").Item("RATE").Value = postLRate
+        	Engine.Item("POSTLSCLM").Item("PREMIUM").Value = postLPremium
+        	
+        	
+        	Dim princOwnContr, princOwnLOI, princOwnRate, princOwnPremium
+        	
+        	princOwnContr = Extras.RiskDataEngine.Item("EXT_PRINC").Item("CONTVALUE").Value
+        	princOwnLOI = Extras.RiskDataEngine.Item("EXT_PRINC").Item("LOL").Value
+        	princOwnRate = Extras.RiskDataEngine.Item("EXT_PRINC").Item("RATE").Value
+        	princOwnPremium = Extras.RiskDataEngine.Item("EXT_PRINC").Item("PREMIUM").Value
+        	
+        	'Send data to claim child object
+        	Engine.Item("EXT_PRINCLM").Item("CONTVALUE").Value = princOwnContr
+        	Engine.Item("EXT_PRINCLM").Item("LOL").Value = princOwnLOI
+        	Engine.Item("EXT_PRINCLM").Item("RATE").Value = princOwnRate
+        	Engine.Item("EXT_PRINCLM").Item("PREMIUM").Value = princOwnPremium
+        	
+        	
+        	Dim profFeesContr, profFeesLOI, profFeesRate, profFeesPremium
+        	
+        	profFeesContr = Extras.RiskDataEngine.Item("EXT_PROF").Item("CONTVALUE").Value
+        	profFeesLOI = Extras.RiskDataEngine.Item("EXT_PROF").Item("LOL").Value
+        	profFeesRate = Extras.RiskDataEngine.Item("EXT_PROF").Item("RATE").Value
+        	profFeesPremium = Extras.RiskDataEngine.Item("EXT_PROF").Item("PREMIUM").Value
+        	
+        	'Send data to claim child object
+        	Engine.Item("EXT_PROFCLM").Item("CONTVALUE").Value = profFeesContr
+        	Engine.Item("EXT_PROFCLM").Item("LOL").Value = profFeesLOI
+        	Engine.Item("EXT_PROFCLM").Item("RATE").Value = profFeesRate
+        	Engine.Item("EXT_PROFCLM").Item("PREMIUM").Value = profFeesPremium
+        	
+        	
+        	Dim extSurrContr, extSurrLOI, extSurrRate, extSurrPremium
+        	
+        	extSurrContr = Extras.RiskDataEngine.Item("EXT_SURR").Item("CONTVALUE").Value
+        	extSurrLOI = Extras.RiskDataEngine.Item("EXT_SURR").Item("LOL").Value
+        	extSurrRate = Extras.RiskDataEngine.Item("EXT_SURR").Item("RATE").Value
+        	extSurrPremium = Extras.RiskDataEngine.Item("EXT_SURR").Item("PREMIUM").Value
+        	
+        	'Send data to claim child object
+        	Engine.Item("EXT_SURRCLM").Item("CONTVALUE").Value = extSurrContr
+        	Engine.Item("EXT_SURRCLM").Item("LOL").Value = extSurrLOI
+        	Engine.Item("EXT_SURRCLM").Item("RATE").Value = extSurrRate
+        	Engine.Item("EXT_SURRCLM").Item("PREMIUM").Value = extSurrPremium
+        	
+        	
+        	Dim tempStorContr, tempStorLOI, tempStorRate, tempStorPremium
+        	
+        	tempStorContr = Extras.RiskDataEngine.Item("EXT_TEMPS").Item("CONTVALUE").Value
+        	tempStorLOI = Extras.RiskDataEngine.Item("EXT_TEMPS").Item("LOL").Value
+        	tempStorRate = Extras.RiskDataEngine.Item("EXT_TEMPS").Item("RATE").Value
+        	tempStorPremium = Extras.RiskDataEngine.Item("EXT_TEMPS").Item("PREMIUM").Value
+        	
+        	'Send data to claim child object
+        	Engine.Item("EXT_TEMPCLM").Item("CONTVALUE").Value = tempStorContr
+        	Engine.Item("EXT_TEMPCLM").Item("LOL").Value = tempStorLOI
+        	Engine.Item("EXT_TEMPCLM").Item("RATE").Value = tempStorRate
+        	Engine.Item("EXT_TEMPCLM").Item("PREMIUM").Value = tempStorPremium
+        	
+        	
+        	Dim tranLiabContr, tranLiabLOI, tranLiabRate, tranLiabPremium
+        	
+        	tranLiabContr = Extras.RiskDataEngine.Item("EXT_TRANSIT").Item("CONTVALUE").Value
+        	tranLiabLOI = Extras.RiskDataEngine.Item("EXT_TRANSIT").Item("LOL").Value
+        	tranLiabRate = Extras.RiskDataEngine.Item("EXT_TRANSIT").Item("RATE").Value
+        	tranLiabPremium = Extras.RiskDataEngine.Item("EXT_TRANSIT").Item("PREMIUM").Value
+        	
+        	'Send data to claim child object
+        	Engine.Item("EXT_TRANCLM").Item("CONTVALUE").Value = tranLiabContr
+        	Engine.Item("EXT_TRANCLM").Item("LOL").Value = tranLiabLOI
+        	Engine.Item("EXT_TRANCLM").Item("RATE").Value = tranLiabRate
+        	Engine.Item("EXT_TRANCLM").Item("PREMIUM").Value = tranLiabPremium
+        			
+        	'Additional Child Screen
+        	Dim otherX,otherCnt,otherNIndex
+        
+        	Dim totalLOL, totalRate
+        		
+        	totalLOL = Extras.RiskDataEngine.Item("EXT_ADDIT").Item("TOTAL_OTHER_LOL").Value
+        	totalRate = Extras.RiskDataEngine.Item("EXT_ADDIT").Item("TOTAL_OTHER_RATE").Value
+        	
+        	'Send data to claim child object
+        	Engine.Item("EXT_ADDITCLM").Item("TOTAL_OTHER_LOL").Value = totalLOL
+        	Engine.Item("EXT_ADDITCLM").Item("TOTAL_OTHER_RATE").Value = totalRate
+        			
+        	'-----------------------------------------------
+        	'---START: Child screen properties population---
+        	'-----------------------------------------------
+        	otherCnt = Extras.RiskDataEngine.Count("OTHEREXT")
+        	'Testing Period Child Screen
+        	otherX = 1
+        	For otherNIndex = otherX to otherCnt
+        		Dim otherContrVal, otherExtLOL, otherExtRate, otherExtPremium, otherDistance
+        			
+        		Engine.Item("EXT_ADDITCLM").NewObject("OTHEREXT_CLM")   
+        		
+        		otherContrVal = Extras.RiskDataEngine.Item("OTHEREXT",otherNIndex).Item("CONTRACTVALUE").Value
+        		otherExtLOL = Extras.RiskDataEngine.Item("OTHEREXT",otherNIndex).Item("LOL").Value
+        		otherExtRate = Extras.RiskDataEngine.Item("OTHEREXT",otherNIndex).Item("RATE").Value
+        		otherExtPremium = Extras.RiskDataEngine.Item("OTHEREXT",otherNIndex).Item("PREMIUM").Value
+        		otherDistance = Extras.RiskDataEngine.Item("OTHEREXT",otherNIndex).Item("DISTANCE").Value
+        	
+        		'Send data to claim child object
+        		Engine.Item("EXT_ADDITCLM").Item("OTHEREXT_CLM",otherX).Item("CONTRACTVALUE").Value = otherContrVal
+        		Engine.Item("EXT_ADDITCLM").Item("OTHEREXT_CLM",otherX).Item("LOL").Value = otherExtLOL
+        		Engine.Item("EXT_ADDITCLM").Item("OTHEREXT_CLM",otherX).Item("RATE").Value = otherExtRate
+        		Engine.Item("EXT_ADDITCLM").Item("OTHEREXT_CLM",otherX).Item("PREMIUM").Value = otherExtPremium
+        		Engine.Item("EXT_ADDITCLM").Item("OTHEREXT_CLM",otherX).Item("DISTANCE").Value = otherDistance
+        		
+        		'otherX = otherX + 1
+        	Next
+        
+        	'Construction Public Liability
+        	Extras.RiskDataEngine.NewObject("CONEXTLEG")
+        	Extras.RiskDataEngine.NewObject("TOTCHLD")
+        
+        	Engine.NewObject("CONEXTCLM")
+        
+        	Dim limitIndemCPL, turnOverCPL, rateCPL, premiumCPL
+        		
+        	limitIndemCPL  = Extras.RiskDataEngine.Item("CONEXTLEG").Item("LIMINDEMNITY").Value
+        	turnOverCPL  = Extras.RiskDataEngine.Item("CONEXTLEG").Item("TURNOVER").Value
+        	rateCPL  = Extras.RiskDataEngine.Item("CONEXTLEG").Item("RATE").Value
+        	premiumCPL  = Extras.RiskDataEngine.Item("CONEXTLEG").Item("PREMIUM").Value
+        
+        	Engine.Item("CONEXTCLM").Item("LIMINDEMNITY").Value = limitIndemCPL
+        	Engine.Item("CONEXTCLM").Item("TURNOVER").Value = turnOverCPL
+        	Engine.Item("CONEXTCLM").Item("RATE").Value = rateCPL
+        	Engine.Item("CONEXTCLM").Item("PREMIUM").Value = premiumCPL
+        			
+        	'Checkbox variables
+        	Dim is_damageUnder, is_partyDamage, is_partyInjury, is_blastDamage, is_spreadFire, is_otherCPL ,is_addDedCPL, is_legalCost, is_spreadFireExt, is_wrongArrest, is_AddExtCPL
+        
+        	'Collect data from Policy risk. Construction Public Liability Checkboxes
+        	is_damageUnder  = Extras.RiskDataEngine.Item("CONEXTLEG").Item("DAMAGEUNDER").Value
+        	is_partyDamage  = Extras.RiskDataEngine.Item("CONEXTLEG").Item("PARTYPROP").Value
+        	is_partyInjury  = Extras.RiskDataEngine.Item("CONEXTLEG").Item("PARTYINJURY").Value
+        	is_blastDamage  = Extras.RiskDataEngine.Item("CONEXTLEG").Item("BLASTINGDAM").Value
+        	is_spreadFire  = Extras.RiskDataEngine.Item("CONEXTLEG").Item("SPREADFIRE").Value
+        	is_otherCPL  = Extras.RiskDataEngine.Item("CONEXTLEG").Item("OTHEROTHER").Value
+        	is_addDedCPL  = Extras.RiskDataEngine.Item("CONEXTLEG").Item("ADDITION").Value
+        	is_legalCost  = Extras.RiskDataEngine.Item("CONEXTLEG").Item("LEGALDEFCOST").Value
+        	is_spreadFireExt  = Extras.RiskDataEngine.Item("CONEXTLEG").Item("SPREADFIRE1").Value
+        	is_wrongArrest = Extras.RiskDataEngine.Item("CONEXTLEG").Item("WRONGFULARR").Value
+        	is_AddExtCPL = Extras.RiskDataEngine.Item("TOTCHLD").Item("ADDEXTENSIONS").Value
+        
+        	'Send data to the claim screen. Construction Public Liability Checkboxes
+        	Engine.Item("CONEXTCLM").Item("DAMAGEUNDER").Value = is_damageUnder
+        	Engine.Item("CONEXTCLM").Item("PARTYPROP").Value = is_partyDamage
+        	Engine.Item("CONEXTCLM").Item("PARTYINJURY").Value = is_partyInjury
+        	Engine.Item("CONEXTCLM").Item("BLASTINGDAM").Value = is_blastDamage
+        	Engine.Item("CONEXTCLM").Item("SPREADFIRE").Value = is_spreadFire
+        	Engine.Item("CONEXTCLM").Item("OTHEROTHER").Value = is_otherCPL
+        	Engine.Item("CONEXTCLM").Item("ADDITION").Value = is_addDedCPL
+        	Engine.Item("CONEXTCLM").Item("LEGALDEFCOST").Value = is_legalCost
+        	Engine.Item("CONEXTCLM").Item("SPREADFIRE1").Value = is_spreadFireExt
+        	Engine.Item("CONEXTCLM").Item("WRONGFULARR").Value = is_wrongArrest
+        	Engine.Item("CONEXTCLM").Item("ADDEXTENSIONS").Value = is_AddExtCPL
+        			
+        
+        	Dim deducDUS, minAmtDUS, maxAmtDUS, basisDUS
+        
+        	deducDUS = Extras.RiskDataEngine.Item("CONEXTLEG").Item("DED_DAMAGEUNDER").Value
+        	minAmtDUS = Extras.RiskDataEngine.Item("CONEXTLEG").Item("MINAMT_DAMAGEUNDER").Value
+        	maxAmtDUS = Extras.RiskDataEngine.Item("CONEXTLEG").Item("MAXAMT_DAMAGEUNDER").Value
+        	basisDUS = Extras.RiskDataEngine.Item("CONEXTLEG").Item("BASISDED_DAMAGEUNDER").Value
+        
+        	'Send data to claim child object
+        	Engine.Item("CONEXTCLM").Item("DED_DAMAGEUNDER").Value = deducDUS
+        	Engine.Item("CONEXTCLM").Item("MINAMT_DAMAGEUNDER").Value = minAmtDUS
+        	Engine.Item("CONEXTCLM").Item("MAXAMT_DAMAGEUNDER").Value = maxAmtDUS
+        	Engine.Item("CONEXTCLM").Item("BASISDED_DAMAGEUNDER").Value = basisDUS
+        
+        
+        	Dim deducPPD, minAmtPPD, maxAmtPPD, basisPPD
+        
+        	deducPPD = Extras.RiskDataEngine.Item("CONEXTLEG").Item("DED_PARTYPROP").Value
+        	minAmtPPD = Extras.RiskDataEngine.Item("CONEXTLEG").Item("MINAMT_PARTYPROP").Value
+        	maxAmtPPD = Extras.RiskDataEngine.Item("CONEXTLEG").Item("MAXAMT_PARTYPROP").Value
+        	basisPPD = Extras.RiskDataEngine.Item("CONEXTLEG").Item("BASISDED_PARTYPROP").Value
+        
+        	'Send data to claim child object
+        	Engine.Item("CONEXTCLM").Item("DED_PARTYPROP").Value = deducPPD
+        	Engine.Item("CONEXTCLM").Item("MINAMT_PARTYPROP").Value = minAmtPPD
+        	Engine.Item("CONEXTCLM").Item("MAXAMT_PARTYPROP").Value = maxAmtPPD
+        	Engine.Item("CONEXTCLM").Item("BASISDED_PARTYPROP").Value = basisPPD
+        
+        
+        	Dim deducPI, minAmtPI, maxAmtPI, basisPI
+        
+        	deducPI = Extras.RiskDataEngine.Item("CONEXTLEG").Item("DED_PARTYINJURY").Value
+        	minAmtPI = Extras.RiskDataEngine.Item("CONEXTLEG").Item("MINAMT_PARTYINJURY").Value
+        	maxAmtPI = Extras.RiskDataEngine.Item("CONEXTLEG").Item("MAXAMT_PARTYINJURY").Value
+        	basisPI = Extras.RiskDataEngine.Item("CONEXTLEG").Item("BASISDED_PARTYINJURY").Value
+        
+        	'Send data to claim child object
+        	Engine.Item("CONEXTCLM").Item("DED_PARTYINJURY").Value = deducPI
+        	Engine.Item("CONEXTCLM").Item("MINAMT_PARTYINJURY").Value = minAmtPI
+        	Engine.Item("CONEXTCLM").Item("MAXAMT_PARTYINJURY").Value = maxAmtPI
+        	Engine.Item("CONEXTCLM").Item("BASISDED_PARTYINJURY").Value = basisPI
+        
+        
+        	Dim deducBD, minAmtBD, maxAmtBD, basisBD
+        
+        	deducBD = Extras.RiskDataEngine.Item("CONEXTLEG").Item("DED_BLASTINGDAM").Value
+        	minAmtBD = Extras.RiskDataEngine.Item("CONEXTLEG").Item("MINAMT_BLASTINGDAM").Value
+        	maxAmtBD = Extras.RiskDataEngine.Item("CONEXTLEG").Item("MAXAMT_BLASTINGDAM").Value
+        	basisBD = Extras.RiskDataEngine.Item("CONEXTLEG").Item("BASISDED_BLASTINGDAM").Value
+        
+        	'Send data to claim child object
+        	Engine.Item("CONEXTCLM").Item("DED_BLASTINGDAM").Value = deducBD
+        	Engine.Item("CONEXTCLM").Item("MINAMT_BLASTINGDAM").Value = minAmtBD
+        	Engine.Item("CONEXTCLM").Item("MAXAMT_BLASTINGDAM").Value = maxAmtBD
+        	Engine.Item("CONEXTCLM").Item("BASISDED_BLASTINGDAM").Value = basisBD
+        
+        
+        	Dim deducSP, minAmtSP, maxAmtSP, basisSP
+        
+        	deducSP = Extras.RiskDataEngine.Item("CONEXTLEG").Item("DED_SPREADFIRE").Value
+        	minAmtSP = Extras.RiskDataEngine.Item("CONEXTLEG").Item("MINAMT_SPREADFIRE").Value
+        	maxAmtSP = Extras.RiskDataEngine.Item("CONEXTLEG").Item("MAXAMT_SPREADFIRE").Value
+        	basisSP = Extras.RiskDataEngine.Item("CONEXTLEG").Item("BASISDED_SPREADFIRE").Value
+        
+        	'Send data to claim child object
+        	Engine.Item("CONEXTCLM").Item("DED_SPREADFIRE").Value = deducSP
+        	Engine.Item("CONEXTCLM").Item("MINAMT_SPREADFIRE").Value = minAmtSP
+        	Engine.Item("CONEXTCLM").Item("MAXAMT_SPREADFIRE").Value = maxAmtSP
+        	Engine.Item("CONEXTCLM").Item("BASISDED_SPREADFIRE").Value = basisSP
+        
+        
+        	Dim deducOT, minAmtOT, maxAmtOT, basisOT
+        
+        	deducOT = Extras.RiskDataEngine.Item("CONEXTLEG").Item("DED_OTHEROTHER").Value
+        	minAmtOT = Extras.RiskDataEngine.Item("CONEXTLEG").Item("MINAMT_OTHEROTHER").Value
+        	maxAmtOT = Extras.RiskDataEngine.Item("CONEXTLEG").Item("MAXAMT_OTHEROTHER").Value
+        	basisOT = Extras.RiskDataEngine.Item("CONEXTLEG").Item("BASISDED_OTHEROTHER").Value
+        
+        	'Send data to claim child object
+        	Engine.Item("CONEXTCLM").Item("DED_OTHEROTHER").Value = deducOT
+        	Engine.Item("CONEXTCLM").Item("MINAMT_OTHEROTHER").Value = minAmtOT
+        	Engine.Item("CONEXTCLM").Item("MAXAMT_OTHEROTHER").Value = maxAmtOT
+        	Engine.Item("CONEXTCLM").Item("BASISDED_OTHEROTHER").Value = basisOT
+        
+        
+        	Dim sumInsuredLDC, rateLDC, premiumLDC
+        
+        	sumInsuredLDC = Extras.RiskDataEngine.Item("CONEXTLEG").Item("SUMINSURED_LEGALDEFCOST").Value
+        	rateLDC = Extras.RiskDataEngine.Item("CONEXTLEG").Item("RATE_LEGALDEFCOST").Value
+        	premiumLDC = Extras.RiskDataEngine.Item("CONEXTLEG").Item("PREMIUM_LEGALDEFCOST").Value
+        
+        	'Send data to claim child object
+        	Engine.Item("CONEXTCLM").Item("SUMINSURED_LEGALDEFCOST").Value = sumInsuredLDC
+        	Engine.Item("CONEXTCLM").Item("RATE_LEGALDEFCOST").Value = rateLDC
+        	Engine.Item("CONEXTCLM").Item("PREMIUM_LEGALDEFCOST").Value = premiumLDC
+        
+        
+        	Dim sumInsuredSP, rateSP, premiumSP
+        
+        	sumInsuredSP = Extras.RiskDataEngine.Item("CONEXTLEG").Item("SUMINSURED_SPREADFIRE1").Value
+        	rateSP = Extras.RiskDataEngine.Item("CONEXTLEG").Item("RATE_SPREADFIRE1").Value
+        	premiumSP = Extras.RiskDataEngine.Item("CONEXTLEG").Item("PREMIUM_SPREADFIRE1").Value
+        
+        	'Send data to claim child object
+        	Engine.Item("CONEXTCLM").Item("SUMINSURED_SPREADFIRE1").Value = sumInsuredSP
+        	Engine.Item("CONEXTCLM").Item("RATE_SPREADFIRE1").Value = rateSP
+        	Engine.Item("CONEXTCLM").Item("PREMIUM_SPREADFIRE1").Value = premiumSP
+        
+        
+        	Dim sumInsuredWAD, rateWAD, premiumWAD
+        
+        	sumInsuredWAD = Extras.RiskDataEngine.Item("CONEXTLEG").Item("SUMINSURED_WRONGFULARR").Value
+        	rateWAD = Extras.RiskDataEngine.Item("CONEXTLEG").Item("RATE_WRONGFULARR").Value
+        	premiumWAD = Extras.RiskDataEngine.Item("CONEXTLEG").Item("PREMIUM_WRONGFULARR").Value
+        
+        	'Send data to claim child object
+        	Engine.Item("CONEXTCLM").Item("SUMINSURED_WRONGFULARR").Value = sumInsuredWAD
+        	Engine.Item("CONEXTCLM").Item("RATE_WRONGFULARR").Value = rateWAD
+        	Engine.Item("CONEXTCLM").Item("PREMIUM_WRONGFULARR").Value = premiumWAD
+        
+        
+        	Dim xAddDeduc,cntAddDeduc,nIndexAddDeduc
+        	'-----------------------------------------------
+        	'---START: Child screen properties population---
+        	'-----------------------------------------------
+        	cntAddDeduc = Extras.RiskDataEngine.Count("CONADDDED")
+        	'Testing Period Child Screen
+        	xAddDeduc = 1
+        	For nIndexAddDeduc = xAddDeduc to cntAddDeduc
+        		Dim descrAddDeduc, dedAddDeduc, minAmtAddDeduc, maxAmtAddDeduc, basisAddDeduc
+        			
+        		Engine.Item("CONEXTCLM").NewObject("CONADDCLM")   
+        
+        		descrAddDeduc = Extras.RiskDataEngine.Item("CONADDDED",nIndexAddDeduc).Item("DESCRIPTION").Value
+        		dedAddDeduc = Extras.RiskDataEngine.Item("CONADDDED",nIndexAddDeduc).Item("DED1").Value
+        		minAmtAddDeduc = Extras.RiskDataEngine.Item("CONADDDED",nIndexAddDeduc).Item("MINAMT1").Value
+        		maxAmtAddDeduc = Extras.RiskDataEngine.Item("CONADDDED",nIndexAddDeduc).Item("MAXAMT1").Value
+        		basisAddDeduc = Extras.RiskDataEngine.Item("CONADDDED",nIndexAddDeduc).Item("BASISDED1").Value
+        
+        		'Send data to claim child object
+        		Engine.Item("CONEXTCLM").Item("CONADDCLM",xAddDeduc).Item("DESCRIPTION").Value = descrAddDeduc
+        		Engine.Item("CONEXTCLM").Item("CONADDCLM",xAddDeduc).Item("DED1").Value = dedAddDeduc
+        		Engine.Item("CONEXTCLM").Item("CONADDCLM",xAddDeduc).Item("MINAMT1").Value = minAmtAddDeduc
+        		Engine.Item("CONEXTCLM").Item("CONADDCLM",xAddDeduc).Item("MAXAMT1").Value = maxAmtAddDeduc
+        		Engine.Item("CONEXTCLM").Item("CONADDCLM",xAddDeduc).Item("BASISDED1").Value = basisAddDeduc
+        		
+        		'xAddDeduc = xAddDeduc + 1
+        	Next
+        
+        	Dim xAddExt,cntAddExt,nIndexAddExt
+        	'-----------------------------------------------
+        	'---START: Child screen properties population---
+        	'-----------------------------------------------
+        	cntAddExt = Extras.RiskDataEngine.Count("CONADDEXT")
+        	'Testing Period Child Screen
+        	xAddExt = 1
+        	For nIndexAddExt = xAddExt to cntAddExt
+        		Dim descrAddExt, lolAddExt, rateAddExt, premiumAddExt
+        			
+        		Engine.Item("CONEXTCLM").NewObject("CONCEXTCLM")   
+        	
+        		descrAddExt = Extras.RiskDataEngine.Item("CONADDEXT",nIndexAddExt).Item("DESCRIPTION").Value
+        		lolAddExt = Extras.RiskDataEngine.Item("CONADDEXT",nIndexAddExt).Item("LOL").Value
+        		rateAddExt = Extras.RiskDataEngine.Item("CONADDEXT",nIndexAddExt).Item("RATE").Value
+        		premiumAddExt = Extras.RiskDataEngine.Item("CONADDEXT",nIndexAddExt).Item("PREMIUM").Value
+        	
+        		'Send data to claim child object
+        		Engine.Item("CONEXTCLM").Item("CONCEXTCLM",xAddExt).Item("DESCRIPTION").Value = descrAddExt
+        		Engine.Item("CONEXTCLM").Item("CONCEXTCLM",xAddExt).Item("LOL").Value = lolAddExt
+        		Engine.Item("CONEXTCLM").Item("CONCEXTCLM",xAddExt).Item("RATE").Value = rateAddExt
+        		Engine.Item("CONEXTCLM").Item("CONCEXTCLM",xAddExt).Item("PREMIUM").Value = premiumAddExt
+        		
+        		'xAddExt = xAddExt + 1
+        	Next
+        
+        	Call DoInstanceCount
+        End If
+        
+        End Sub
+
+        
+        Sub DoInstanceCount
+        ' The ScreenMain rule is added to every screen automatically.
+        
+        
+        Call FindObjectInstanceCount("")
+End Sub
+
+Sub onValidate_CWORKCLAIM__THIRDPARTY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CWORKCLAIM", "THIRDPARTY", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CWORKCLAIM__RECOVERY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CWORKCLAIM", "RECOVERY", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CWORKCLAIM__SALVAGE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CWORKCLAIM", "SALVAGE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CWORKCLAIM__IS_THRDTLS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CWORKCLAIM", "IS_THRDTLS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CWORKCLAIM__IS_ASSESSDETAIL(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CWORKCLAIM", "IS_ASSESSDETAIL", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CWORKCLAIM__IS_NAMAPP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CWORKCLAIM", "IS_NAMAPP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CWORKCLAIM__IS_EXGRAT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CWORKCLAIM", "IS_EXGRAT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CWORKCLM__ASSESSOR(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CWORKCLM", "ASSESSOR", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CWORKCLM__LAWYRS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CWORKCLM", "LAWYRS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CWORKCLM__WITNESS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CWORKCLM", "WITNESS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub DoDefaults(bIsOnStart)
+    Call WebRequired(bIsOnStart)
+    Call onScreenLogic(bIsOnStart)
+    Call onValidate_CWORKCLAIM__THIRDPARTY(bIsOnStart)
+    Call onValidate_CWORKCLAIM__RECOVERY(bIsOnStart)
+    Call onValidate_CWORKCLAIM__SALVAGE(bIsOnStart)
+    Call onValidate_CWORKCLAIM__IS_THRDTLS(bIsOnStart)
+    Call onValidate_CWORKCLAIM__IS_ASSESSDETAIL(bIsOnStart)
+    Call onValidate_CWORKCLAIM__IS_NAMAPP(bIsOnStart)
+    Call onValidate_CWORKCLAIM__IS_EXGRAT(bIsOnStart)
+    Call onValidate_CWORKCLM__ASSESSOR(bIsOnStart)
+    Call onValidate_CWORKCLM__LAWYRS(bIsOnStart)
+    Call onValidate_CWORKCLM__WITNESS(bIsOnStart)
+End Sub
+
+Sub Start()
+    Call DoDefaults(True)
+End Sub
+
+Sub Main()
+    Call DoDefaults(False)
+End Sub
+

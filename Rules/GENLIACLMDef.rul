@@ -1,0 +1,909 @@
+        Dim iObjectInstanceCount
+        
+        Sub FindObjectInstanceCount(strScreenObjectName)
+        	iObjectInstanceCount = 1
+        
+        	' strScreenObjectName is the object that is associate with this screen (if a child), or "" if the root screen.
+        	If strScreenObjectName <> ""  Then
+        		Dim instanceCount
+        		
+        		' How many instance of this object exist?
+        		instanceCount = engine.count(strScreenObjectName)
+        		
+        		Dim i
+        		for i = 1 to instanceCount
+        			if engine.item(strScreenObjectName, i).item("OI").value = vAdditionalData(cAdditionalData_OIKey) then
+        				iObjectInstanceCount = i
+        			end if
+        		next
+        	End If
+        End Sub
+
+        Sub DefaultTextTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultCommentTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultIntegerTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CLng(strValue)
+        End Sub
+
+        
+        Sub DefaultCheckboxTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanListTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanRadioTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	If InStr(1, LCase(strValue), "code:", 1) = 1 Then
+        		' The default value has been specified as a code (code:<thecode>).
+        		Dim code
+        		Dim effectiveDate
+        		Dim version
+        		
+        		code = Mid(strValue, Len("code:")+1)
+        		effectiveDate = Now()
+        		version = 1
+        		
+        		Dim listItemId
+        		listItemId = Extras.GetField(strListCode, strListCode + "_Id", code, effectiveDate, version)
+        		
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(listItemId)
+        	Else
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        	End If
+        End Sub
+
+        
+        Sub DefaultRateListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	' TODO.
+        End Sub
+
+        
+        Sub DefaultDateTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	
+        	Dim location
+        	Dim Interval
+        	Dim Duration
+        	Dim DateValue
+        	
+        	'Upper case the input
+        	DateValue = UCase(strValue)
+        	'Check to see if we want data AND  Time
+        	location = InStr(1,DateValue,"DATETIME")
+        	if location > 0 then
+        		DateValue=  CDate(FormatDateTime(Now,0)) 'use the standard vb datetime
+        	End If
+        	'Check to see if TODAY is specified as a modifier
+        	location  = InStr(1,DateValue,"TODAY")
+        	If location > 0 Then
+        		'Determine if we are adding values
+        		location  = InStr(1,DateValue,"+")
+        		If location > 0 Then 
+        			Interval = Mid(DateValue,location + 1,1)
+        			
+        			If Interval = "Y" Then
+        				Interval = "YYYY"
+        			End If
+        			
+        			If Interval <> "" Then 
+        				Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        				DateValue = DateAdd(Interval,Duration,CDate(FormatDateTime(Now,2)))	
+        				
+        			Else
+        				'No Interval specified 
+        				'Need an error here!!!!
+        			End If	
+        		Else 
+        			'Check to see if we are subtracting values
+        			location  =InStr(1,DateValue,"-")
+        			If location > 0  Then 
+        				Interval = Mid(DateValue,location + 1,1)
+        				
+        				If Interval <> "" Then 
+        					Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        					DateValue = DateAdd(Interval, Duration * -1,CDate(FormatDateTime(Now,2)))	
+        				Else
+        					'No Interval specified 
+        					'Need an error here!!!!
+        				End If
+        			Else
+        				'No Function specified, so assume we are just using today's date as a shortdate
+        				DateValue = CDate(FormatDateTime(Now,2))
+        			End If
+        			
+        		End If
+        		
+        	End If	
+        	
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDate(DateValue)
+        End Sub
+
+        
+        Sub DefaultCurrencyTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+        
+        Sub DefaultPercentageTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+Sub WebRequired(bIsOnStart)
+	If bIsOnStart = True Then
+		Engine.NewObject("GENLIABCLAIM")
+		Engine.NewObject("GLEXTCLAIM")
+		Engine.NewObject("GENLIACLM")
+	End If
+End Sub
+
+Sub onScreenLogic(bIsOnStart)
+        If bIsOnStart = True Then
+        
+        		 'Instantiate Risk object(s)
+        		Extras.RiskDataEngine.NewObject("RISK_DETAILS")
+        		Extras.RiskDataEngine.NewObject("ADDRESS")
+        		Extras.RiskDataEngine.NewObject("RISK_EXTENSIONS")
+        
+        		'Instantiate Claims object(s)
+        		Engine.NewObject("GENLIABCLAIM")
+        		Engine.NewObject("GLEXTCLAIM")
+        
+        		'---------------------------------------------------
+        		'---START: Non-child screen properties population---	
+        		'---------------------------------------------------
+        		
+        		Dim Address
+        		
+        		Address = Extras.RiskDataEngine.Item("ADDRESS").Item("LINE1").Value
+        		Engine.Item("GENLIABCLAIM").Item("ADDRESS").Value = Address
+        
+        		Dim RiskObject, ClaimObject
+        
+        		RiskObject = "RISK_DETAILS"
+        		ClaimObject = "GENLIABCLAIM"
+        
+        		Call ToClaim(RiskObject,ClaimObject,"POLICY_TYPE")
+        		Call ToClaim(RiskObject,ClaimObject,"POLICY_TYPE_CODE")
+        		Call ToClaim(RiskObject,ClaimObject,"BUSINESS_COVERAGE")
+        		Call ToClaim(RiskObject,ClaimObject,"BUSINESS_CODE")
+        		Call ToClaim(RiskObject,ClaimObject,"TURNOVER")
+        		Call ToClaim(RiskObject,ClaimObject,"NUMBER_OF_EMPLOYEES")
+        		Call ToClaim(RiskObject,ClaimObject,"IS_EXTENSIONS")
+        
+        		'Call ToClaim(RiskObject,ClaimObject,"RETROACTIVE_DATE_EXPIRY")
+        		'Call ToClaim(RiskObject,ClaimObject,"RETROACTIVE_DATE_INCEPTION")
+        		Call ToClaim(RiskObject,ClaimObject,"RETROACTIVE_DATE")
+        		Call ToClaim(RiskObject,ClaimObject,"ADD_RETRO_DATE_INFO")
+        		Call ToClaim(RiskObject,ClaimObject,"RETRO_DATE")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_PUBLIC_LIABILITY")
+        		Call ToClaim(RiskObject,ClaimObject,"PUBLIC_LIABILITY_BASISOFLIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"PUBLIC_LIABILITY_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"PUBLIC_LIABILITY_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PUBLIC_LIABILITY_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"PUBLIC_LIABILITY_BASISOFDEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"PUBLIC_LIABILITY_DEDUCT")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_PRODUCT_LIABILITY")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCT_LIABILITY_BASISOFLIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCT_LIABILITY_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCT_LIABILITY_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCT_LIABILITY_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCT_LIABILITY_BASISOFDEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCT_LIABILITY_DEDUCT")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_EMPLOYERS_LIABILITY")
+        		Call ToClaim(RiskObject,ClaimObject,"EMPLOYERS_LIABILITY_BASISOFLIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"EMPLOYERS_LIABILITY_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"EMPLOYERS_LIABILITY_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"EMPLOYERS_LIABILITY_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"EMPLOYERS_LIABILITY_BASISOFDEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"EMPLOYERS_LIABILITY_DEDUCT")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_WRONGFUL_ARREST")
+        		Call ToClaim(RiskObject,ClaimObject,"WRONGFUL_ARREST_BASISOFLIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"WRONGFUL_ARREST_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"WRONGFUL_ARREST_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"WRONGFUL_ARREST_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"WRONGFUL_ARREST_BASISOFDEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"WRONGFUL_ARREST_DEDUCT")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_LEGAL_DEFENCE")
+        		Call ToClaim(RiskObject,ClaimObject,"LEGAL_DEFENCE_BASISOFLIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"LEGAL_DEFENCE_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"LEGAL_DEFENCE_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"LEGAL_DEFENCE_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"LEGAL_DEFENCE_BASISOFDEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"LEGAL_DEFENCE_DEDUCT")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_MOTOR")
+        		Call ToClaim(RiskObject,ClaimObject,"MOTOR_BASISOFLIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"MOTOR_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"MOTOR_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"MOTOR_BASISOFDEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"MOTOR_DEDU")
+                Call ToClaim(RiskObject,ClaimObject,"RISK_TOTAL_PREMIUM")
+                '----------------------Extensions------------------'
+        		RiskObject = "RISK_EXTENSIONS"
+        		ClaimObject = "GLEXTCLAIM"
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_CARE_CUSTODY")
+        		Call ToClaim(RiskObject,ClaimObject,"CARE_CUSTODY_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"CARE_CUSTODY_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"CARE_CUSTODY_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"CARE_CUSTODY_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"CARE_CUSTODY_BASISOFDEDU")
+        		
+        		
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_CARRIERS_LIABILITY")
+        		Call ToClaim(RiskObject,ClaimObject,"CARRIERS_LIABILITY_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"CARRIERS_LIABILITY_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"CARRIERS_LIABILITY_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"CARRIERS_LIABILITY_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"CARRIERS_LIABILITY_BASISOFDEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"CONS_LOSS_ONLY")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_CLAIMS_PREPARATION")
+        		Call ToClaim(RiskObject,ClaimObject,"CLAIMS_PREPARATION_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"CLAIMS_PREPARATION_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"CLAIMS_PREPARATION_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"CLAIMS_PREPARATION_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"CLAIMS_PREPARATION_BASISOFDEDU")
+        	
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_COMMERCIAL_HUNTING")
+        		Call ToClaim(RiskObject,ClaimObject,"COMMERCIAL_HUNTING_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"COMMERCIAL_HUNTING_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"COMMERCIAL_HUNTING_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"COMMERCIAL_HUNTING_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"COMMERCIAL_HUNTING_BASISOFDEDU")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_CONTRACTORS_LIABILITY")
+        		Call ToClaim(RiskObject,ClaimObject,"CONTRACTORS_LIABILITY_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"CONTRACTORS_LIABILITY_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"CONTRACTORS_LIABILITY_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"CONTRACTORS_LIABILITY_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"CONTRACTORS_LIABILITY_BASISOFDEDU")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_EXHIBITOR_LIABILITY")
+        		Call ToClaim(RiskObject,ClaimObject,"EXHIBITOR_LIABILITY_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"EXHIBITOR_LIABILITY_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"EXHIBITOR_LIABILITY_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"EXHIBITOR_LIABILITY_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"EXHIBITOR_LIABILITY_BASISOFDEDU")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_INCIDENTAL_MEDICAL")
+        		Call ToClaim(RiskObject,ClaimObject,"INCIDENTAL_MEDICAL_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"INCIDENTAL_MEDICAL_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"INCIDENTAL_MEDICAL_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"INCIDENTAL_MEDICAL_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"INCIDENTAL_MEDICAL_BASISOFDEDU")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_AMERICAN_JURI")
+        		Call ToClaim(RiskObject,ClaimObject,"AMERICAN_JURI_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"AMERICAN_JURI_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"AMERICAN_JURI_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"AMERICAN_JURI_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"AMERICAN_JURI_BASISOFDEDU")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_PRODUCT_RECALL")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCT_RECALL_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCT_RECALL_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCT_RECALL_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCT_RECALL_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCT_RECALL_BASISOFDEDU")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_PRODUCTS_INEFFICACY")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCTS_INEFFICACY_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCTS_INEFFICACY_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCTS_INEFFICACY_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCTS_INEFFICACY_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCTS_INEFFICACY_BASISOFDEDU")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_PROFESSIONAL_LIABILITY")
+        		Call ToClaim(RiskObject,ClaimObject,"PROFESSIONAL_LIABILITY_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"PROFESSIONAL_LIABILITY_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PROFESSIONAL_LIABILITY_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"PROFESSIONAL_LIABILITY_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"PROFESSIONAL_LIABILITY_BASISOFDEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"INCIDENT_ONLY")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_PURE_ECONOMIC")
+        		Call ToClaim(RiskObject,ClaimObject,"PURE_ECONOMIC_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"PURE_ECONOMIC_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PURE_ECONOMIC_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"PURE_ECONOMIC_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"PURE_ECONOMIC_BASISOFDEDU")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_SPREAD_OF_FIRE")
+        		Call ToClaim(RiskObject,ClaimObject,"SPREAD_OF_FIRE_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"SPREAD_OF_FIRE_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"SPREAD_OF_FIRE_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"SPREAD_OF_FIRE_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"SPREAD_OF_FIRE_BASISOFDEDU")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_VENDORS_LIABILITY")
+        		Call ToClaim(RiskObject,ClaimObject,"VENDORS_LIABILITY_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"VENDORS_LIABILITY_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"VENDORS_LIABILITY_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"VENDORS_LIABILITY_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"VENDORS_LIABILITY_BASISOFDEDU")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_WAREHOUSEMANS_LIABILITY")
+        		Call ToClaim(RiskObject,ClaimObject,"WAREHOUSEMANS_LIABILITY_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"WAREHOUSEMANS_LIABILITY_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"WAREHOUSEMANS_LIABILITY_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"WAREHOUSEMANS_LIABILITY_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"WAREHOUSEMANS_LIABILITY_BASISOFDEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"CONSEQ_LOS_ONLY")
+        		
+                Call ToClaim(RiskObject,ClaimObject,"PASS_LIAB")
+        		Call ToClaim(RiskObject,ClaimObject,"PASS_LIAB_LIMIT_OF_IND")
+        		Call ToClaim(RiskObject,ClaimObject,"PASS_LIAB_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PASS_LIAB_PREM")
+        		Call ToClaim(RiskObject,ClaimObject,"PASS_LIAB_DED")
+        		Call ToClaim(RiskObject,ClaimObject,"PASS_LIAB_BASIS_OF_DED")
+        	
+        	    Call ToClaim(RiskObject,ClaimObject,"TOTAL_EXTENSIONS")
+        		'-------------End Extensions-------------------------'
+        
+        		Call DoInstanceCount
+         End If
+        End Sub
+
+        
+        Function ToClaim(RObject, CObject, PropName)
+        	Dim Val	
+        	Val = Extras.RiskDataEngine.Item(RObject).Item(PropName).Value
+        	Engine.Item(CObject).Item(PropName).Value = Val
+        End Function
+        
+        Sub DoInstanceCount
+        
+        If bIsOnStart = True Then
+        
+        		 'Instantiate Risk object(s)
+        		Extras.RiskDataEngine.NewObject("RISK_DETAILS")
+        		Extras.RiskDataEngine.NewObject("ADDRESS")
+        		Extras.RiskDataEngine.NewObject("RISK_EXTENSIONS")
+        
+        		'Instantiate Claims object(s)
+        		Engine.NewObject("GENLIABCLAIM")
+        		Engine.NewObject("GLEXTCLAIM")
+        
+        		'---------------------------------------------------
+        		'---START: Non-child screen properties population---	
+        		'---------------------------------------------------
+        		
+        		Dim Address
+        		
+        		Address = Extras.RiskDataEngine.Item("ADDRESS").Item("LINE1").Value
+        		Engine.Item("GENLIABCLAIM").Item("ADDRESS").Value = Address
+        
+        		Dim RiskObject, ClaimObject
+        
+        		RiskObject = "RISK_DETAILS"
+        		ClaimObject = "GENLIABCLAIM"
+        
+        		Call ToClaim(RiskObject,ClaimObject,"POLICY_TYPE")
+        		Call ToClaim(RiskObject,ClaimObject,"POLICY_TYPE_CODE")
+        		Call ToClaim(RiskObject,ClaimObject,"BUSINESS_COVERAGE")
+        		Call ToClaim(RiskObject,ClaimObject,"BUSINESS_CODE")
+        		Call ToClaim(RiskObject,ClaimObject,"TURNOVER")
+        		Call ToClaim(RiskObject,ClaimObject,"NUMBER_OF_EMPLOYEES")
+        		Call ToClaim(RiskObject,ClaimObject,"IS_EXTENSIONS")
+        
+        		'Call ToClaim(RiskObject,ClaimObject,"RETROACTIVE_DATE_EXPIRY")
+        		'Call ToClaim(RiskObject,ClaimObject,"RETROACTIVE_DATE_INCEPTION")
+        		Call ToClaim(RiskObject,ClaimObject,"RETROACTIVE_DATE")
+        		Call ToClaim(RiskObject,ClaimObject,"ADD_RETRO_DATE_INFO")
+        		Call ToClaim(RiskObject,ClaimObject,"RETRO_DATE")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_PUBLIC_LIABILITY")
+        		Call ToClaim(RiskObject,ClaimObject,"PUBLIC_LIABILITY_BASISOFLIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"PUBLIC_LIABILITY_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"PUBLIC_LIABILITY_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PUBLIC_LIABILITY_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"PUBLIC_LIABILITY_BASISOFDEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"PUBLIC_LIABILITY_DEDUCT")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_PRODUCT_LIABILITY")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCT_LIABILITY_BASISOFLIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCT_LIABILITY_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCT_LIABILITY_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCT_LIABILITY_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCT_LIABILITY_BASISOFDEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCT_LIABILITY_DEDUCT")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_EMPLOYERS_LIABILITY")
+        		Call ToClaim(RiskObject,ClaimObject,"EMPLOYERS_LIABILITY_BASISOFLIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"EMPLOYERS_LIABILITY_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"EMPLOYERS_LIABILITY_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"EMPLOYERS_LIABILITY_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"EMPLOYERS_LIABILITY_BASISOFDEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"EMPLOYERS_LIABILITY_DEDUCT")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_WRONGFUL_ARREST")
+        		Call ToClaim(RiskObject,ClaimObject,"WRONGFUL_ARREST_BASISOFLIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"WRONGFUL_ARREST_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"WRONGFUL_ARREST_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"WRONGFUL_ARREST_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"WRONGFUL_ARREST_BASISOFDEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"WRONGFUL_ARREST_DEDUCT")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_LEGAL_DEFENCE")
+        		Call ToClaim(RiskObject,ClaimObject,"LEGAL_DEFENCE_BASISOFLIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"LEGAL_DEFENCE_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"LEGAL_DEFENCE_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"LEGAL_DEFENCE_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"LEGAL_DEFENCE_BASISOFDEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"LEGAL_DEFENCE_DEDUCT")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_MOTOR")
+        		Call ToClaim(RiskObject,ClaimObject,"MOTOR_BASISOFLIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"MOTOR_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"MOTOR_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"MOTOR_BASISOFDEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"MOTOR_DEDU")
+                Call ToClaim(RiskObject,ClaimObject,"RISK_TOTAL_PREMIUM")
+                '----------------------Extensions------------------'
+        		RiskObject = "RISK_EXTENSIONS"
+        		ClaimObject = "GLEXTCLAIM"
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_CARE_CUSTODY")
+        		Call ToClaim(RiskObject,ClaimObject,"CARE_CUSTODY_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"CARE_CUSTODY_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"CARE_CUSTODY_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"CARE_CUSTODY_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"CARE_CUSTODY_BASISOFDEDU")
+        		
+        		
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_CARRIERS_LIABILITY")
+        		Call ToClaim(RiskObject,ClaimObject,"CARRIERS_LIABILITY_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"CARRIERS_LIABILITY_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"CARRIERS_LIABILITY_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"CARRIERS_LIABILITY_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"CARRIERS_LIABILITY_BASISOFDEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"CONS_LOSS_ONLY")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_CLAIMS_PREPARATION")
+        		Call ToClaim(RiskObject,ClaimObject,"CLAIMS_PREPARATION_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"CLAIMS_PREPARATION_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"CLAIMS_PREPARATION_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"CLAIMS_PREPARATION_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"CLAIMS_PREPARATION_BASISOFDEDU")
+        	
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_COMMERCIAL_HUNTING")
+        		Call ToClaim(RiskObject,ClaimObject,"COMMERCIAL_HUNTING_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"COMMERCIAL_HUNTING_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"COMMERCIAL_HUNTING_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"COMMERCIAL_HUNTING_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"COMMERCIAL_HUNTING_BASISOFDEDU")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_CONTRACTORS_LIABILITY")
+        		Call ToClaim(RiskObject,ClaimObject,"CONTRACTORS_LIABILITY_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"CONTRACTORS_LIABILITY_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"CONTRACTORS_LIABILITY_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"CONTRACTORS_LIABILITY_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"CONTRACTORS_LIABILITY_BASISOFDEDU")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_EXHIBITOR_LIABILITY")
+        		Call ToClaim(RiskObject,ClaimObject,"EXHIBITOR_LIABILITY_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"EXHIBITOR_LIABILITY_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"EXHIBITOR_LIABILITY_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"EXHIBITOR_LIABILITY_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"EXHIBITOR_LIABILITY_BASISOFDEDU")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_INCIDENTAL_MEDICAL")
+        		Call ToClaim(RiskObject,ClaimObject,"INCIDENTAL_MEDICAL_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"INCIDENTAL_MEDICAL_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"INCIDENTAL_MEDICAL_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"INCIDENTAL_MEDICAL_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"INCIDENTAL_MEDICAL_BASISOFDEDU")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_AMERICAN_JURI")
+        		Call ToClaim(RiskObject,ClaimObject,"AMERICAN_JURI_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"AMERICAN_JURI_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"AMERICAN_JURI_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"AMERICAN_JURI_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"AMERICAN_JURI_BASISOFDEDU")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_PRODUCT_RECALL")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCT_RECALL_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCT_RECALL_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCT_RECALL_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCT_RECALL_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCT_RECALL_BASISOFDEDU")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_PRODUCTS_INEFFICACY")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCTS_INEFFICACY_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCTS_INEFFICACY_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCTS_INEFFICACY_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCTS_INEFFICACY_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCTS_INEFFICACY_BASISOFDEDU")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_PROFESSIONAL_LIABILITY")
+        		Call ToClaim(RiskObject,ClaimObject,"PROFESSIONAL_LIABILITY_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"PROFESSIONAL_LIABILITY_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PROFESSIONAL_LIABILITY_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"PROFESSIONAL_LIABILITY_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"PROFESSIONAL_LIABILITY_BASISOFDEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"INCIDENT_ONLY")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_PURE_ECONOMIC")
+        		Call ToClaim(RiskObject,ClaimObject,"PURE_ECONOMIC_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"PURE_ECONOMIC_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PURE_ECONOMIC_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"PURE_ECONOMIC_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"PURE_ECONOMIC_BASISOFDEDU")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_SPREAD_OF_FIRE")
+        		Call ToClaim(RiskObject,ClaimObject,"SPREAD_OF_FIRE_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"SPREAD_OF_FIRE_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"SPREAD_OF_FIRE_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"SPREAD_OF_FIRE_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"SPREAD_OF_FIRE_BASISOFDEDU")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_VENDORS_LIABILITY")
+        		Call ToClaim(RiskObject,ClaimObject,"VENDORS_LIABILITY_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"VENDORS_LIABILITY_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"VENDORS_LIABILITY_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"VENDORS_LIABILITY_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"VENDORS_LIABILITY_BASISOFDEDU")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_WAREHOUSEMANS_LIABILITY")
+        		Call ToClaim(RiskObject,ClaimObject,"WAREHOUSEMANS_LIABILITY_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"WAREHOUSEMANS_LIABILITY_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"WAREHOUSEMANS_LIABILITY_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"WAREHOUSEMANS_LIABILITY_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"WAREHOUSEMANS_LIABILITY_BASISOFDEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"CONSEQ_LOS_ONLY")
+        		
+                Call ToClaim(RiskObject,ClaimObject,"PASS_LIAB")
+        		Call ToClaim(RiskObject,ClaimObject,"PASS_LIAB_LIMIT_OF_IND")
+        		Call ToClaim(RiskObject,ClaimObject,"PASS_LIAB_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PASS_LIAB_PREM")
+        		Call ToClaim(RiskObject,ClaimObject,"PASS_LIAB_DED")
+        		Call ToClaim(RiskObject,ClaimObject,"PASS_LIAB_BASIS_OF_DED")
+        	
+        	    Call ToClaim(RiskObject,ClaimObject,"TOTAL_EXTENSIONS")
+        		'-------------End Extensions-------------------------'
+        
+        		Call DoInstanceCount
+         End If
+        End Sub
+
+        
+        Function ToClaim(RObject, CObject, PropName)
+        	Dim Val	
+        	Val = Extras.RiskDataEngine.Item(RObject).Item(PropName).Value
+        	Engine.Item(CObject).Item(PropName).Value = Val
+        End Function
+        
+        Sub DoInstanceCount
+        
+        If bIsOnStart = True Then
+        
+        		 'Instantiate Risk object(s)
+        		Extras.RiskDataEngine.NewObject("RISK_DETAILS")
+        		Extras.RiskDataEngine.NewObject("ADDRESS")
+        		Extras.RiskDataEngine.NewObject("RISK_EXTENSIONS")
+        
+        		'Instantiate Claims object(s)
+        		Engine.NewObject("GENLIABCLAIM")
+        		Engine.NewObject("GLEXTCLAIM")
+        
+        		'---------------------------------------------------
+        		'---START: Non-child screen properties population---	
+        		'---------------------------------------------------
+        		
+        		Dim Address
+        		
+        		Address = Extras.RiskDataEngine.Item("ADDRESS").Item("LINE1").Value
+        		Engine.Item("GENLIABCLAIM").Item("ADDRESS").Value = Address
+        
+        		Dim RiskObject, ClaimObject
+        
+        		RiskObject = "RISK_DETAILS"
+        		ClaimObject = "GENLIABCLAIM"
+        
+        		Call ToClaim(RiskObject,ClaimObject,"POLICY_TYPE")
+        		Call ToClaim(RiskObject,ClaimObject,"POLICY_TYPE_CODE")
+        		Call ToClaim(RiskObject,ClaimObject,"BUSINESS_COVERAGE")
+        		Call ToClaim(RiskObject,ClaimObject,"BUSINESS_CODE")
+        		Call ToClaim(RiskObject,ClaimObject,"TURNOVER")
+        		Call ToClaim(RiskObject,ClaimObject,"NUMBER_OF_EMPLOYEES")
+        		Call ToClaim(RiskObject,ClaimObject,"IS_EXTENSIONS")
+        
+        		'Call ToClaim(RiskObject,ClaimObject,"RETROACTIVE_DATE_EXPIRY")
+        		'Call ToClaim(RiskObject,ClaimObject,"RETROACTIVE_DATE_INCEPTION")
+        		Call ToClaim(RiskObject,ClaimObject,"RETROACTIVE_DATE")
+        		Call ToClaim(RiskObject,ClaimObject,"ADD_RETRO_DATE_INFO")
+        		Call ToClaim(RiskObject,ClaimObject,"RETRO_DATE")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_PUBLIC_LIABILITY")
+        		Call ToClaim(RiskObject,ClaimObject,"PUBLIC_LIABILITY_BASISOFLIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"PUBLIC_LIABILITY_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"PUBLIC_LIABILITY_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PUBLIC_LIABILITY_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"PUBLIC_LIABILITY_BASISOFDEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"PUBLIC_LIABILITY_DEDUCT")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_PRODUCT_LIABILITY")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCT_LIABILITY_BASISOFLIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCT_LIABILITY_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCT_LIABILITY_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCT_LIABILITY_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCT_LIABILITY_BASISOFDEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCT_LIABILITY_DEDUCT")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_EMPLOYERS_LIABILITY")
+        		Call ToClaim(RiskObject,ClaimObject,"EMPLOYERS_LIABILITY_BASISOFLIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"EMPLOYERS_LIABILITY_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"EMPLOYERS_LIABILITY_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"EMPLOYERS_LIABILITY_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"EMPLOYERS_LIABILITY_BASISOFDEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"EMPLOYERS_LIABILITY_DEDUCT")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_WRONGFUL_ARREST")
+        		Call ToClaim(RiskObject,ClaimObject,"WRONGFUL_ARREST_BASISOFLIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"WRONGFUL_ARREST_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"WRONGFUL_ARREST_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"WRONGFUL_ARREST_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"WRONGFUL_ARREST_BASISOFDEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"WRONGFUL_ARREST_DEDUCT")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_LEGAL_DEFENCE")
+        		Call ToClaim(RiskObject,ClaimObject,"LEGAL_DEFENCE_BASISOFLIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"LEGAL_DEFENCE_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"LEGAL_DEFENCE_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"LEGAL_DEFENCE_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"LEGAL_DEFENCE_BASISOFDEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"LEGAL_DEFENCE_DEDUCT")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_MOTOR")
+        		Call ToClaim(RiskObject,ClaimObject,"MOTOR_BASISOFLIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"MOTOR_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"MOTOR_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"MOTOR_BASISOFDEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"MOTOR_DEDU")
+                Call ToClaim(RiskObject,ClaimObject,"RISK_TOTAL_PREMIUM")
+                '----------------------Extensions------------------'
+        		RiskObject = "RISK_EXTENSIONS"
+        		ClaimObject = "GLEXTCLAIM"
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_CARE_CUSTODY")
+        		Call ToClaim(RiskObject,ClaimObject,"CARE_CUSTODY_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"CARE_CUSTODY_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"CARE_CUSTODY_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"CARE_CUSTODY_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"CARE_CUSTODY_BASISOFDEDU")
+        		
+        		
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_CARRIERS_LIABILITY")
+        		Call ToClaim(RiskObject,ClaimObject,"CARRIERS_LIABILITY_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"CARRIERS_LIABILITY_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"CARRIERS_LIABILITY_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"CARRIERS_LIABILITY_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"CARRIERS_LIABILITY_BASISOFDEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"CONS_LOSS_ONLY")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_CLAIMS_PREPARATION")
+        		Call ToClaim(RiskObject,ClaimObject,"CLAIMS_PREPARATION_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"CLAIMS_PREPARATION_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"CLAIMS_PREPARATION_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"CLAIMS_PREPARATION_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"CLAIMS_PREPARATION_BASISOFDEDU")
+        	
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_COMMERCIAL_HUNTING")
+        		Call ToClaim(RiskObject,ClaimObject,"COMMERCIAL_HUNTING_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"COMMERCIAL_HUNTING_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"COMMERCIAL_HUNTING_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"COMMERCIAL_HUNTING_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"COMMERCIAL_HUNTING_BASISOFDEDU")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_CONTRACTORS_LIABILITY")
+        		Call ToClaim(RiskObject,ClaimObject,"CONTRACTORS_LIABILITY_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"CONTRACTORS_LIABILITY_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"CONTRACTORS_LIABILITY_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"CONTRACTORS_LIABILITY_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"CONTRACTORS_LIABILITY_BASISOFDEDU")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_EXHIBITOR_LIABILITY")
+        		Call ToClaim(RiskObject,ClaimObject,"EXHIBITOR_LIABILITY_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"EXHIBITOR_LIABILITY_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"EXHIBITOR_LIABILITY_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"EXHIBITOR_LIABILITY_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"EXHIBITOR_LIABILITY_BASISOFDEDU")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_INCIDENTAL_MEDICAL")
+        		Call ToClaim(RiskObject,ClaimObject,"INCIDENTAL_MEDICAL_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"INCIDENTAL_MEDICAL_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"INCIDENTAL_MEDICAL_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"INCIDENTAL_MEDICAL_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"INCIDENTAL_MEDICAL_BASISOFDEDU")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_AMERICAN_JURI")
+        		Call ToClaim(RiskObject,ClaimObject,"AMERICAN_JURI_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"AMERICAN_JURI_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"AMERICAN_JURI_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"AMERICAN_JURI_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"AMERICAN_JURI_BASISOFDEDU")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_PRODUCT_RECALL")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCT_RECALL_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCT_RECALL_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCT_RECALL_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCT_RECALL_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCT_RECALL_BASISOFDEDU")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_PRODUCTS_INEFFICACY")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCTS_INEFFICACY_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCTS_INEFFICACY_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCTS_INEFFICACY_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCTS_INEFFICACY_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"PRODUCTS_INEFFICACY_BASISOFDEDU")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_PROFESSIONAL_LIABILITY")
+        		Call ToClaim(RiskObject,ClaimObject,"PROFESSIONAL_LIABILITY_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"PROFESSIONAL_LIABILITY_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PROFESSIONAL_LIABILITY_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"PROFESSIONAL_LIABILITY_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"PROFESSIONAL_LIABILITY_BASISOFDEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"INCIDENT_ONLY")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_PURE_ECONOMIC")
+        		Call ToClaim(RiskObject,ClaimObject,"PURE_ECONOMIC_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"PURE_ECONOMIC_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PURE_ECONOMIC_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"PURE_ECONOMIC_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"PURE_ECONOMIC_BASISOFDEDU")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_SPREAD_OF_FIRE")
+        		Call ToClaim(RiskObject,ClaimObject,"SPREAD_OF_FIRE_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"SPREAD_OF_FIRE_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"SPREAD_OF_FIRE_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"SPREAD_OF_FIRE_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"SPREAD_OF_FIRE_BASISOFDEDU")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_VENDORS_LIABILITY")
+        		Call ToClaim(RiskObject,ClaimObject,"VENDORS_LIABILITY_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"VENDORS_LIABILITY_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"VENDORS_LIABILITY_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"VENDORS_LIABILITY_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"VENDORS_LIABILITY_BASISOFDEDU")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_WAREHOUSEMANS_LIABILITY")
+        		Call ToClaim(RiskObject,ClaimObject,"WAREHOUSEMANS_LIABILITY_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"WAREHOUSEMANS_LIABILITY_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"WAREHOUSEMANS_LIABILITY_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"WAREHOUSEMANS_LIABILITY_DEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"WAREHOUSEMANS_LIABILITY_BASISOFDEDU")
+        		Call ToClaim(RiskObject,ClaimObject,"CONSEQ_LOS_ONLY")
+        		
+                Call ToClaim(RiskObject,ClaimObject,"PASS_LIAB")
+        		Call ToClaim(RiskObject,ClaimObject,"PASS_LIAB_LIMIT_OF_IND")
+        		Call ToClaim(RiskObject,ClaimObject,"PASS_LIAB_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PASS_LIAB_PREM")
+        		Call ToClaim(RiskObject,ClaimObject,"PASS_LIAB_DED")
+        		Call ToClaim(RiskObject,ClaimObject,"PASS_LIAB_BASIS_OF_DED")
+        	
+        	    Call ToClaim(RiskObject,ClaimObject,"TOTAL_EXTENSIONS")
+        		'-------------End Extensions-------------------------'
+        
+        		Call DoInstanceCount
+         End If
+        End Sub
+
+        
+        Function ToClaim(RObject, CObject, PropName)
+        	Dim Val	
+        	Val = Extras.RiskDataEngine.Item(RObject).Item(PropName).Value
+        	Engine.Item(CObject).Item(PropName).Value = Val
+        End Function
+        
+        Sub DoInstanceCount
+        
+        ' The ScreenMain rule is added to every screen automatically.
+        
+        
+        Call FindObjectInstanceCount("")
+End Sub
+
+Sub onValidate_GENLIABCLAIM__THIRDPARTY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENLIABCLAIM", "THIRDPARTY", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENLIABCLAIM__SALVAGE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENLIABCLAIM", "SALVAGE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENLIABCLAIM__RECOVERY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENLIABCLAIM", "RECOVERY", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENLIABCLAIM__IS_THRDTLS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENLIABCLAIM", "IS_THRDTLS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENLIABCLAIM__IS_ASSESSDETAIL(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENLIABCLAIM", "IS_ASSESSDETAIL", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENLIABCLAIM__IS_NAMAPP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENLIABCLAIM", "IS_NAMAPP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENLIACLM__ASSESSOR(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENLIACLM", "ASSESSOR", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENLIACLM__LAWYRS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENLIACLM", "LAWYRS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENLIACLM__WITNESS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENLIACLM", "WITNESS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub DoDefaults(bIsOnStart)
+    Call WebRequired(bIsOnStart)
+    Call onScreenLogic(bIsOnStart)
+    Call onValidate_GENLIABCLAIM__THIRDPARTY(bIsOnStart)
+    Call onValidate_GENLIABCLAIM__SALVAGE(bIsOnStart)
+    Call onValidate_GENLIABCLAIM__RECOVERY(bIsOnStart)
+    Call onValidate_GENLIABCLAIM__IS_THRDTLS(bIsOnStart)
+    Call onValidate_GENLIABCLAIM__IS_ASSESSDETAIL(bIsOnStart)
+    Call onValidate_GENLIABCLAIM__IS_NAMAPP(bIsOnStart)
+    Call onValidate_GENLIACLM__ASSESSOR(bIsOnStart)
+    Call onValidate_GENLIACLM__LAWYRS(bIsOnStart)
+    Call onValidate_GENLIACLM__WITNESS(bIsOnStart)
+End Sub
+
+Sub Start()
+    Call DoDefaults(True)
+End Sub
+
+Sub Main()
+    Call DoDefaults(False)
+End Sub
+

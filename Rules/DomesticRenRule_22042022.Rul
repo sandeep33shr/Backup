@@ -1,0 +1,89 @@
+Sub Start()
+	Dim dEscalationPerc
+	Dim dEscalatedSI
+	Dim dtExpiryDate
+	Dim dtCoverStartDate
+	Dim dtAnniversaryDate
+	Dim dtRenewalDate
+	Dim vResults
+	Dim iAge
+	Dim DOBYear, QuoteYear
+	Dim vExtraParameters
+	Dim dtBuildings, dtContents
+	Dim iMonthsBuild, iMonthsContents
+	Dim dBuildingSI, dContentsSI
+
+    
+  	'Get dates
+	Call Extras.CallNamedStoredProcedure(6722, CStr("GetPreviousVersionDates"), vResults)
+	If IsArray(vResults) = True Then
+		dtExpiryDate = vResults(0, 0)
+		dtCoverStartDate = vResults(1, 0)		
+		dtAnniversaryDate  = vResults(2, 0)
+		dtRenewalDate  = vResults(3, 0)
+	End If
+  
+	Call Extras.CallNamedStoredProcedure(6722, CStr("SI_Escalation_GetEffectiveDate"), vResults)
+	If IsArray(vResults) = True Then
+		dtBuildings = vResults(0, 0)
+		dtContents = vResults(1, 0)
+	End If
+	
+	'Buidings Section
+	dBuildingSI = Engine.Item("BUILDINGS").Item("SUMINSURED").Value
+	'Contents Section
+	dContentsSI = Engine.Item("CONTENTS").Item("SUMINSURED").Value
+	
+	If (Extras.IsTrueMonthlyPolicy = False) Then	
+		'Calculate number of months for annual policies
+		If dBuildingSI <> 0 Then
+			iMonthsBuild = DateDiff("m",dtBuildings,dtExpiryDate) + 1
+		End If
+		
+		If dContentsSI <> 0 Then
+			iMonthsContents = DateDiff("m",dtContents,dtExpiryDate) + 1
+		End If
+	ElseIf Extras.CoverStartDate = dtAnniversaryDate Then
+		iMonthsBuild = 12
+		iMonthsContents = 12
+	End If
+	
+	
+	dEscalationPerc = Extras.GetField("UDL_SI_ESCALATION", "Escalation_Perc", "BUILD",Extras.CoverStartDate)
+	dEscalatedSI = dBuildingSI * (1 + (iMonthsBuild * dEscalationPerc/100))
+
+	'Assign the new sum insured for BUILDINGS
+	Engine.Item("BUILDINGS").Item("SUMINSURED").Value = dEscalatedSI
+	
+	dEscalationPerc = Extras.GetField("UDL_SI_ESCALATION", "Escalation_Perc", "CONTS",Extras.CoverStartDate)
+	dEscalatedSI = dContentsSI * (1 + (iMonthsContents * dEscalationPerc/100))
+
+	'Assign the new sum insured for Conetents
+	Engine.Item("CONTENTS").Item("SUMINSURED").Value = dEscalatedSI
+
+	'Added to populate the correct date when dealing with Anniversary renewals
+	If (Extras.IsTrueMonthlyPolicy = False) Then
+		If Extras.CoverStartDate = dtRenewalDate Then
+			'Assign the new Quote Date for Annivesary Renewal
+			Engine.Item("GENERAL").Item("QUOTEDATE").Value = Extras.CoverStartDate
+			
+			Engine.Item("GENERAL").Item("ENDDATE").Value = dtExpiryDate
+			DOBYear = Year(Engine.Item("GENERAL").Item("DOB").Value)
+			QuoteYear = Year(Extras.CoverStartDate)
+			iAge = QuoteYear - DOBYear
+			Engine.Item("GENERAL").Item("AGE").Value = iAge
+		End If
+	Else
+		If Extras.CoverStartDate = dtAnniversaryDate Then
+			'Assign the new Quote Date for Annivesary Renewal
+			Engine.Item("GENERAL").Item("QUOTEDATE").Value = Extras.CoverStartDate
+			
+			Engine.Item("GENERAL").Item("ENDDATE").Value = dtExpiryDate
+			DOBYear = Year(Engine.Item("GENERAL").Item("DOB").Value)
+			QuoteYear = Year(Extras.CoverStartDate)
+			iAge = QuoteYear - DOBYear
+			Engine.Item("GENERAL").Item("AGE").Value = iAge
+		End If
+	End If
+
+End Sub 

@@ -1,0 +1,585 @@
+        Dim iObjectInstanceCount
+        
+        Sub FindObjectInstanceCount(strScreenObjectName)
+        	iObjectInstanceCount = 1
+        
+        	' strScreenObjectName is the object that is associate with this screen (if a child), or "" if the root screen.
+        	If strScreenObjectName <> ""  Then
+        		Dim instanceCount
+        		
+        		' How many instance of this object exist?
+        		instanceCount = engine.count(strScreenObjectName)
+        		
+        		Dim i
+        		for i = 1 to instanceCount
+        			if engine.item(strScreenObjectName, i).item("OI").value = vAdditionalData(cAdditionalData_OIKey) then
+        				iObjectInstanceCount = i
+        			end if
+        		next
+        	End If
+        End Sub
+
+        Sub DefaultTextTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultCommentTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultIntegerTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CLng(strValue)
+        End Sub
+
+        
+        Sub DefaultCheckboxTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanListTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanRadioTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	If InStr(1, LCase(strValue), "code:", 1) = 1 Then
+        		' The default value has been specified as a code (code:<thecode>).
+        		Dim code
+        		Dim effectiveDate
+        		Dim version
+        		
+        		code = Mid(strValue, Len("code:")+1)
+        		effectiveDate = Now()
+        		version = 1
+        		
+        		Dim listItemId
+        		listItemId = Extras.GetField(strListCode, strListCode + "_Id", code, effectiveDate, version)
+        		
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(listItemId)
+        	Else
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        	End If
+        End Sub
+
+        
+        Sub DefaultRateListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	' TODO.
+        End Sub
+
+        
+        Sub DefaultDateTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	
+        	Dim location
+        	Dim Interval
+        	Dim Duration
+        	Dim DateValue
+        	
+        	'Upper case the input
+        	DateValue = UCase(strValue)
+        	'Check to see if we want data AND  Time
+        	location = InStr(1,DateValue,"DATETIME")
+        	if location > 0 then
+        		DateValue=  CDate(FormatDateTime(Now,0)) 'use the standard vb datetime
+        	End If
+        	'Check to see if TODAY is specified as a modifier
+        	location  = InStr(1,DateValue,"TODAY")
+        	If location > 0 Then
+        		'Determine if we are adding values
+        		location  = InStr(1,DateValue,"+")
+        		If location > 0 Then 
+        			Interval = Mid(DateValue,location + 1,1)
+        			
+        			If Interval = "Y" Then
+        				Interval = "YYYY"
+        			End If
+        			
+        			If Interval <> "" Then 
+        				Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        				DateValue = DateAdd(Interval,Duration,CDate(FormatDateTime(Now,2)))	
+        				
+        			Else
+        				'No Interval specified 
+        				'Need an error here!!!!
+        			End If	
+        		Else 
+        			'Check to see if we are subtracting values
+        			location  =InStr(1,DateValue,"-")
+        			If location > 0  Then 
+        				Interval = Mid(DateValue,location + 1,1)
+        				
+        				If Interval <> "" Then 
+        					Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        					DateValue = DateAdd(Interval, Duration * -1,CDate(FormatDateTime(Now,2)))	
+        				Else
+        					'No Interval specified 
+        					'Need an error here!!!!
+        				End If
+        			Else
+        				'No Function specified, so assume we are just using today's date as a shortdate
+        				DateValue = CDate(FormatDateTime(Now,2))
+        			End If
+        			
+        		End If
+        		
+        	End If	
+        	
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDate(DateValue)
+        End Sub
+
+        
+        Sub DefaultCurrencyTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+        
+        Sub DefaultPercentageTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+Sub WebRequired(bIsOnStart)
+	If bIsOnStart = True Then
+		Engine.NewObject("GENERAL")
+		Engine.NewObject("ADDRESS")
+		Engine.NewObject("MOTOR")
+		Engine.NewObject("REFERRAL_CLAUSES")
+		Engine.NewObject("NOTES")
+	End If
+End Sub
+
+Sub onScreenLogic(bIsOnStart)
+        '***********************************************************************
+        '	User Mandates
+        '***********************************************************************
+        Dim sUser, sMandate, sUserGroup
+        Dim sUdl, sProdCode
+        Dim vExtraParameters, iRet
+        Dim arrSPUserGroup, arrSPMandate
+        
+        sUser = Extras.Username
+        sProdCode = "NPA" ' Engine.item("GENERAL").item("PRODCODE").Value
+        
+        '--------------------DISCOUNT SANTIONS--------------------'
+        
+        'Get User group of logged in User
+        sMandate = "DISCOUNT"
+        
+        vExtraParameters = Array("sUsername",CStr(sUser),"sMandateType",CStr(sMandate))
+        iRet = Extras.CallNamedStoredProcedure(CLng(6722), CStr("GetUserGroups"), arrSPUserGroup,vExtraParameters)
+        
+        If IsArray(arrSPUserGroup) Then
+        	sUserGroup = arrSPUserGroup(0,0)
+        End If	
+        
+        'Retrieve Mandate values for the usergroup
+        sUdl = "UDL_KUSRDISC"
+        vExtraParameters = array("sUDLName",CStr(sUdl),"sCode",CStr(sUserGroup),"sProdCode",CStr(sProdCode))
+        iRet = Extras.CallNamedStoredProcedure(CLng(6722), CStr("GetMandateAmounts"), arrSPMandate,vExtraParameters)
+        
+        If IsArray(arrSPMandate) Then
+        	Engine.item("MOTOR").item("DISCSANC").Value = arrSPMandate(0,0)
+        End If
+        
+        '--------------------MOTOR SI SANTIONS--------------------'
+        
+        'Get User group of logged in User
+        sMandate = "SI"
+        
+        vExtraParameters = Array("sUsername",CStr(sUser),"sMandateType",CStr(sMandate))
+        iRet = Extras.CallNamedStoredProcedure(CLng(6722), CStr("GetUserGroups"), arrSPUserGroup,vExtraParameters)
+        
+        If IsArray(arrSPUserGroup) Then
+        	sUserGroup = arrSPUserGroup(0,0)
+        End If	
+        
+        'Retrieve Mandate values for the usergroup
+        sUdl = "UDL_KSANCMOT"
+        vExtraParameters = array("sUDLName",CStr(sUdl),"sCode",CStr(sUserGroup),"sProdCode",CStr(sProdCode))
+        iRet = Extras.CallNamedStoredProcedure(CLng(6722), CStr("GetMandateAmounts"), arrSPMandate,vExtraParameters)
+        
+        If IsArray(arrSPMandate) Then
+        	Engine.item("MOTOR").item("MAXSI").Value = arrSPMandate(0,0)
+        End If
+        
+        '--------------------MOTOR CLAIMS SANTIONS--------------------'
+        
+        'Get User group of logged in User
+        sMandate = "CLAIM"
+        
+        vExtraParameters = array("sUsername",sUser,"sMandateType",sMandate)
+        iRet = Extras.CallNamedStoredProcedure(CLng(6722), CStr("GetUserGroups"), arrSPUserGroup,vExtraParameters)
+        
+        If IsArray(arrSPUserGroup) Then
+        	sUserGroup = arrSPUserGroup(0,0)
+        End If
+        
+        'Retrieve Mandate values for the usergroup
+        sUdl = "UDL_KCLMSANC"
+        vExtraParameters = array("sUDLName",sUdl,"sCode",sUserGroup,"sProdCode",sProdCode)
+        iRet = Extras.CallNamedStoredProcedure(CLng(6722), CStr("GetMandateAmounts"), arrSPMandate,vExtraParameters)
+        
+        If IsArray(arrSPMandate) Then
+        	Engine.item("MOTOR").item("CLM24SANC").Value = arrSPMandate(0,0)
+        	Engine.item("MOTOR").item("CLM36SANC").Value = arrSPMandate(1,0)
+        End If
+        
+        '--------------------MOTOR Quote Date--------------------'
+        Dim TransactionType
+        Dim dtAnniversaryDate
+        Dim dtRenewalDate
+        Dim dYear
+        Dim lTrueMonthly
+        Dim dtQuoteDate
+        TransactionType = Extras.TransactionType
+        
+        If TransactionType <> "NB" Then
+        	'Get dates
+        	Call Extras.CallNamedStoredProcedure(6722, CStr("GetPreviousVersionDates"), vResults)
+        	If IsArray(vResults) = True Then		
+        		dtAnniversaryDate  = vResults(2, 0)
+        		dtRenewalDate  = vResults(3, 0)
+        	End If
+        	
+        	If TransactionType = "REN" Then
+        		If (Extras.IsTrueMonthlyPolicy = False) Then
+        			If Extras.CoverStartDate = dtRenewalDate Then
+        				'Assign the new Quote Date for Annivesary Renewal
+        				Engine.Item("MOTOR").Item("QUOTE_DATE").Value = Extras.CoverStartDate
+        				dYear = Year(Extras.CoverStartDate)
+        				Engine.Item("MOTOR").Item("QUOTE_YEAR").Value = dYear
+        			End If
+        		Else
+        			If Extras.CoverStartDate = dtAnniversaryDate Then
+        				'Assign the new Quote Date for Annivesary Renewal
+        				Engine.Item("MOTOR").Item("QUOTE_DATE").Value = Extras.CoverStartDate 
+        				dYear = Year(Extras.CoverStartDate)
+        				Engine.Item("MOTOR").Item("QUOTE_YEAR").Value = dYear
+        			End If
+        		End If
+        	Else
+        		'Get Quote Date
+        		lTrueMonthly = 0
+        		If (Extras.IsTrueMonthlyPolicy = True) Then
+        			lTrueMonthly = 1
+        		End If
+        		vExtraParameters = array("lTrueMonthly",lTrueMonthly)
+        		Call Extras.CallNamedStoredProcedure(6722, CStr("GetPLMotorQuoteDate"), vResults)
+        		If IsArray(vResults) = True Then		
+        			dtQuoteDate  = vResults(1, 0)
+        		End If
+        		Engine.Item("MOTOR").Item("QUOTE_DATE").Value = dtQuoteDate
+        		dYear = Year(dtQuoteDate)
+        		Engine.Item("MOTOR").Item("QUOTE_YEAR").Value = dYear
+        	End If
+        End If
+        
+        '***********************************************************************
+        '	Duplicate Client Check
+        '***********************************************************************
+        If bIsOnStart = True Then
+        	Dim vResults
+        	Dim ResultTwo
+        	Dim ResultThree
+        	Dim DisplayReason
+        	Dim PartyCounts 	
+        	Dim CountElements
+        	Dim CheckVariable
+        	Dim vExtraParameter(1)
+        	Dim d
+        
+        	vExtraParameter(0) ="lCheckValidPartyCount"
+        
+        	Call Extras.CallNamedStoredProcedure(CLng(6722), CStr("check_party_counts"), PartyCounts)
+        	
+        	For each d in PartyCounts
+        		vExtraParameter(1) = d  
+        		
+        		Call Extras.CallNamedStoredProcedure(CLng(6722), CStr("Check_Duplicate_Policy_Two"), vResults, vExtraParameter)
+        		If IsArray(vResults) Then
+        		   DisplayReason = vResults(0,0)
+        		End If
+        	
+        		Call Extras.CallNamedStoredProcedure(CLng(6722), CStr("Check_Qoute_Two"), ResultTwo, vExtraParameter)
+        		If IsArray(ResultTwo) Then
+        			DisplayReason = DisplayReason & vbCrLf & ResultTwo(0,0)
+        		End If
+        		
+        		Call Extras.CallNamedStoredProcedure(CLng(6722), CStr("Check_Cancellation_Two"), ResultThree, vExtraParameter)
+        		If IsArray(ResultThree) Then
+        		    DisplayReason = DisplayReason & vbCrLf &  ResultThree(0,0)
+        			
+        		End If
+        		Engine.Item("GENERAL").item("DUPLIC_CLIENT_CHECK_REASON").Value = DisplayReason
+        		Exit For
+        	Next
+        	
+        	Call DoInstanceCount
+        End If
+        
+        End Sub
+
+        Sub DoInstanceCount
+        ' The ScreenMain rule is added to every screen automatically.
+        
+        
+        Call FindObjectInstanceCount("")
+End Sub
+
+Sub onValidate_GENERAL__IS_MTA_REASON(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "IS_MTA_REASON", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__ACCEPT_DUPLIC_CLIENT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "ACCEPT_DUPLIC_CLIENT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MOTOR__UNSUPPORTED(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MOTOR", "UNSUPPORTED", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MOTOR__TMP_ISPVT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MOTOR", "TMP_ISPVT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MOTOR__TMP_ISCVANTRL(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MOTOR", "TMP_ISCVANTRL", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MOTOR__TMP_DRIVER(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MOTOR", "TMP_DRIVER", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MOTOR__TMP_ISMTRXT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MOTOR", "TMP_ISMTRXT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MOTOR__TMP_TOGGLE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MOTOR", "TMP_TOGGLE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MOTOR__TMP_COVDETS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MOTOR", "TMP_COVDETS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MOTOR__TMP_ISCVANTRL2(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MOTOR", "TMP_ISCVANTRL2", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MOTOR__TMP_DRIVER2(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MOTOR", "TMP_DRIVER2", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MOTOR__TMP_ISMTRXT2(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MOTOR", "TMP_ISMTRXT2", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MOTOR__VEH_TYPE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultListTo("MOTOR", "VEH_TYPE", "3", "UDL_MVVEHGR")
+        End If
+End Sub
+
+Sub onValidate_MOTOR__EXTRA(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MOTOR", "EXTRA", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MOTOR__RADIO(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MOTOR", "RADIO", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MOTOR__IS_REBUILD(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MOTOR", "IS_REBUILD", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MOTOR__GARAGE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MOTOR", "GARAGE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MOTOR__TRACK(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MOTOR", "TRACK", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MOTOR__IMMOB(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MOTOR", "IMMOB", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MOTOR__ALARM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MOTOR", "ALARM", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MOTOR__GEAR_LOCK(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MOTOR", "GEAR_LOCK", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MOTOR__IS_PENSIONER(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MOTOR", "IS_PENSIONER", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MOTOR__WSCRNEXAMNT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCurrencyTo("MOTOR", "WSCRNEXAMNT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MOTOR__SANDBLAST(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCurrencyTo("MOTOR", "SANDBLAST", "2000", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MOTOR__MXBEXESSTHREE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCurrencyTo("MOTOR", "MXBEXESSTHREE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MOTOR__IS_WAIVER(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MOTOR", "IS_WAIVER", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MOTOR__IS_PAYING(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MOTOR", "IS_PAYING", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MOTOR__IS_DEPOSIT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MOTOR", "IS_DEPOSIT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MOTOR__tmpISDepositValid(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MOTOR", "tmpISDepositValid", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MOTOR__tmpDEPPAIDVALID(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MOTOR", "tmpDEPPAIDVALID", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MOTOR__IS_EXTENDCAR(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MOTOR", "IS_EXTENDCAR", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MOTOR__IS_VEHREPL(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MOTOR", "IS_VEHREPL", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MOTOR__tmpCARPERDAY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MOTOR", "tmpCARPERDAY", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MOTOR__tmpCARNODAY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MOTOR", "tmpCARNODAY", "0", "{listcode}")
+        End If
+End Sub
+
+Sub DoDefaults(bIsOnStart)
+    Call WebRequired(bIsOnStart)
+    Call onScreenLogic(bIsOnStart)
+    Call onValidate_GENERAL__IS_MTA_REASON(bIsOnStart)
+    Call onValidate_GENERAL__ACCEPT_DUPLIC_CLIENT(bIsOnStart)
+    Call onValidate_MOTOR__UNSUPPORTED(bIsOnStart)
+    Call onValidate_MOTOR__TMP_ISPVT(bIsOnStart)
+    Call onValidate_MOTOR__TMP_ISCVANTRL(bIsOnStart)
+    Call onValidate_MOTOR__TMP_DRIVER(bIsOnStart)
+    Call onValidate_MOTOR__TMP_ISMTRXT(bIsOnStart)
+    Call onValidate_MOTOR__TMP_TOGGLE(bIsOnStart)
+    Call onValidate_MOTOR__TMP_COVDETS(bIsOnStart)
+    Call onValidate_MOTOR__TMP_ISCVANTRL2(bIsOnStart)
+    Call onValidate_MOTOR__TMP_DRIVER2(bIsOnStart)
+    Call onValidate_MOTOR__TMP_ISMTRXT2(bIsOnStart)
+    Call onValidate_MOTOR__VEH_TYPE(bIsOnStart)
+    Call onValidate_MOTOR__EXTRA(bIsOnStart)
+    Call onValidate_MOTOR__RADIO(bIsOnStart)
+    Call onValidate_MOTOR__IS_REBUILD(bIsOnStart)
+    Call onValidate_MOTOR__GARAGE(bIsOnStart)
+    Call onValidate_MOTOR__TRACK(bIsOnStart)
+    Call onValidate_MOTOR__IMMOB(bIsOnStart)
+    Call onValidate_MOTOR__ALARM(bIsOnStart)
+    Call onValidate_MOTOR__GEAR_LOCK(bIsOnStart)
+    Call onValidate_MOTOR__IS_PENSIONER(bIsOnStart)
+    Call onValidate_MOTOR__WSCRNEXAMNT(bIsOnStart)
+    Call onValidate_MOTOR__SANDBLAST(bIsOnStart)
+    Call onValidate_MOTOR__MXBEXESSTHREE(bIsOnStart)
+    Call onValidate_MOTOR__IS_WAIVER(bIsOnStart)
+    Call onValidate_MOTOR__IS_PAYING(bIsOnStart)
+    Call onValidate_MOTOR__IS_DEPOSIT(bIsOnStart)
+    Call onValidate_MOTOR__tmpISDepositValid(bIsOnStart)
+    Call onValidate_MOTOR__tmpDEPPAIDVALID(bIsOnStart)
+    Call onValidate_MOTOR__IS_EXTENDCAR(bIsOnStart)
+    Call onValidate_MOTOR__IS_VEHREPL(bIsOnStart)
+    Call onValidate_MOTOR__tmpCARPERDAY(bIsOnStart)
+    Call onValidate_MOTOR__tmpCARNODAY(bIsOnStart)
+End Sub
+
+Sub Start()
+    Call DoDefaults(True)
+End Sub
+
+Sub Main()
+    Call DoDefaults(False)
+End Sub
+

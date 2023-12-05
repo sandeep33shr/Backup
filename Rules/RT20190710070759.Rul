@@ -1,0 +1,676 @@
+Sub Start()
+	Dim pcicheck , ownWorksCheck, constPubLiaCheck
+	
+	ownWorksCheck = Engine.Item("RISKDETAILS").Item("OWNIND").value 
+	pcicheck = Engine.Item("RISKDETAILS").Item("PCIIND").value
+	constPubLiaCheck = Engine.Item("CONTWORKS").Item("CONPUBLIA").value
+	
+	If ownWorksCheck = 0 AND pcicheck = 0 AND constPubLiaCheck = 0 Then
+		RatingOWNERWORKS()
+	End If
+	
+	If (ownWorksCheck) Then
+		RatingOWNERWORKS()
+	End if
+	
+	If (pcicheck) Then
+		RatingPCISUBCONTRACT()
+	End if
+	
+	If (constPubLiaCheck) Then
+		RatingCONSTRUCTIONPULICLIABILITY()
+	End if
+	
+	RatingExtensions()
+	
+End Sub
+
+Function RatingOWNERWORKS()
+  
+	Dim OwnWorksPremium, OwnWorksTurnover, OwnWorksRate
+	Dim VatFreePremium_OW, VatFreeSI_OW
+	Dim MonthlyPremium_OW, MonthlyRate_OW
+	Dim ProdCode_OW
+	
+	ProdCode_OW = Engine.Item("GENERAL").Item("PRODCODE").value
+	
+	OwnWorksPremium = SafecDbl(Engine.Item("RISKDETAILS").Item("PREMIUM_LIM").value)
+	OwnWorksTurnover = SafecDbl(Engine.Item("RISKDETAILS").Item("ESTANNTUR").value)
+	
+	If OwnWorksTurnover > 0 Then
+		OwnWorksRate = SafecDbl((OwnWorksPremium / OwnWorksTurnover) * 100)
+	End if
+	
+	If ProdCode_OW = "CCA" Then
+		
+		VatFreeSI_OW = SafecDbl(OwnWorksTurnover/1.15)
+		VatFreePremium_OW = SafecDbl(OwnWorksPremium/1.15)
+		
+		GenerateOutput VatFreeSI_OW, OwnWorksRate, VatFreePremium_OW, "CCACWALOP"
+		
+	End If
+	
+	If ProdCode_OW = "CCM" Then
+		
+		MonthlyRate_OW = SafecDbl(OwnWorksRate/12)
+		MonthlyPremium_OW = SafecDbl(OwnWorksTurnover * (MonthlyRate_OW * 0.01))
+		
+		VatFreeSI_OW = SafecDbl(OwnWorksTurnover/1.15)
+		VatFreePremium_OW = SafecDbl(MonthlyPremium_OW/1.15)
+		
+		GenerateOutput VatFreeSI_OW, MonthlyRate_OW, VatFreePremium_OW, "CCACWALOP"
+		
+	End If
+
+End Function
+
+Function RatingPCISUBCONTRACT()
+  
+	Dim PCIPremium, PCITurnover, PCIRate
+	Dim VatFreePremium_PCI, VatFreeSI_PCI
+	Dim MonthlyPremium_PCI, MonthlyRate_PCI
+	Dim ProdCode_PCI
+	
+	ProdCode_PCI = Engine.Item("GENERAL").Item("PRODCODE").value
+	
+	PCIPremium = SafecDbl(Engine.Item("RISKDETAILS").Item("PCIPREMIUM_LIM").value)
+	PCITurnover = SafecDbl(Engine.Item("RISKDETAILS").Item("PCIESTANNTUR").value)
+	
+	If PCITurnover > 0 Then
+		PCIRate = SafecDbl((PCIPremium / PCITurnover) * 100)
+	End If
+	
+	If ProdCode_PCI = "CCA" Then
+		
+		VatFreeSI_PCI = SafecDbl(PCITurnover/1.15)
+		VatFreePremium_PCI = SafecDbl(PCIPremium/1.15)
+		
+		GenerateOutput VatFreeSI_PCI, PCIRate, VatFreePremium_PCI, "CCACWCV"
+		
+	End If
+	
+	If ProdCode_PCI = "CCM" Then
+	
+		MonthlyRate_PCI = SafecDbl(PCIRate/12)
+		MonthlyPremium_PCI = SafecDbl(PCITurnover * (MonthlyRate_PCI * 0.01))
+		
+		VatFreeSI_PCI = SafecDbl(PCITurnover/1.15)
+		VatFreePremium_PCI = SafecDbl(MonthlyPremium_PCI/1.15)
+		
+		GenerateOutput VatFreeSI_PCI, MonthlyRate_PCI, VatFreePremium_PCI, "CCACWCV"
+		
+	End If
+		
+End Function
+
+Function RatingCONSTRUCTIONPULICLIABILITY()
+   
+	Dim childSI, childPrem, otherExtPrem, otherExtSumIns
+	Dim totalPrem, totalSumins, totalRate
+	Dim coverD_premium, coverD_turnOver, coverD_rate
+	Dim LegalDefenceCostPrem, LegalDefenceCostSumIns, SpreadofFirePrem, SpreadofFireSumIns
+	Dim WrongfulArrestDefamationPrem, WrongfulArrestDefamationSumIns
+	Dim VatFreePremium_PL, VatFreeSI_PL
+	Dim MonthlyPremium_PL, MonthlyRate_PL
+	Dim ProdCode_PL
+	Dim x, plIndex, plCnt
+	
+	ProdCode_PL = Engine.Item("GENERAL").Item("PRODCODE").value
+	
+	coverD_turnOver = SafecDbl(Engine.Item("CONEXTLEG").Item("TURNOVER").value)
+	coverD_premium = SafecDbl(Engine.Item("CONEXTLEG").Item("PREMIUM").value)
+	
+	LegalDefenceCostSumIns = SafecDbl(Engine.Item("CONEXTLEG").Item("SUMINSURED_LEGALDEFCOST").value)
+	LegalDefenceCostPrem = SafecDbl(Engine.Item("CONEXTLEG").Item("PREMIUM_LEGALDEFCOST").value)
+	
+	SpreadofFireSumIns = SafecDbl(Engine.Item("CONEXTLEG").Item("SUMINSURED_SPREADFIRE").value)
+	SpreadofFirePrem = SafecDbl(Engine.Item("CONEXTLEG").Item("PREMIUM_SPREADFIRE1").value)
+	
+	WrongfulArrestDefamationSumIns = SafecDbl(Engine.Item("CONEXTLEG").Item("SUMINSURED_WRONGFULARR").value)
+	WrongfulArrestDefamationPrem = SafecDbl(Engine.Item("CONEXTLEG").Item("PREMIUM_WRONGFULARR").value)
+	
+	plCnt = Engine.Count("CONADDEXT")
+	
+	otherExtSumIns = 0
+	otherExtPrem = 0
+	x = 1
+
+	For plIndex = x to plCnt
+		childSI = SafecDbl(Engine.Item("TOTCHLD").Item("CONADDEXT", plIndex).Item("LOL").value)
+		childPrem = SafecDbl(Engine.Item("TOTCHLD").Item("CONADDEXT", plIndex).Item("PREMIUM").value)
+		otherExtSumIns = otherExtSumIns + childSI
+		otherExtPrem = otherExtPrem + childPrem
+	Next
+
+	totalSumins = SafecDbl(LegalDefenceCostSumIns + SpreadofFireSumIns + WrongfulArrestDefamationSumIns + coverD_turnOver + otherExtSumIns)
+	totalPrem = SafecDbl(LegalDefenceCostPrem + SpreadofFirePrem + WrongfulArrestDefamationPrem + coverD_premium + otherExtPrem)
+	
+	If totalSumins > 0 then
+		totalRate = SafecDbl((totalPrem / totalSumins) * 100)
+	End If
+	
+	If ProdCode_PL = "CCA" Then
+		
+		VatFreeSI_PL = SafecDbl(totalSumins/1.15)
+		VatFreePremium_PL = SafecDbl(totalPrem/1.15)
+		
+		GenerateOutput VatFreeSI_PL, totalRate, VatFreePremium_PL, "CCACWCVCPL" '"CCACPL"
+		
+	End If
+	
+	If ProdCode_PL = "CCM" Then
+		
+		MonthlyRate_PL = SafecDbl(totalRate/12)
+		MonthlyPremium_PL = SafecDbl(totalSumins * (MonthlyRate_PL * 0.01))
+		
+		VatFreeSI_PL = SafecDbl(totalSumins/1.15)
+		VatFreePremium_PL = SafecDbl(MonthlyPremium_PL/1.15)
+		
+		GenerateOutput VatFreeSI_PL, MonthlyRate_PL, VatFreePremium_PL, "CCACWCVCPL" '"CCACPL"
+		
+	End If
+
+End Function
+
+Function RatingExtensions()
+	Dim AddClmPrepSI, AddClmPrepRate, AddClmPrepPrem
+	Dim AddDebRemSI, AddDebRemRate, AddDebRemPrem
+	Dim AddReconSI, AddReconRate, AddReconPrem
+	Dim ConDefectSI, ConDefectRate, ConDefectPrem
+	Dim DiffConditSI, DiffConditRate, DiffConditPrem
+	Dim DiffExcessSI, DiffExcessRate, DiffExcessPrem
+	Dim EscalSI, EscalRate, EscalPrem
+	Dim ExpidSI, ExpidRate, ExpidPrem
+	Dim MitExpSI, MitExpRate, MitExpPrem
+	Dim PrincSurrSI, PrincSurrRate, PrincSurrPrem
+	Dim ProfFeesSI, ProfFeesRate, ProfFeesPrem
+	Dim ProLossEscSI, ProLossEscRate, ProLossEscPrem
+	Dim SurrPropSI, SurrPropRate, SurrPropPrem
+	Dim TempStorSI, TempStorRate, TempStorPrem
+	Dim TranLiabSI, TranLiabRate, TranLiabPrem
+	Dim AddExtSI, AddExtRate, AddExtPrem
+	Dim ProdCode_Ext
+	Dim y, extIndex, extCnt
+	Dim addSI, addPrem
+	
+	ProdCode_Ext = Engine.Item("GENERAL").Item("PRODCODE").value
+	
+	AddClmPrepSI = SafecDbl(Engine.Item("EXT_ADDCP").Item("LOL").value)
+	AddClmPrepRate = SafecDbl(Engine.Item("EXT_ADDCP").Item("RATE").value)
+	AddClmPrepPrem = SafecDbl(AddClmPrepSI * (AddClmPrepRate * 0.01))
+	
+	AddDebRemSI = SafecDbl(Engine.Item("EXT_ADDDR").Item("LOL").value)
+	AddDebRemRate = SafecDbl(Engine.Item("EXT_ADDDR").Item("RATE").value)
+	AddDebRemPrem = SafecDbl(AddDebRemSI * (AddDebRemRate * 0.01))
+	
+	AddReconSI = SafecDbl(Engine.Item("EXT_ADDREC").Item("LOL").value)
+	AddReconRate = SafecDbl(Engine.Item("EXT_ADDREC").Item("RATE").value)
+	AddReconPrem = SafecDbl(AddReconSI * (AddReconRate * 0.01))
+	
+	ConDefectSI = SafecDbl(Engine.Item("EXT_CONDEF").Item("LOL").value)
+	ConDefectRate = SafecDbl(Engine.Item("EXT_CONDEF").Item("RATE").value)
+	ConDefectPrem = SafecDbl(ConDefectSI * (ConDefectRate * 0.01))
+	
+	DiffConditSI = SafecDbl(Engine.Item("EXT_DEFCON").Item("LOL").value)
+	DiffConditRate = SafecDbl(Engine.Item("EXT_DEFCON").Item("RATE").value)
+	DiffConditPrem = SafecDbl(DiffConditSI * (DiffConditRate * 0.01))
+	
+	DiffExcessSI = SafecDbl(Engine.Item("EXT_DEFEXC").Item("LOL").value)
+	DiffExcessRate = SafecDbl(Engine.Item("EXT_DEFEXC").Item("RATE").value)
+	DiffExcessPrem = SafecDbl(DiffExcessSI * (DiffExcessRate * 0.01))
+	
+	EscalSI = SafecDbl(Engine.Item("EXT_ESC").Item("LOL").value)
+	EscalRate = SafecDbl(Engine.Item("EXT_ESC").Item("RATE").value)
+	EscalPrem = SafecDbl(EscalSI * (EscalRate * 0.01))
+	
+	ExpidSI = SafecDbl(Engine.Item("EXT_EXPEXP").Item("LOL").value)
+	ExpidRate = SafecDbl(Engine.Item("EXT_EXPEXP").Item("RATE").value)
+	ExpidPrem = SafecDbl(ExpidSI * (ExpidRate * 0.01))
+	
+	MitExpSI = SafecDbl(Engine.Item("EXT_MITEXP").Item("LOL").value)
+	MitExpRate = SafecDbl(Engine.Item("EXT_MITEXP").Item("RATE").value)
+	MitExpPrem = SafecDbl(MitExpSI * (MitExpRate * 0.01))
+	
+	PrincSurrSI = SafecDbl(Engine.Item("EXT_PRINC").Item("LOL").value)
+	PrincSurrRate = SafecDbl(Engine.Item("EXT_PRINC").Item("RATE").value)
+	PrincSurrPrem = SafecDbl(PrincSurrSI * (PrincSurrRate * 0.01))
+	
+	ProfFeesSI = SafecDbl(Engine.Item("EXT_PROF").Item("LOL").value)
+	ProfFeesRate = SafecDbl(Engine.Item("EXT_PROF").Item("RATE").value)
+	ProfFeesPrem = SafecDbl(ProfFeesSI * (ProfFeesRate * 0.01))
+	
+	ProLossEscSI = SafecDbl(Engine.Item("EXT_POSTL").Item("LOL").value)
+	ProLossEscRate = SafecDbl(Engine.Item("EXT_POSTL").Item("RATE").value)
+	ProLossEscPrem = SafecDbl(ProLossEscSI * (ProLossEscRate * 0.01))
+	
+	SurrPropSI = SafecDbl(Engine.Item("EXT_SURR").Item("LOL").value)
+	SurrPropRate = SafecDbl(Engine.Item("EXT_SURR").Item("RATE").value)
+	SurrPropPrem = SafecDbl(SurrPropSI * (SurrPropRate * 0.01))
+	
+	TempStorSI = SafecDbl(Engine.Item("EXT_TEMPS").Item("LOL").value)
+	TempStorRate = SafecDbl(Engine.Item("EXT_TEMPS").Item("RATE").value)
+	TempStorPrem = SafecDbl(TempStorSI * (TempStorRate * 0.01))
+	
+	TranLiabSI = SafecDbl(Engine.Item("EXT_TRANSIT").Item("LOL").value)
+	TranLiabRate = SafecDbl(Engine.Item("EXT_TRANSIT").Item("RATE").value)
+	TranLiabPrem = SafecDbl(TranLiabSI * (TranLiabRate * 0.01))
+	
+	AddExtSI = 0
+	AddExtPrem = 0
+	y = 1
+	
+	extCnt = Engine.Count("OTHEREXT")
+	
+	For extIndex = y to extCnt
+		addSI = SafecDbl(Engine.Item("OTHEXTL").Item("OTHEREXT", extIndex).Item("LOL").value)
+		addPrem = SafecDbl(Engine.Item("OTHEXTL").Item("OTHEREXT", extIndex).Item("PREMIUM").value)
+		AddExtSI = AddExtSI + addSI
+		AddExtPrem = AddExtPrem + addPrem
+	Next
+	
+	
+	If AddClmPrepPrem > 0 Then
+		Dim VatFreeClmSI, VatFreeClmPrem
+		
+		If ProdCode_Ext = "CCA" Then
+			VatFreeClmSI = SafecDbl(AddClmPrepSI / 1.15)
+			VatFreeClmPrem = SafecDbl(AddClmPrepPrem / 1.15)
+			
+			GenerateOutput VatFreeClmSI, AddClmPrepRate, VatFreeClmPrem, "CCAEXCP"
+		End If
+		
+		If ProdCode_Ext = "CCM" Then
+			Dim ClmPrepMonthlyRate, ClmPrepMonthlyPrem
+			ClmPrepMonthlyRate = SafecDbl(AddClmPrepRate / 12)
+			ClmPrepMonthlyPrem = SafecDbl(AddClmPrepSI * (ClmPrepMonthlyRate * 0.01))
+			
+			VatFreeClmSI = SafecDbl(AddClmPrepSI / 1.15)
+			VatFreeClmPrem = SafecDbl(ClmPrepMonthlyPrem / 1.15)
+			
+			GenerateOutput VatFreeClmSI, ClmPrepMonthlyRate, VatFreeClmPrem, "CCAEXCP"
+		End If
+	End If
+	
+	If AddDebRemPrem > 0 Then
+		Dim VatFreeDebSI, VatFreeDebPrem
+		
+		If ProdCode_Ext = "CCA" Then
+			VatFreeDebSI = SafecDbl(AddDebRemSI / 1.15)
+			VatFreeDebPrem = SafecDbl(AddDebRemPrem / 1.15)
+			
+			GenerateOutput VatFreeDebSI, AddDebRemRate, VatFreeDebPrem, "CCAEXDR"
+		End If
+		
+		If ProdCode_Ext = "CCM" Then
+			Dim DebRemMonthlyRate, DebRemMonthlyPrem
+			DebRemMonthlyRate = SafecDbl(AddDebRemRate / 12)
+			DebRemMonthlyPrem = SafecDbl(AddDebRemSI * (DebRemMonthlyRate * 0.01))
+			
+			VatFreeDebSI = SafecDbl(AddDebRemSI / 1.15)
+			VatFreeDebPrem = SafecDbl(DebRemMonthlyPrem / 1.15)
+			
+			GenerateOutput VatFreeDebSI, DebRemMonthlyRate, VatFreeDebPrem, "CCAEXDR"
+		End If
+	End If
+	
+	If AddReconPrem > 0 Then
+		Dim VatFreeReconSI, VatFreeReconPrem
+		
+		If ProdCode_Ext = "CCA" Then
+			VatFreeReconSI = SafecDbl(AddReconSI / 1.15)
+			VatFreeReconPrem = SafecDbl(AddReconPrem / 1.15)
+			
+			GenerateOutput VatFreeReconSI, AddReconRate, VatFreeReconPrem, "CCAEXAR"
+		End If
+		
+		If ProdCode_Ext = "CCM" Then
+			Dim ReconMonthlyRate, ReconMonthlyPrem
+			ReconMonthlyRate = SafecDbl(AddReconRate / 12)
+			ReconMonthlyPrem = SafecDbl(AddReconSI * (ReconMonthlyRate * 0.01))
+			
+			VatFreeReconSI = SafecDbl(AddReconSI / 1.15)
+			VatFreeReconPrem = SafecDbl(ReconMonthlyPrem / 1.15)
+			
+			GenerateOutput VatFreeReconSI, ReconMonthlyRate, VatFreeReconPrem, "CCAEXAR"
+		End If
+	End If
+	
+	If ConDefectPrem > 0 Then
+		Dim VatFreeConDefSI, VatFreeConDefPrem
+		
+		If ProdCode_Ext = "CCA" Then
+			VatFreeConDefSI = SafecDbl(ConDefectSI / 1.15)
+			VatFreeConDefPrem = SafecDbl(ConDefectPrem / 1.15)
+			
+			GenerateOutput VatFreeConDefSI, ConDefectRate, VatFreeConDefPrem, "CCAEXCD"
+		End If
+		
+		If ProdCode_Ext = "CCM" Then
+			Dim ConDefMonthlyRate, ConDefMonthlyPrem
+			ConDefMonthlyRate = SafecDbl(ConDefectRate / 12)
+			ConDefMonthlyPrem = SafecDbl(ConDefectSI * (ConDefMonthlyRate * 0.01))
+			
+			VatFreeConDefSI = SafecDbl(ConDefectSI / 1.15)
+			VatFreeConDefPrem = SafecDbl(ConDefMonthlyPrem / 1.15)
+			
+			GenerateOutput VatFreeConDefSI, ConDefMonthlyRate, VatFreeConDefPrem, "CCAEXCD"
+		End If
+	End If
+	
+	If DiffConditPrem > 0 Then
+		Dim VatFreeDiffConSI, VatFreeDiffConPrem
+		
+		If ProdCode_Ext = "CCA" Then
+			VatFreeDiffConSI = SafecDbl(DiffConditSI / 1.15)
+			VatFreeDiffConPrem = SafecDbl(DiffConditPrem / 1.15)
+			
+			GenerateOutput VatFreeDiffConSI, DiffConditRate, VatFreeDiffConPrem, "CCAEXDC"
+		End If
+		
+		If ProdCode_Ext = "CCM" Then
+			Dim DiffConMonthlyRate, DiffConMonthlyPrem
+			DiffConMonthlyRate = SafecDbl(DiffConditRate / 12)
+			DiffConMonthlyPrem = SafecDbl(DiffConditSI * (DiffConMonthlyRate * 0.01))
+			
+			VatFreeDiffConSI = SafecDbl(DiffConditSI / 1.15)
+			VatFreeDiffConPrem = SafecDbl(DiffConMonthlyPrem / 1.15)
+			
+			GenerateOutput VatFreeDiffConSI, DiffConMonthlyRate, VatFreeDiffConPrem, "CCAEXDC"
+		End If
+	End If
+	
+	If DiffExcessPrem > 0 Then
+		Dim VatFreeDiffExcSI, VatFreeDiffExcPrem
+		
+		If ProdCode_Ext = "CCA" Then
+			VatFreeDiffExcSI = SafecDbl(DiffExcessSI / 1.15)
+			VatFreeDiffExcPrem = SafecDbl(DiffExcessPrem / 1.15)
+			
+			GenerateOutput VatFreeDiffExcSI, DiffExcessRate, VatFreeDiffExcPrem, "CCAEXDE"
+		End If
+		
+		If ProdCode_Ext = "CCM" Then
+			Dim DiffExcMonthlyRate, DiffExcMonthlyPrem
+			DiffExcMonthlyRate = SafecDbl(DiffExcessRate / 12)
+			DiffExcMonthlyPrem = SafecDbl(DiffExcessSI * (DiffExcMonthlyRate * 0.01))
+			
+			VatFreeDiffExcSI = SafecDbl(DiffExcessSI / 1.15)
+			VatFreeDiffExcPrem = SafecDbl(DiffExcMonthlyPrem / 1.15)
+			
+			GenerateOutput VatFreeDiffExcSI, DiffExcMonthlyRate, VatFreeDiffExcPrem, "CCAEXDE"
+		End If
+	End If
+	
+	If EscalPrem > 0 Then
+		Dim VatFreeEscalSI, VatFreeEscalPrem
+		
+		If ProdCode_Ext = "CCA" Then
+			VatFreeEscalSI = SafecDbl(EscalSI / 1.15)
+			VatFreeEscalPrem = SafecDbl(EscalPrem / 1.15)
+			
+			GenerateOutput VatFreeEscalSI, EscalRate, VatFreeEscalPrem, "CCAEXES"
+		End If
+		
+		If ProdCode_Ext = "CCM" Then
+			Dim EscalMonthlyRate, EscalMonthlyPrem
+			EscalMonthlyRate = SafecDbl(EscalRate / 12)
+			EscalMonthlyPrem = SafecDbl(EscalSI * (EscalMonthlyRate * 0.01))
+			
+			VatFreeEscalSI = SafecDbl(EscalSI / 1.15)
+			VatFreeEscalPrem = SafecDbl(EscalMonthlyPrem / 1.15)
+			
+			GenerateOutput VatFreeEscalSI, EscalMonthlyRate, VatFreeEscalPrem, "CCAEXES"
+		End If
+	End If
+	
+	If ExpidPrem > 0 Then
+		Dim VatFreeExpidSI, VatFreeExpidPrem
+		
+		If ProdCode_Ext = "CCA" Then
+			VatFreeExpidSI = SafecDbl(ExpidSI / 1.15)
+			VatFreeExpidPrem = SafecDbl(ExpidPrem / 1.15)
+			
+			GenerateOutput VatFreeExpidSI, ExpidRate, VatFreeExpidPrem, "CCAECEX"
+		End If
+		
+		If ProdCode_Ext = "CCM" Then
+			Dim ExpidMonthlyRate, ExpidMonthlyPrem
+			ExpidMonthlyRate = SafecDbl(ExpidRate / 12)
+			ExpidMonthlyPrem = SafecDbl(ExpidSI * (ExpidMonthlyRate))
+			
+			VatFreeExpidSI = SafecDbl(ExpidSI / 1.15)
+			VatFreeExpidPrem = SafecDbl(ExpidMonthlyPrem / 1.15)
+			
+			GenerateOutput VatFreeExpidSI, ExpidMonthlyRate, VatFreeExpidPrem, "CCAECEX"
+		End If
+	End If
+	
+	If MitExpPrem > 0 Then
+		Dim VatFreeMitSI, VatFreeMitPrem
+		
+		If ProdCode_Ext = "CCA" Then
+			VatFreeMitSI = SafecDbl(MitExpSI / 1.15)
+			VatFreeMitPrem = SafecDbl(MitExpPrem / 1.15)
+			
+			GenerateOutput VatFreeMitSI, MitExpRate, VatFreeMitPrem, "CCAEXME"
+		End If
+		
+		If ProdCode_Ext = "CCM" Then
+			Dim MitMonthlyRate, MitMonthlyPrem
+			MitMonthlyRate = SafecDbl(MitExpRate / 12)
+			MitMonthlyPrem = SafecDbl(MitExpSI * (MitMonthlyRate * 0.01))
+			
+			VatFreeMitSI = SafecDbl(MitExpSI / 1.15)
+			VatFreeMitPrem = SafecDbl(MitMonthlyPrem / 1.15)
+			
+			GenerateOutput VatFreeMitSI, MitMonthlyRate, VatFreeMitPrem, "CCAEXME"
+		End If
+	End If
+	
+	If PrincSurrPrem > 0 Then
+		Dim VatFreeSurrSI, VatFreeSurrPrem
+		
+		If ProdCode_Ext = "CCA" Then
+			VatFreeSurrSI = SafecDbl(PrincSurrSI / 1.15)
+			VatFreeSurrPrem = SafecDbl(PrincSurrPrem / 1.15)
+			
+			GenerateOutput VatFreeSurrSI, PrincSurrRate, VatFreeSurrPrem, "CCAEXPS"
+		End If
+		
+		If ProdCode_Ext = "CCM" Then
+			Dim SurrMonthlyRate, SurrMonthlyPrem
+			SurrMonthlyRate = SafecDbl(PrincSurrRate / 12)
+			SurrMonthlyPrem = SafecDbl(PrincSurrSI * (SurrMonthlyRate * 0.01))
+			
+			VatFreeSurrSI = SafecDbl(PrincSurrSI / 1.15)
+			VatFreeSurrPrem = SafecDbl(SurrMonthlyPrem / 1.15)
+			
+			GenerateOutput VatFreeSurrSI, SurrMonthlyRate, VatFreeSurrPrem, "CCAEXPS"
+		End If
+	End If
+	
+	If ProfFeesPrem > 0 Then
+		Dim VatFreeProfSI, VatFreeProfPrem
+		
+		If ProdCode_Ext = "CCA" Then
+			VatFreeProfSI = SafecDbl(ProfFeesSI / 1.15)
+			VatFreeProfPrem = SafecDbl(ProfFeesPrem / 1.15)
+			
+			GenerateOutput VatFreeProfSI, ProfFeesRate, VatFreeProfPrem, "CCAEXPF"
+		End If
+		
+		If ProdCode_Ext = "CCM" Then
+			Dim ProfMonthlyRate, ProfMonthlyPrem
+			ProfMonthlyRate = SafecDbl(ProfFeesRate / 12)
+			ProfMonthlyPrem = SafecDbl(ProfFeesSI * (ProfMonthlyRate * 0.01))
+			
+			VatFreeProfSI = SafecDbl(ProfFeesSI / 1.15)
+			VatFreeProfPrem = SafecDbl(ProfMonthlyPrem / 1.15)
+			
+			GenerateOutput VatFreeProfSI, ProfMonthlyRate, VatFreeProfPrem, "CCAEXPF"
+		End If
+	End If
+	
+	If ProLossEscPrem > 0 Then
+		Dim VatFreeProLossSI, VatFreeProLossPrem
+		
+		If ProdCode_Ext = "CCA" Then
+			VatFreeProLossSI = SafecDbl(ProLossEscSI / 1.15)
+			VatFreeProLossPrem = SafecDbl(ProLossEscPrem / 1.15)
+			
+			GenerateOutput VatFreeProLossSI, ProLossEscRate, VatFreeProLossPrem, "CCAEXPE"
+		End If
+		
+		If ProdCode_Ext = "CCM" Then
+			Dim ProLossMonthlyRate, ProLossMonthlyPrem
+			ProLossMonthlyRate = SafecDbl(ProLossEscRate / 12)
+			ProLossMonthlyPrem = SafecDbl(ProLossEscSI * (ProLossMonthlyRate * 0.01))
+			
+			VatFreeProLossSI = SafecDbl(ProLossEscSI / 1.15)
+			VatFreeProLossPrem = SafecDbl(ProLossMonthlyPrem / 1.15)
+			
+			GenerateOutput VatFreeProLossSI, ProLossMonthlyRate, VatFreeProLossPrem, "CCAEXPE"
+		End If
+	End If
+	
+	If SurrPropPrem > 0 Then
+		Dim VatFreeSurrPropSI, VatFreeSurrPropPrem
+		
+		If ProdCode_Ext = "CCA" Then
+			VatFreeSurrPropSI = SafecDbl(SurrPropSI / 1.15)
+			VatFreeSurrPropPrem = SafecDbl(SurrPropPrem / 1.15)
+			
+			GenerateOutput VatFreeSurrPropSI, SurrPropRate, VatFreeSurrPropPrem, "CCAEXSP"
+		End If
+		
+		If ProdCode_Ext = "CCM" Then
+			Dim SurrPropMonthlyRate, SurrPropMonthlyPrem
+			SurrPropMonthlyRate = SafecDbl(SurrPropRate / 12)
+			SurrPropMonthlyPrem = SafecDbl(SurrPropSI * (SurrPropMonthlyRate * 0.01))
+			
+			VatFreeSurrPropSI = SafecDbl(SurrPropSI / 1.15)
+			VatFreeSurrPropPrem = SafecDbl(SurrPropMonthlyPrem / 1.15)
+			
+			GenerateOutput VatFreeSurrPropSI, SurrPropMonthlyRate, VatFreeSurrPropPrem, "CCAEXSP"
+		End If
+	End If
+	
+	If TempStorPrem > 0 Then
+		Dim VatFreeTempSI, VatFreeTempPrem
+		
+		If ProdCode_Ext = "CCA" Then
+			VatFreeTempSI = SafecDbl(TempStorSI / 1.15)
+			VatFreeTempPrem = SafecDbl(TempStorPrem / 1.15)
+			
+			GenerateOutput VatFreeTempSI, TempStorRate, VatFreeTempPrem, "CCAEXSL"
+		End If
+		
+		If ProdCode_Ext = "CCM" Then
+			Dim TempMonthlyRate, TempMonthlyPrem
+			TempMonthlyRate = SafecDbl(TempStorRate / 12)
+			TempMonthlyPrem = SafecDbl(TempStorSI * (TempMonthlyRate * 0.01))
+			
+			VatFreeTempSI = SafecDbl(TempStorSI / 1.15)
+			VatFreeTempPrem = SafecDbl(TempMonthlyPrem / 1.15)
+			
+			GenerateOutput VatFreeTempSI, TempMonthlyRate, VatFreeTempPrem, "CCAEXSL"
+		End If
+	End If
+	
+	If TranLiabPrem > 0 Then
+		Dim VatFreeTransSI, VatFreeTransPrem
+		
+		If ProdCode_Ext = "CCA" Then
+			VatFreeTransSI = SafecDbl(TranLiabSI / 1.15)
+			VatFreeTransPrem = SafecDbl(TranLiabPrem / 1.15)
+			
+			GenerateOutput VatFreeTransSI, TranLiabRate, VatFreeTransPrem, "CCAEXTR"
+		End If
+		
+		If ProdCode_Ext = "CCM" Then
+			Dim TransMonthlyRate, TransMonthlyPrem
+			TransMonthlyRate = SafecDbl(TranLiabRate / 12)
+			TransMonthlyPrem = SafecDbl(TranLiabSI * (TransMonthlyRate * 0.01))
+			
+			VatFreeTransSI = SafecDbl(TranLiabSI / 1.15)
+			VatFreeTransPrem = SafecDbl(TransMonthlyPrem / 1.15)
+			
+			GenerateOutput VatFreeTransSI, TransMonthlyRate, VatFreeTransPrem, "CCAEXTR"
+		End If
+	End If
+	
+	If AddExtPrem > 0 Then
+		Dim VatFreeExtSI, VatFreeExtPrem
+		
+		AddExtRate = SafecDbl((AddExtPrem / AddExtSI) * 100)
+		
+		If ProdCode_Ext = "CCA" Then
+			VatFreeExtSI = SafecDbl(AddExtSI / 1.15)
+			VatFreeExtPrem = SafecDbl(AddExtPrem / 1.15)
+			
+			GenerateOutput VatFreeExtSI, AddExtRate, VatFreeExtPrem, "CCAEXOTH"
+		End If
+		
+		If ProdCode_Ext = "CCM" Then
+			Dim ExtMonthlyRate, ExtMonthlyPrem
+			ExtMonthlyRate = SafecDbl(AddExtRate / 12)
+			ExtMonthlyPrem = SafecDbl(AddExtSI * (ExtMonthlyRate * 0.01))
+			
+			VatFreeExtSI = SafecDbl(AddExtSI / 1.15)
+			VatFreeExtPrem = SafecDbl(ExtMonthlyPrem / 1.15)
+			
+			GenerateOutput VatFreeExtSI, ExtMonthlyRate, VatFreeExtPrem, "CCAEXOTH"
+		End If
+	End If
+	
+End Function
+
+Function GenerateOutput(cSI, cRATE, cPREM, cRatingSection)
+    
+	Dim counter
+
+    Engine.NewObject("CONWORKINS_Output")
+    counter = Engine.Count("CONWORKINS_Output")
+
+    Engine.Item("CONWORKINS_Output", counter).Item("Sum_insured").value = cSI
+    Engine.Item("CONWORKINS_Output", counter).Item("Rate").value = cRATE
+    Engine.Item("CONWORKINS_Output", counter).Item("Premium").value = cPREM
+    Engine.Item("CONWORKINS_Output", counter).Item("risk_rating_section").value = cRatingSection
+
+End Function
+
+Function SafecDbl(value)
+    
+	SafecDbl = 0
+    On Error Resume Next
+    SafecDbl = CDbl(value)
+    On Error GoTo 0
+
+End Function
+
+Function SafeInt(value)
+    
+	SafeInt = 0
+    On Error Resume Next
+    SafeInt = CInt(value)
+    On Error GoTo 0
+
+End Function
+
+Function SafecBool(value)
+    
+	SafecBool = 0
+    On Error Resume Next
+    SafecBool = CBool(value)
+    On Error GoTo 0
+
+End Function
+
+Function SafecLng(value)
+    
+	SafecLng = 0
+    On Error Resume Next
+    SafecLng = CLng(value)
+    On Error GoTo 0
+
+End Function

@@ -1,0 +1,1320 @@
+
+Dim m_Prem, vCoreDetails, m_bFlag, m_FlagFullRefund, m_MonthDays, m_YearDays
+Dim sTransType
+'Get LatestCoverStartDate
+Dim lCoverStartDate 
+'Get Previous Sum Insured for (ProRata calculation on MTA)
+Dim prevMDSumInsured
+Dim prevMOTSumInsured
+Dim prevPCSumInsured
+Sub Start()
+	
+    Dim dTotalPremium, dPercentRate, dStampDuty
+	Dim iRet, iCount, lNumberOfMonthsinRF
+	Dim vExtraParam, arrSPResult1, arrSPResult2, arrSPResult3
+	Dim isMTA, isAdd, isDelete
+	Dim retPrem, origPrem
+	Dim BusinessType, BrokerShare
+	Dim iRet2
+	Dim mReturn
+	Dim vResults
+	Dim vExtraParameters
+	Dim inceptionDateTpi
+	Dim renewalDate
+	Dim lCount
+	Dim sRatingSectionCode
+	Dim dPrevStampDuty
+	Dim dStampDutyRate
+	Dim dPremium
+   
+	'Get Transaction Type - Workaround
+	'RENEWAL   	Policy under Renewal	
+	'QUOTE     	Quotation	
+	'MTAQUOTE  	MTA Quotation Permanent	
+	'MTAQTETEMP	MTA Quotation Temporary
+	'MTAQREINS 	MTA Quotation Reinstatement
+	'MTAQCAN   	MTA Quotation Cancellation
+
+   	'Call Extras.CallNamedStoredProcedure(clng(6722),cstr("Get_Transaction_Type"), vResults)
+	'If IsArray(vResults) = true Then
+		'sTransType = vResults(0,0)
+	'End If
+   
+	'Get Inception This Period of Insurance (TPI) date for policy
+	Call Extras.CallNamedStoredProcedure(clng(6722),cstr("InceptionDateTpi"), vResults)
+	If IsArray(vResults) = true Then
+		inceptionDateTpi = vResults(0,0)
+	End If
+
+	'Get Renewal Date
+	mReturn = Extras.GetBODetails(vResults)
+	renewalDate = vResults(16,0)
+	'Calculate NASRIA Premiums
+	Call HandleNASRIA(inceptionDateTpi,renewalDate)
+	
+	vExtraParameters = array("sTransactionType",TransactionType)
+
+	If extras.IsTrueMonthlyPolicy = False Then
+		
+		'Calculate Stamp Duty For Annual Policies
+		iRet = Extras.CallNamedStoredProcedure(CLng(6722), CStr("GetStampDutyPremium"), arrSPResult2,vExtraParameters)
+
+		If IsArray(arrSPResult2) Then
+			
+			dStampDuty = SafecDbl(arrSPResult2(0,0))
+			dPremium = SafecDbl(arrSPResult2(1,0))
+			dStampDutyRate = SafecDbl(Extras.GetField("UDL_STAMP_DUTY", "rate_percent", "SD", Extras.CoverStartDate))			
+			' If dStampDutyRate <> 0 Then
+				' dPremium = dStampDuty / dStampDutyRate * 100
+			' End If
+			
+			Engine.Item("STAMPDUTY").Item("STAMP_DUTY_SI").value = 0.00
+			Engine.Item("STAMPDUTY").Item("SD_AMOUNT").value = dPremium
+			Engine.Item("STAMPDUTY").Item("SD_RATE").value = dStampDutyRate
+			
+			'call GenerateStampDutyOutput (0.00, 0.0, dStampDuty, "STAMPDUTY")
+			Call GenerateOutput(0.00, 0.00, dStampDuty, "STAMPDUTY" , 1)
+		End If			
+		
+		' iRet2 = Extras.CallNamedStoredProcedure(CLng(6722), CStr("GetNamfisa"), arrSPResult2, vExtraParameters)
+		' If IsArray(arrSPResult2) Then
+			' BusinessType = SafecInt(arrSPResult2(0,0))
+			' If BusinessType = 7 Then
+				' BrokerShare = SafecDbl(arrSPResult2(1,0))
+				' Call GenerateOutput (0.00, 0.0, BrokerShare, "NAMFISA", 1)
+			' End If
+		' End If
+	Else
+		' iRet2 = Extras.CallNamedStoredProcedure(CLng(6722), CStr("GetNamfisa"), arrSPResult2, vExtraParameters)
+		' If IsArray(arrSPResult2) Then
+			' BusinessType = SafecInt(arrSPResult2(0,0))
+			' If BusinessType = 7 Then
+				' BrokerShare = SafecDbl(arrSPResult2(1,0))
+				' Call GenerateOutput (0.00, 0.0, BrokerShare, "NAMFISA", 1)
+			' End If
+		' End If
+		
+		'Calculate Stamp Duty For Monthly Policies
+		If IsNull(TransactionType) Or TransactionType = "" OR TransactionType = "NB" Or TransactionType = "REN" Then
+			vExtraParameters = array("dInceptionDateTpi", CDate(inceptionDateTpi), "sTransactionType", TransactionType, "dCoverStartDate", Extras.CoverStartDate)
+			Call Extras.CallNamedStoredProcedure(clng(6722),cstr("CalculateMonthlyStampDuty"), vResults, vExtraParameters)
+
+			If IsArray(vResults) = True Then
+			
+				dTotalPremium = SafecDbl(vResults(0,0))
+				dPercentRate = SafecDbl(vResults(1,0))
+				dStampDuty = SafecDbl(vResults(2,0))
+				Engine.Item("STAMPDUTY").Item("STAMP_DUTY_SI").value = SafecDbl(0.00)
+				Engine.Item("STAMPDUTY").Item("SD_RATE").value = SafecDbl(vResults(1,0))
+				Engine.Item("STAMPDUTY").Item("SD_AMOUNT").value = SafecDbl(vResults(2,0))
+		
+			End If	
+		End If 
+		
+		'Stamp was not refunded during MTR so it must be be charged again on re-instatement
+		' If (TransactionType = "MTR") And (inceptionDateTpi <> Extras.CoverStartDate) Then
+			' Call Extras.CallNamedStoredProcedure(6722, "Get_Previous_Annual_Premium", vResults)
+			' If IsArray(vResults) Then
+				' For lCount = 0 To UBound(vResults, 2)
+					' sRatingSectionCode = vResults(0, lCount)
+					' If sRatingSectionCode = "STAMPDUTY" Then
+						' dStampDuty = SafecDbl(vResults(1, lCount))
+						' Engine.Item("STAMPDUTY").Item("STAMP_DUTY_SI").value = 0
+						' Engine.Item("STAMPDUTY").Item("SD_AMOUNT").value = 0
+						' Exit For
+					' End If
+				 ' Next
+			' End If
+		' End If
+		
+		'Added to handle MTC and  MTR by  Badimu Kazadi  -17 Dec 2020
+		'stop
+		If (TransactionType = "MTC") Then
+			Dim mtcDate, vMTCResults, dCurrentStampDuty
+			mtcDate = Extras.CoverStartDate
+			vExtraParameters = array("dInceptionDateTpi", CDate(inceptionDateTpi), "sTransactionType", transactionType, "dMTADate", CDate(mtcDate))
+			Call Extras.CallNamedStoredProcedure(clng(6722),cstr("CalculateStampDutyCancellation"), vMTCResults, vExtraParameters)
+				
+			If IsArray(vMTCResults) Then
+				For lCount = 0 To UBound(vMTCResults, 2)
+						dStampDuty = SafecDbl(vMTCResults(0, lCount))
+						dCurrentStampDuty = SafecDbl(vMTCResults(1, lCount))
+						Engine.Item("STAMPDUTY").Item("SD_AMOUNT").value = SafecDbl(dCurrentStampDuty)
+						Exit For
+				Next
+			End If
+		End If
+		
+		
+		If (TransactionType = "MTR") Then
+			Dim mtrDate, vMTRResults
+			mtrDate = Extras.CoverStartDate
+			vExtraParameters = array("dInceptionDateTpi", CDate(inceptionDateTpi), "sTransactionType", transactionType, "dMTADate", CDate(mtrDate))
+			Call Extras.CallNamedStoredProcedure(clng(6722),cstr("CalculateStampDutyReinstatement"), vMTRResults, vExtraParameters)
+			If IsArray(vMTRResults) Then
+				For lCount = 0 To UBound(vMTRResults, 2)
+						dStampDuty = SafecDbl(vMTRResults(0, lCount))
+						Engine.Item("STAMPDUTY").Item("SD_AMOUNT").value = SafecDbl(dStampDuty)
+						Exit For
+				Next
+			End If
+
+		End If
+		
+		
+		' If (TransactionType = "MTA") And dStampDuty = 0 Then
+			
+			' Call Extras.CallNamedStoredProcedure(6722, "Get_Previous_Annual_Premium", vResults)
+			' If IsArray(vResults) Then
+				' For lCount = 0 To UBound(vResults, 2)
+					 ' sRatingSectionCode = vResults(0, lCount)
+					 ' If sRatingSectionCode = "STAMPDUTY" Then
+						' dStampDuty = SafecDbl(vResults(1, lCount))
+						' Engine.Item("STAMPDUTY").Item("STAMP_DUTY_SI").value = 0
+						' Engine.Item("STAMPDUTY").Item("SD_AMOUNT").value = 0
+						' Exit For
+					' End If
+				 ' Next
+			' End If
+		' End If
+		
+		
+		If (TransactionType = "MTA")  Then
+			dStampDuty = 0
+			
+			Dim isInSync, mtaDate, vMTAResults
+			mtaDate = Extras.CoverStartDate
+			Dim QuarterStampDuty,MaxStamp, CurrentStampDuty
+			
+			vExtraParameters = array("dMTADate", CDate(mtaDate))
+		
+			Call Extras.CallNamedStoredProcedure(clng(6722),cstr("MTAInSyncCheck"), vResults, vExtraParameters)
+		
+			If IsArray(vResults) = True Then
+				isInSync = CInt(vResults(0,0))
+			
+			vExtraParameters = array("dInceptionDateTpi", CDate(inceptionDateTpi), "sTransactionType", TransactionType, "dMTADate", CDate(mtaDate))
+				
+			If isInSync = 1 Then
+				Call Extras.CallNamedStoredProcedure(clng(6722),cstr("CalculateStampDutyInSyncMTA"), vMTAResults, vExtraParameters)
+				If IsArray(vMTAResults) Then
+					For lCount = 0 To UBound(vMTAResults, 2)
+							dStampDuty = SafecDbl(vMTAResults(0, lCount))
+							QuarterStampDuty = SafecDbl(vMTAResults(1, lCount))
+							CurrentStampDuty = SafecDbl(vMTAResults(2, lCount))
+							MaxStamp = SafecDbl(vMTAResults(3, lCount))
+							Engine.Item("STAMPDUTY").Item("STAMP_DUTY_SI").value = 0
+							
+							'If QuarterStampDuty >= MaxStamp Then
+								'Engine.Item("STAMPDUTY").Item("SD_AMOUNT").value = SafecDbl(0.00)
+							'Else
+								Engine.Item("STAMPDUTY").Item("SD_AMOUNT").value = SafecDbl(CurrentStampDuty)
+							'End If
+							
+							Exit For
+					Next
+				End If
+			Else
+				Call Extras.CallNamedStoredProcedure(clng(6722),cstr("CalculateStampDutyOOSMTA"), vMTAResults, vExtraParameters)
+				If IsArray(vMTAResults) Then
+					For lCount = 0 To UBound(vMTAResults, 2)
+							dStampDuty = SafecDbl(vMTAResults(0, lCount))
+							QuarterStampDuty = SafecDbl(vMTAResults(1, lCount))
+							CurrentStampDuty = SafecDbl(vMTAResults(2, lCount))
+							MaxStamp = SafecDbl(vMTAResults(3, lCount))
+							Engine.Item("STAMPDUTY").Item("STAMP_DUTY_SI").value = 0
+							'If QuarterStampDuty >= MaxStamp Then
+								'Engine.Item("STAMPDUTY").Item("SD_AMOUNT").value = SafecDbl(0.00)
+							'Else
+								Engine.Item("STAMPDUTY").Item("SD_AMOUNT").value = SafecDbl(CurrentStampDuty)
+							'End If
+							
+							Exit For
+					Next
+				End If
+			End If
+		End If	
+			
+				
+		End If	
+		
+		Call GenerateOutput(0.00, 0.00, dStampDuty, "STAMPDUTY" , 1)
+		
+		'Call GenerateStampDutyOutput(0.00, 0.0, dStampDuty, "STAMPDUTY")
+		
+	End If
+	
+	'Get Assign excesses to hidden field
+	GetExcesses()
+	
+	 
+End Sub
+
+Sub GetExcesses()
+	With Engine.Item("NASRIA")
+	
+		'MD
+		.Item("MD_EXCESS_PERCENT").Value = SafecDbl(Extras.GetField("UDL_NASRIA_RATES", "excess_percent", "MDANN", Extras.CoverStartDate))
+		.Item("MD_EXCESS_AMOUNT").Value = SafecDbl(Extras.GetField("UDL_NASRIA_RATES", "excess_amount", "MDANN", Extras.CoverStartDate))
+		
+		'MOT
+		.Item("MOTOR_EXCESS_PERCENT").Value = SafecDbl(Extras.GetField("UDL_NASRIA_RATES", "excess_percent", "MOTANN", Extras.CoverStartDate))
+		.Item("MOTOR_EXCESS_AMOUNT").Value = SafecDbl(Extras.GetField("UDL_NASRIA_RATES", "excess_amount", "MOTANN", Extras.CoverStartDate))
+		.Item("MOTOR_WS_EXCESS_AMOUNT").Value = SafecDbl(Extras.GetField("UDL_NASRIA_RATES", "excess_windscreen", "MOTANN", Extras.CoverStartDate))		
+		
+		'PC
+		.Item("PC_EXCESS_PERCENT").Value = SafecDbl(Extras.GetField("UDL_NASRIA_RATES", "excess_percent", "PCANN", Extras.CoverStartDate))
+		.Item("PC_EXCESS_AMOUNT").Value = SafecDbl(Extras.GetField("UDL_NASRIA_RATES", "excess_amount", "PCANN", Extras.CoverStartDate))
+
+	End With
+End Sub
+
+Sub HandleNASRIA(inceptionDateTpi,renewalDate)
+	
+	Dim vExtraParameters
+	Dim vResults
+	Dim lNumberOfDays
+	Dim lPolicyPeriod
+	Dim lCount
+	Dim lRiskID
+	Dim lNewRiskID
+	Dim lOrigRiskID
+	Dim sRiskCode
+	Dim sRiskDescription
+	Dim dSumInsured	
+
+
+	'Minimum Premiums
+	Dim dMDMinPrem
+	Dim dMOTMinPrem
+	Dim dPCMinPrem
+
+	'Rates
+	Dim dMDRate
+	Dim dMOTRate
+	Dim dPCRate	
+	
+	'RiskCodes
+	Dim bIsMD:bIsMD = 0
+	Dim bIsMOT:bIsMOT = 0
+	Dim bIsPC:bIsPC = 0
+
+	If Extras.IsTrueMonthlyPolicy = True Then 
+		'True Monthly Minimum Premiums
+		dMDMinPrem = SafecDbl(Extras.GetField("UDL_NASRIA_RATES", "minimum_premium", "MDMTH", Extras.CoverStartDate) / 1.15)
+		dMOTMinPrem	 = SafecDbl(Extras.GetField("UDL_NASRIA_RATES", "minimum_premium", "MOTMTH", Extras.CoverStartDate)/ 1.15)
+		dPCMinPrem = SafecDbl(Extras.GetField("UDL_NASRIA_RATES", "minimum_premium", "PCMTH", Extras.CoverStartDate)/ 1.15)
+		
+		'True Monthly Minimum Rates
+		dMDRate = SafecDbl(Extras.GetField("UDL_NASRIA_RATES", "rate", "MDMTH", Extras.CoverStartDate))
+		dMOTRate = SafecDbl(Extras.GetField("UDL_NASRIA_RATES", "rate", "MOTMTH", Extras.CoverStartDate))
+		dPCRate = SafecDbl(Extras.GetField("UDL_NASRIA_RATES", "rate", "PCMTH", Extras.CoverStartDate))		
+		
+	Else
+		'Annual Minimum Premiums	
+		dMDMinPrem = SafecDbl(Extras.GetField("UDL_NASRIA_RATES", "minimum_premium", "MDANN", Extras.CoverStartDate)/ 1.15)
+		dMOTMinPrem = 	SafecDbl(Extras.GetField("UDL_NASRIA_RATES", "minimum_premium", "MOTANN", Extras.CoverStartDate)/ 1.15)
+		dPCMinPrem = SafecDbl(Extras.GetField("UDL_NASRIA_RATES", "minimum_premium", "PCANN", Extras.CoverStartDate)/ 1.15)
+		
+		'Annual Minimum Rates	
+		dMDRate = SafecDbl(Extras.GetField("UDL_NASRIA_RATES", "rate", "MDANN", Extras.CoverStartDate))
+		dMOTRate = SafecDbl(Extras.GetField("UDL_NASRIA_RATES", "rate", "MOTANN", Extras.CoverStartDate))
+		dPCRate = SafecDbl(Extras.GetField("UDL_NASRIA_RATES", "rate", "PCANN", Extras.CoverStartDate))		
+	End If
+		
+
+	'Get Policy Period Details
+	vExtraParameters = array("bIsMonthly",Extras.IsTrueMonthlyPolicy)
+	Call Extras.CallNamedStoredProcedure(clng(6722),cstr("SASRIA_GetPeriod"), vResults, vExtraParameters)
+	If IsArray(vResults) = True Then
+		lNumberOfDays = SafecInt(vResults(0,0))
+		lPolicyPeriod = SafecInt(vResults(1,0))
+	End If
+
+	Dim vRisksArray
+	Dim bCalculateTotalPremium:bCalculateTotalPremium = False													  
+	Call Extras.CallNamedStoredProcedure(clng(6722),cstr("NASRIA_GetRiskSIforPersonalLines"), vRisksArray)
+	If IsArray(vRisksArray) = True Then
+		 Call DeleleRiskDetails("NASRIA_MOT")
+		 Call DeleleRiskDetails("NASRIA_MD")
+		 Call DeleleRiskDetails("NASRIA_PC")
+		For lCount = 0 to UBound(vRisksArray,2)
+			 lRiskID = vRisksArray(0,lCount)
+			 sRiskCode = vRisksArray(1,lCount)
+			 sRiskDescription  = vRisksArray(2,lCount)
+			 dSumInsured = (vRisksArray(3,lCount)/1.15)
+			 lOrigRiskID = vRisksArray(4,lCount) 'Added by Muhammad Adam - To uniquely identify each risk
+			 If Extras.TransactionType <> "MTR" and lOrigRiskID <> 0 Then
+				lRiskID = lOrigRiskID
+			 End If
+			If sRiskCode = "NPADOM" Then
+				Call CalculatePremiums(inceptionDateTpi,renewalDate,dMDMinPrem,dMDRate,lNumberOfDays,lPolicyPeriod,lRiskID,sRiskCode,sRiskDescription,dSumInsured)
+				bCalculateTotalPremium = True				 
+			ElseIf sRiskCode = "NPAMOTOR" Then
+				Call CalculatePremiums(inceptionDateTpi,renewalDate,dMOTMinPrem,dMOTRate,lNumberOfDays,lPolicyPeriod,lRiskID,sRiskCode,sRiskDescription,dSumInsured)
+				bCalculateTotalPremium = True				 
+			ElseIf sRiskCode = "NPAPC" Then
+				Call CalculatePremiums(inceptionDateTpi,renewalDate,dPCMinPrem,dPCRate,lNumberOfDays,lPolicyPeriod,lRiskID,sRiskCode,sRiskDescription,dSumInsured)
+				bCalculateTotalPremium = True				 
+			End If
+			
+			'Added to deal with Clawback of premium when doing an MTA on Inception
+			If (Extras.TransactionType ="MTA" And CDate(Extras.CoverStartDate) = CDate(inceptionDateTpi)) Then
+				If sRiskCode = "NPADOM" Then					  
+					Call HandleClawbackInception(inceptionDateTpi,lNumberOfDays,lPolicyPeriod,dMDMinPrem,"NPADOM",dMDRate, lRiskID)
+				ElseIf sRiskCode = "NPAMOTOR" Then													
+					Call HandleClawbackInception(inceptionDateTpi,lNumberOfDays,lPolicyPeriod,dMOTMinPrem,"NPAMOTOR",dMOTRate, lRiskID)
+				ElseIf sRiskCode = "NPAPC" Then												 
+					Call HandleClawbackInception(inceptionDateTpi,lNumberOfDays,lPolicyPeriod,dPCMinPrem,"NPAPC",dPCRate, lRiskID)
+				End If		
+			End If
+			'End of added Code
+			
+			'Moved here from outside IF Statement. - Muhammad Adam - 03/12/2020
+			'Process each risk type
+			'If (Extras.TransactionType <> "NB") And (Extras.TransactionType <> "REN" ) Then 	
+			'If (sTransType <> "QUOTE") And (sTransType <> "RENEWAL" ) Then 
+			If (Extras.TransactionType = "MTR") OR (Extras.TransactionType = "MTC" ) OR (Extras.TransactionType ="MTA" And CDate(Extras.CoverStartDate) <> CDate(inceptionDateTpi)) Then 
+			
+				If sRiskCode = "NPADOM" Then					  
+					Call HandleMidTermTransactions(inceptionDateTpi,lNumberOfDays,lPolicyPeriod,dMDMinPrem,"NPADOM",dMDRate, lRiskID)
+					bCalculateTotalPremium = True
+				ElseIf sRiskCode = "NPAMOTOR" Then													
+					Call HandleMidTermTransactions(inceptionDateTpi,lNumberOfDays,lPolicyPeriod,dMOTMinPrem,"NPAMOTOR",dMOTRate, lRiskID)
+					bCalculateTotalPremium = True
+				ElseIf sRiskCode = "NPAPC" Then												 
+					Call HandleMidTermTransactions(inceptionDateTpi,lNumberOfDays,lPolicyPeriod,dPCMinPrem,"NPAPC",dPCRate, lRiskID)
+					bCalculateTotalPremium = True
+				End If						
+			End If
+			'End of moved code
+		Next
+	End If 
+
+
+	'Calculate Total Premiums based on selected RiskCode
+	If bCalculateTotalPremium = True Then
+		Call CalculateTotalPremium(inceptionDateTpi,renewalDate,lNumberOfDays,lPolicyPeriod,dMDMinPrem,dMOTMinPrem,dPCMinPrem,prevMDSumInsured,prevMOTSumInsured,prevPCSumInsured,lCoverStartDate)
+	End If												 
+End Sub
+
+Private Sub CalculatePremiums(inceptionDateTpi,renewalDate, dMinPrem,dRate,lNumberOfDays,lPolicyPeriod,lRiskID,sRiskCode,sRiskDescription,dSumInsured)
+	Dim dFullPeriodPremium
+	Dim dPremium
+	Dim dCalcPremium
+	Dim dMinimumPremiumUplift: dMinimumPremiumUplift = 0
+	
+	'Calculate Full Period Premiums
+	dSumInsured = dSumInsured
+	dFullPeriodPremium = dSumInsured * dRate * 0.01
+	dCalcPremium = dFullPeriodPremium
+	
+	'Calculate this transaction Premium - for display
+	dPremium = dFullPeriodPremium * (lNumberOfDays  / lPolicyPeriod)
+
+	'Apply minimum premium
+	If dSumInsured > 0 Then
+		If dPremium > 0 And dPremium < dMinPrem Then
+			dMinimumPremiumUplift = dMinPrem - dPremium
+			dPremium = dMinPrem
+			If dFullPeriodPremium < dMinPrem Then
+				dFullPeriodPremium = dMinPrem
+			End If
+		End If				
+	End If
+	Call AddRiskDetails(lRiskID,sRiskCode,sRiskDescription,dSumInsured,dRate,dPremium,dFullPeriodPremium,dCalcPremium,dMinimumPremiumUplift)	
+End Sub
+
+'*****************************************************************************************************
+' Processes MTA, MTC and MTR at child level for each risk
+'*****************************************************************************************************
+Private Sub HandleMidTermTransactions(inceptionDateTpi,lNumberOfDays,lPolicyPeriod,dMinPrem,sRiskCode, dRate, lRiskID)
+	Dim sColumns
+	Dim vRisksArray
+	DIm vExtraParameters
+	Dim sDataModelCode
+	Dim sGisObject
+	DIm sProperty
+	Dim lCount
+	Dim sRiskDescription
+	Dim dPrevThisPremium
+	Dim dPrevAnnualPremium
+	Dim dAnnualPremiumCalculated	
+	Dim dPrevAnnualPremiumCalculated
+	Dim dPrevMinUpliftPremium
+	Dim dSi
+	Dim dAnnualPremium
+	Dim dPremiumMTA
+	Dim dPremium
+	Dim dEarnerdPremium
+	Dim LatestCoverStartDate
+	Dim PreviousSumInsured
+	Dim vPrevSumInsured		
+	
+	'Get last calculated Premiums
+	 sDataModelCode = "SDNASRIA"
+	 If sRiskCode = "NPADOM" Then
+		sGisObject = "NASRIA_MD"
+		sProperty = "MD_"
+		'sColumns = " RISKDESCRIPTION" '0
+		sColumns = " RISKID" '0
+		sColumns = sColumns & ", RISKCODE" '1
+		sColumns = sColumns & ", MD_NASRIA_PREMIUM"	'2	 
+		sColumns = sColumns & ", MD_NASRIA_ANNUAL_PREM" '3
+		sColumns = sColumns & ", MD_NASRIA_ANNUAL_PREM_CALC" '4	 
+		sColumns = sColumns & ", MD_MIN_PREM_UPLIFT" '5	
+		
+	ElseIf sRiskCode = "NPAMOTOR" Then
+		sGisObject = "NASRIA_MOT"
+		sProperty = "MOTOR_"
+		'sColumns = " RISKDESCRIPTION" '0
+		sColumns = " RISKID" '0
+		sColumns = sColumns & ", RISKCODE" '1
+		sColumns = sColumns & ", MOTOR_NASRIA_PREMIUM"	'2	 
+		sColumns = sColumns & ", MOTOR_NASRIA_ANNUAL_PREM" '3
+		sColumns = sColumns & ", MOTOR_NASRIA_ANNUAL_PREM_CALC" '4	 
+		sColumns = sColumns & ", MOTOR_MIN_PREM_UPLIFT" '5	
+				
+	ElseIf sRiskCode = "NPAPC" Then
+		sGisObject = "NASRIA_PC"
+		sProperty = "PC_"		
+		'sColumns = " RISKDESCRIPTION" '0
+		sColumns = " RISKID" '0
+		sColumns = sColumns & ", RISKCODE" '1
+		sColumns = sColumns & ", PC_NASRIA_PREMIUM"	'2	 
+		sColumns = sColumns & ", PC_NASRIA_ANNUAL_PREM" '3
+		sColumns = sColumns & ", PC_NASRIA_ANNUAL_PREM_CALC" '4	 
+		sColumns = sColumns & ", PC_MIN_PREM_UPLIFT" '5
+		
+	End If
+
+	 vExtraParameters = Array("sDataModelCode", sDataModelCode, "sGisObject", sGisObject, "sColumns", sColumns)
+	 Call Extras.CallNamedStoredProcedure(clng(6722), cstr("GetPreviousVersionDataModelValues"), vRisksArray, vExtraParameters)
+	 If IsArray(vRisksArray) = True Then
+		For lCount = 0 to UBound(vRisksArray,2)
+			 sRiskDescription = vRisksArray(0,lCount)
+			 sRiskCode = vRisksArray(1,lCount)
+			 dPrevThisPremium  = vRisksArray(2,lCount)
+			 dPrevAnnualPremium = vRisksArray(3,lCount)
+			 dPrevAnnualPremiumCalculated = vRisksArray(4,lCount)
+			 dPrevMinUpliftPremium = vRisksArray(5,lCount)
+			 LatestCoverStartDate = vRisksArray(6,lCount)
+			 PreviousSumInsured = vRisksArray(7,lCount)
+			 'Check which RiskID should be used
+			 If Extras.TransactionType = "MTR" OR Extras.TransactionType = "MTC" Then
+				sRiskDescription = lRiskID
+			 End If
+			Call UpdateRiskDetails(sRiskDescription,sRiskCode,dPrevThisPremium,dPrevAnnualPremium,dPrevAnnualPremiumCalculated,dPrevMinUpliftPremium)
+		Next	
+	End If
+
+	'Assign the latest Cover Start Date back
+	lCoverStartDate = LatestCoverStartDate									 
+	Dim lTotalCount
+	lTotalCount = Engine.Item("NASRIA").Count(sGisObject)
+	'Loop through child object to calculate premiums
+	For lCount = 1 To Engine.Item("NASRIA").Count(sGisObject)
+		dSi = SafecDbl(Engine.Item("NASRIA").Item(sGisObject, lCount).Item(sProperty & "ACCUMULATED_SI").value)
+		dPrevThisPremium = SafecDbl(Engine.Item("NASRIA").Item(sGisObject, lCount).Item(sProperty & "NASRIA_PREMIUM_PREV").value)
+		dAnnualPremium = SafecDbl(Engine.Item("NASRIA").Item(sGisObject, lCount).Item(sProperty & "NASRIA_ANNUAL_PREM").value)
+		dPrevAnnualPremium =  SafecDbl(Engine.Item("NASRIA").Item(sGisObject, lCount).Item(sProperty & "NASRIA_ANNUAL_PREM_PREV").value)
+		dAnnualPremiumCalculated = SafecDbl(Engine.Item("NASRIA").Item(sGisObject, lCount).Item(sProperty & "NASRIA_ANNUAL_PREM_CALC").value)		
+		dPrevAnnualPremiumCalculated = SafecDbl(Engine.Item("NASRIA").Item(sGisObject, lCount).Item(sProperty & "NASRIA_ANNUAL_PREM_CALC_PREV").value)	
+		dPrevMinUpliftPremium = SafecDbl(Engine.Item("NASRIA").Item(sGisObject, lCount).Item(sProperty & "MIN_PREM_UPLIFT_PREV").value)			
+	
+		'****************************************************************
+		' MTA (Not from inception)
+		'****************************************************************
+		
+		'RENEWAL   	Policy under Renewal	
+		'QUOTE     	Quotation	
+		'MTAQUOTE  	MTA Quotation Permanent	
+		'MTAQTETEMP	MTA Quotation Temporary
+		'MTAQREINS 	MTA Quotation Reinstatement
+		'MTAQCAN   	MTA Quotation Cancellation
+
+		If (Extras.TransactionType = "MTA") And (CDate(Extras.CoverStartDate) <> CDate(inceptionDateTpi)) Then
+		'If ((sTransType = "MTAQUOTE") Or (sTransType = "MTAQTETEMP")) And (CDate(Extras.CoverStartDate) <> CDate(inceptionDateTpi)) Then
+			
+				vPrevSumInsured = vPrevSumInsured + SafecDbl(PreviousSumInsured)
+																	  
+				dPremiumMTA = SafecDbl(dAnnualPremium) 
+
+			If (dSi > 0) Then
+				'We need to check if uplifiting of minimum premiums took place
+				'We also need to ensure this is only for newly added risk
+				If (dPrevAnnualPremiumCalculated >= dMinPrem) Then 
+					'Normal MTA
+					Engine.Item("NASRIA").Item(sGisObject, lCount).Item(sProperty & "NASRIA_PREMIUM").value = dPremiumMTA
+				
+				ElseIf dPrevAnnualPremiumCalculated = 0  Then 'Need to take of situations where a new item is being added 
+					If dPremiumMTA < dMinPrem Then
+						dPremiumMTA = dMinPrem
+					End If 			 
+					Engine.Item("NASRIA").Item(sGisObject, lCount).Item(sProperty & "NASRIA_PREMIUM").value = dPremiumMTA
+									
+				Else			
+					'If calculated premium > minimum premium the difference between previously calculated premium 
+					'and minimum premium must be clawed back before additional premium is raised 
+					If dAnnualPremiumCalculated > 0 And dAnnualPremiumCalculated < dMinPrem Then
+						
+						'We already charged minimum premium and we are yet to hit minimum premium
+						Engine.Item("NASRIA").Item(sGisObject, lCount).Item(sProperty & "NASRIA_PREMIUM").value = 0							
+					Else
+						'We need to refund minimum retained
+						Dim dMinPremRefund
+						If dPremiumMTA <= dPrevMinUpliftPremium Then
+							dPremiumMTA = 0 'Don't charge extra
+							Engine.Item("NASRIA").Item(sGisObject, lCount).Item(sProperty & "MIN_PREM_UPLIFT").value = dPrevMinUpliftPremium - dPremiumMTA
+						Else
+							dPremiumMTA = dPremiumMTA - dPrevMinUpliftPremium 'Claw back premium
+							Engine.Item("NASRIA").Item(sGisObject, lCount).Item(sProperty & "MIN_PREM_UPLIFT").value = 0
+						End If 
+						Engine.Item("NASRIA").Item(sGisObject, lCount).Item(sProperty & "NASRIA_PREMIUM").value = dPremiumMTA
+					End If				
+				End If
+			End If
+		ElseIf (Extras.TransactionType = "MTC") Then
+		 'ElseIf sTransType = "MTAQCAN" Then
+			'Stop
+			dPremium = dPrevAnnualPremium * (lNumberOfDays / lPolicyPeriod)	
+			
+			'We refund full premium if cancelling from inception
+			If (CDate(Extras.CoverStartDate) = CDate(inceptionDateTpi)) Then
+				If Round(dPrevAnnualPremium) <> Round(dPrevThisPremium,2) Then
+					dPrevAnnualPremium = dPrevThisPremium
+					'dPremium = SafecDbl(dPrevAnnualPremium * (lNumberOfDays / lPolicyPeriod))
+					dPremium = dPrevAnnualPremium
+				End If
+				Engine.Item("NASRIA").Item(sGisObject, lCount).Item(sProperty & "NASRIA_PREMIUM").value = dPremium * -1	
+			Else
+				'We must not refund minimum premium
+				If dPrevAnnualPremium > 0 Then
+					'If dPremium > 0 And Round(dPremium,2) <= Round(dMinPrem,2) Then
+					'	dPremium = 0 'No refund as we only charged minimum premium
+					'End If
+					
+					'We should not refund part of minimum premium
+					dEarnerdPremium	= dPrevAnnualPremium - dPremium
+					If dEarnerdPremium < dMinPrem Then
+						dPremium = SafecDbl(dPremium - (dMinPrem - dEarnerdPremium))
+						Engine.Item("NASRIA").Item(sGisObject, lCount).Item(sProperty & "NASRIA_PREMIUM").value = SafecDbl(dPremium * -1)
+					Else
+						Engine.Item("NASRIA").Item(sGisObject, lCount).Item(sProperty & "NASRIA_PREMIUM").value = dPremium * -1
+					End If
+					'Engine.Item("NASRIA").Item(sGisObject, lCount).Item(sProperty & "NASRIA_PREMIUM").value = dPremium * -1
+				End If
+			End If 
+		ElseIf (Extras.TransactionType = "MTR") Then
+		'ElseIf sTransType = "MTAQREINS" Then		
+			'Charge what was returned
+			Engine.Item("NASRIA").Item(sGisObject, lCount).Item(sProperty & "NASRIA_PREMIUM").value = dPrevThisPremium * -1	
+		End If
+	Next
+	'Get all Previous Sum Insured
+	If sRiskCode = "NPADOM" Then
+		prevMDSumInsured = SafecDbl(vPrevSumInsured)
+	ElseIf sRiskCode = "NPAMOTOR" Then
+		prevMOTSumInsured = SafecDbl(vPrevSumInsured)	
+	ElseIf sRiskCode = "NPAPC" Then
+		prevPCSumInsured = SafecDbl(vPrevSumInsured)
+	End If	
+						  
+
+End Sub
+
+'*****************************************************************************************************
+' Processes MTA on Inception Clawback
+'*****************************************************************************************************
+Private Sub HandleClawbackInception(inceptionDateTpi,lNumberOfDays,lPolicyPeriod,dMinPrem,sRiskCode, dRate, lRiskID)
+	Dim sColumns
+	Dim vRisksArray
+	DIm vExtraParameters
+	Dim sDataModelCode
+	Dim sGisObject
+	DIm sProperty
+	Dim lCount
+	Dim sRiskDescription
+	Dim dPrevThisPremium
+	Dim dPrevAnnualPremium
+	Dim dAnnualPremiumCalculated	
+	Dim dPrevAnnualPremiumCalculated
+	Dim dPrevMinUpliftPremium
+	Dim dSi
+	Dim dAnnualPremium
+	Dim dPremiumMTA
+	Dim dPremium
+	Dim dEarnerdPremium
+	Dim LatestCoverStartDate
+	Dim PreviousSumInsured
+	Dim vPrevSumInsured			
+	'Get last calculated Premiums
+	 sDataModelCode = "SDNASRIA"
+	 If sRiskCode = "NPADOM" Then
+		sGisObject = "NASRIA_MD"
+		sProperty = "MD_"
+		'sColumns = " RISKDESCRIPTION" '0
+		sColumns = " RISKID" '0
+		sColumns = sColumns & ", RISKCODE" '1
+		sColumns = sColumns & ", MD_NASRIA_PREMIUM"	'2	 
+		sColumns = sColumns & ", MD_NASRIA_ANNUAL_PREM" '3
+		sColumns = sColumns & ", MD_NASRIA_ANNUAL_PREM_CALC" '4	 
+		sColumns = sColumns & ", MD_MIN_PREM_UPLIFT" '5	
+		
+	ElseIf sRiskCode = "NPAMOTOR" Then
+		sGisObject = "NASRIA_MOT"
+		sProperty = "MOTOR_"
+		'sColumns = " RISKDESCRIPTION" '0
+		sColumns = " RISKID" '0
+		sColumns = sColumns & ", RISKCODE" '1
+		sColumns = sColumns & ", MOTOR_NASRIA_PREMIUM"	'2	 
+		sColumns = sColumns & ", MOTOR_NASRIA_ANNUAL_PREM" '3
+		sColumns = sColumns & ", MOTOR_NASRIA_ANNUAL_PREM_CALC" '4	 
+		sColumns = sColumns & ", MOTOR_MIN_PREM_UPLIFT" '5	
+				
+	ElseIf sRiskCode = "NPAPC" Then
+		sGisObject = "NASRIA_PC"
+		sProperty = "PC_"		
+		'sColumns = " RISKDESCRIPTION" '0
+		sColumns = " RISKID" '0
+		sColumns = sColumns & ", RISKCODE" '1
+		sColumns = sColumns & ", PC_NASRIA_PREMIUM"	'2	 
+		sColumns = sColumns & ", PC_NASRIA_ANNUAL_PREM" '3
+		sColumns = sColumns & ", PC_NASRIA_ANNUAL_PREM_CALC" '4	 
+		sColumns = sColumns & ", PC_MIN_PREM_UPLIFT" '5
+		
+	End If
+	 vExtraParameters = Array("sDataModelCode", sDataModelCode, "sGisObject", sGisObject, "sColumns", sColumns)
+	 Call Extras.CallNamedStoredProcedure(clng(6722), cstr("GetPreviousVersionDataModelValues"), vRisksArray, vExtraParameters)
+	 If IsArray(vRisksArray) = True Then
+		For lCount = 0 to UBound(vRisksArray,2)
+			 sRiskDescription = vRisksArray(0,lCount)
+			 sRiskCode = vRisksArray(1,lCount)
+			 dPrevThisPremium  = vRisksArray(2,lCount)
+			 dPrevAnnualPremium = vRisksArray(3,lCount)
+			 dPrevAnnualPremiumCalculated = vRisksArray(4,lCount)
+			 dPrevMinUpliftPremium = vRisksArray(5,lCount)
+			 LatestCoverStartDate = vRisksArray(6,lCount)
+			 PreviousSumInsured = vRisksArray(7,lCount)
+			Call UpdateRiskDetails(sRiskDescription,sRiskCode,dPrevThisPremium,dPrevAnnualPremium,dPrevAnnualPremiumCalculated,dPrevMinUpliftPremium)
+		Next	
+	End If
+	Stop
+	'Assign the latest Cover Start Date back
+	lCoverStartDate = LatestCoverStartDate									 
+	Dim lTotalCount
+	lTotalCount = Engine.Item("NASRIA").Count(sGisObject)
+	'Loop through child object to calculate premiums
+	For lCount = 1 To Engine.Item("NASRIA").Count(sGisObject)
+		dSi = SafecDbl(Engine.Item("NASRIA").Item(sGisObject, lCount).Item(sProperty & "ACCUMULATED_SI").value)
+		dPrevThisPremium = SafecDbl(Engine.Item("NASRIA").Item(sGisObject, lCount).Item(sProperty & "NASRIA_PREMIUM_PREV").value)
+		dAnnualPremium = SafecDbl(Engine.Item("NASRIA").Item(sGisObject, lCount).Item(sProperty & "NASRIA_ANNUAL_PREM").value)
+		dPrevAnnualPremium =  SafecDbl(Engine.Item("NASRIA").Item(sGisObject, lCount).Item(sProperty & "NASRIA_ANNUAL_PREM_PREV").value)
+		dAnnualPremiumCalculated = SafecDbl(Engine.Item("NASRIA").Item(sGisObject, lCount).Item(sProperty & "NASRIA_ANNUAL_PREM_CALC").value)		
+		dPrevAnnualPremiumCalculated = SafecDbl(Engine.Item("NASRIA").Item(sGisObject, lCount).Item(sProperty & "NASRIA_ANNUAL_PREM_CALC_PREV").value)	
+		dPrevMinUpliftPremium = SafecDbl(Engine.Item("NASRIA").Item(sGisObject, lCount).Item(sProperty & "MIN_PREM_UPLIFT_PREV").value)			
+	
+		'****************************************************************
+		' MTA (From Inception)
+		'****************************************************************
+		vPrevSumInsured = vPrevSumInsured + SafecDbl(PreviousSumInsured)
+		dPremiumMTA = SafecDbl(dAnnualPremium) 
+		If (dSi > 0) Then
+			If dPrevMinUpliftPremium > 0 Then
+				If (dPrevAnnualPremiumCalculated < dMinPrem) Then 
+					If dAnnualPremiumCalculated > 0 And dAnnualPremiumCalculated < dMinPrem Then
+						'We already charged minimum premium and we are yet to hit minimum premium
+						Engine.Item("NASRIA").Item(sGisObject, lCount).Item(sProperty & "NASRIA_PREMIUM").value = dMinPrem							
+					Else
+						'We need to refund minimum retained
+						Dim dMinPremRefund
+						If dPremiumMTA <= dPrevMinUpliftPremium Then
+							dPremiumMTA = 0 'Don't charge extra
+							Engine.Item("NASRIA").Item(sGisObject, lCount).Item(sProperty & "MIN_PREM_UPLIFT").value = dPrevMinUpliftPremium - dPremiumMTA
+						Else
+							Dim dNewClawback
+							dNewClawback = 0
+							dPremiumMTA = dPremiumMTA - dPrevMinUpliftPremium 'Claw back premium
+							If dPremiumMTA <= dMinPrem Then
+								dNewClawback = dMinPrem - dPremiumMTA
+								dPremiumMTA = dMinPrem
+							End If
+							Engine.Item("NASRIA").Item(sGisObject, lCount).Item(sProperty & "MIN_PREM_UPLIFT").value = dNewClawback
+						End If
+						Engine.Item("NASRIA").Item(sGisObject, lCount).Item(sProperty & "NASRIA_PREMIUM").value = dPremiumMTA '+ dMinPrem
+					End If
+				End If
+			End If
+		End If
+	Next
+End Sub
+
+'************************************************************************************************************
+'  Add risk details
+'************************************************************************************************************
+Sub AddRiskDetails(lRiskID,sRiskCode,sRiskDescription,dSumInsured,dRate,dPremium,dFullPeriodPremium,dCalcPremium,dMinimumPremiumUplift)
+	Dim lCount
+	Dim lTotalCount
+	Dim sObject
+	Dim sProperty
+	Dim vatFreeRate
+	
+	
+	'vatFreeRate = FormatNumber(SafecDbl(dRate / 1.15),4)
+	If sRiskCode = "NPADOM" Then
+		sObject = "NASRIA_MD"
+		sProperty = "MD_"
+	ElseIf sRiskCode = "NPAMOTOR" Then
+		sObject = "NASRIA_MOT"
+		sProperty = "MOTOR_"
+	ElseIf sRiskCode = "NPAPC" Then
+		sObject = "NASRIA_PC"
+		sProperty = "PC_"
+	End If
+
+	With Engine
+		lCount = .Item("NASRIA").Count(sObject)
+		.Item("NASRIA").NewObject(sObject)
+		.Item("NASRIA").Item(sObject, lCount + 1).Item("RISKID").value = lRiskID
+		.Item("NASRIA").Item(sObject, lCount + 1).Item("RISKCODE").value = sRiskCode
+		.Item("NASRIA").Item(sObject, lCount + 1).Item("RISKDESCRIPTION").value = sRiskDescription
+		.Item("NASRIA").Item(sObject, lCount + 1).Item(sProperty & "ACCUMULATED_SI").value = dSumInsured
+		.Item("NASRIA").Item(sObject, lCount + 1).Item(sProperty & "NASRIA_RATE").value = FormatNumber(dRate,5)
+		.Item("NASRIA").Item(sObject, lCount + 1).Item(sProperty & "NASRIA_PREMIUM").value = dPremium	
+		.Item("NASRIA").Item(sObject, lCount + 1).Item(sProperty & "NASRIA_ANNUAL_PREM").value = dFullPeriodPremium	
+		.Item("NASRIA").Item(sObject, lCount + 1).Item(sProperty & "NASRIA_ANNUAL_PREM_CALC").value = dCalcPremium
+		.Item("NASRIA").Item(sObject, lCount + 1).Item(sProperty & "MIN_PREM_UPLIFT").value = dMinimumPremiumUplift			
+	End With
+End Sub
+
+
+'************************************************************************************************************
+'  Upate risk details During Mid-Term Transactions
+'************************************************************************************************************
+Private Sub UpdateRiskDetails(sRiskDescription,sRiskCode,dPrevThisPremium,dPrevAnnualPremium,dPrevAnnualPremiumCalculated,dPrevMinUpliftPremium)
+	Dim lCount
+	Dim lTotalCount
+	Dim sObject
+	Dim sProperty	
+
+	If sRiskCode = "NPADOM" Then
+		sObject = "NASRIA_MD"
+		sProperty = "MD_"
+	ElseIf sRiskCode = "NPAMOTOR" Then
+		sObject = "NASRIA_MOT"
+		sProperty = "MOTOR_"
+	ElseIf sRiskCode = "NPAPC" Then
+		sObject = "NASRIA_PC"
+		sProperty = "PC_"
+	End If
+	
+	With Engine
+		For lCount = 1 To .Item("NASRIA").Count(sObject)
+			If .Item("NASRIA").Item(sObject, lCount).Item("RISKID").value = sRiskDescription Then
+				.Item("NASRIA").Item(sObject, lCount).Item(sProperty & "NASRIA_PREMIUM_PREV").value = dPrevThisPremium
+				.Item("NASRIA").Item(sObject, lCount).Item(sProperty & "NASRIA_ANNUAL_PREM_PREV").value = dPrevAnnualPremium	
+				.Item("NASRIA").Item(sObject, lCount).Item(sProperty & "NASRIA_ANNUAL_PREM_CALC_PREV").value = dPrevAnnualPremiumCalculated					
+				.Item("NASRIA").Item(sObject, lCount).Item(sProperty & "MIN_PREM_UPLIFT_PREV").value = dPrevMinUpliftPremium					
+				Exit For
+			End If
+		Next
+	End With
+End Sub
+
+
+Sub CalculateTotalPremium(inceptionDateTpi,renewalDate,lNumberOfDays,lPolicyPeriod,dMDMinPrem,dMOTMinPrem,dPCMinPrem,prevMDSumInsured,prevMOTSumInsured,prevPCSumInsured,lCoverStartDate)
+	Dim lCount
+	Dim vResults
+	Dim sRatingSectionCode
+	Dim dMDFullPeriodPremium
+	Dim dMOTFullPeriodPremium
+	Dim dPCFullPeriodPremium
+	Dim dMDPrevPremium
+	Dim dMOTPrevPremium
+	Dim dPCPrevPremium	
+	DIm dMDPremium
+	Dim dMOTPremium
+	Dim dPCPremium
+
+	Call Extras.CallNamedStoredProcedure(6722, "Get_Previous_Annual_Premium", vResults)
+	If IsArray(vResults) Then
+		For lCount = 0 To UBound(vResults, 2)
+			sRatingSectionCode = vResults(0, lCount)
+			Select Case sRatingSectionCode
+				
+				'Material Damage
+				Case "NASRIAMDD"
+					dMDFullPeriodPremium = SafecDbl(vResults(1, lCount))
+				
+				'Motor
+				Case "NASRIAMOTD"
+					dMOTFullPeriodPremium = SafecDbl(vResults(1, lCount))
+
+				'Pleasure Craft
+				Case "NASRIAPCD"
+					dPCFullPeriodPremium = SafecDbl(vResults(1, lCount))
+			 End Select
+		 Next
+	End If	
+	
+	
+	With Engine
+
+		'Material Cummulative Values
+		Dim dMDTotalSi
+		Dim dMDTotalPeriodPrem
+		dIM dMDTotalPeriodPrevPrem
+		Dim dMDTotalPrem
+		Dim dMDRate
+
+		For lCount = 1 To .Item("NASRIA").Count("NASRIA_MD")
+			dMDTotalSi =  dMDTotalSi + SafecDbl(.Item("NASRIA").Item("NASRIA_MD", lCount).Item("MD_ACCUMULATED_SI").value)
+			dMDTotalPeriodPrem = dMDTotalPeriodPrem + SafecDbl(.Item("NASRIA").Item("NASRIA_MD", lCount).Item("MD_NASRIA_ANNUAL_PREM").value)
+			dMDTotalPeriodPrevPrem = dMDTotalPeriodPrevPrem + SafecDbl(.Item("NASRIA").Item("NASRIA_MD", lCount).Item("MD_NASRIA_ANNUAL_PREM_PREV").value)			
+			dMDTotalPrem = dMDTotalPrem + SafecDbl(.Item("NASRIA").Item("NASRIA_MD", lCount).Item("MD_NASRIA_PREMIUM").value)
+			dMDRate = SafecDbl(.Item("NASRIA").Item("NASRIA_MD", lCount).Item("MD_NASRIA_RATE").value)
+		Next
+		
+		.Item("NASRIA").Item("MD_DOM_ACCUMULATED_SI").value = dMDTotalSi
+		.Item("NASRIA").Item("MD_DOM_NASRIA_PERIOD_PREMIUM").value =  dMDTotalPeriodPrem
+		.Item("NASRIA").Item("MD_DOM_NASRIA_PREMIUM").value	= dMDTotalPrem
+	
+	
+		'Motor Cummulative Values
+		Dim dMotTotalSi
+		Dim dMotTotalPeriodPrem
+		dIM dMotTotalPeriodPrevPrem
+		Dim dMOTTotalPrem
+		Dim dMOTRate
+
+		For lCount = 1 To .Item("NASRIA").Count("NASRIA_MOT")
+			dMotTotalSi =  dMotTotalSi + SafecDbl(.Item("NASRIA").Item("NASRIA_MOT", lCount).Item("MOTOR_ACCUMULATED_SI").value)
+			dMotTotalPeriodPrem = dMotTotalPeriodPrem + SafecDbl(.Item("NASRIA").Item("NASRIA_MOT", lCount).Item("MOTOR_NASRIA_ANNUAL_PREM").value)
+			dMotTotalPeriodPrevPrem = dMotTotalPeriodPrevPrem + SafecDbl(.Item("NASRIA").Item("NASRIA_MOT", lCount).Item("MOTOR_NASRIA_ANNUAL_PREM_PREV").value)			
+			dMOTTotalPrem = dMOTTotalPrem + SafecDbl(.Item("NASRIA").Item("NASRIA_MOT", lCount).Item("MOTOR_NASRIA_PREMIUM").value)
+			dMOTRate = SafecDbl(.Item("NASRIA").Item("NASRIA_MOT", lCount).Item("MOTOR_NASRIA_RATE").value)
+		Next
+		
+		.Item("NASRIA").Item("MOTOR_ACCUMULATED_SI").value = dMotTotalSi
+		.Item("NASRIA").Item("MOTOR_NASRIA_PERIOD_PREMIUM").value =  dMotTotalPeriodPrem
+		.Item("NASRIA").Item("MOTOR_NASRIA_PREMIUM").value	= 	dMOTTotalPrem
+			
+			
+		'Pleasure Craft Cummulative Values			
+		Dim dPCTotalSi
+		Dim dPCTotalPeriodPrem
+		dIM dPCTotalPeriodPrevPrem
+		Dim dPCTotalPrem
+		Dim dPCRate
+		Dim dPCMinUplift
+
+		.Item("NASRIA").Item("PLCounter").Value	= .Item("NASRIA").Count("NASRIA_PC")
+		For lCount = 1 To .Item("NASRIA").Count("NASRIA_PC")
+			dPCTotalSi =  dPCTotalSi + SafecDbl(.Item("NASRIA").Item("NASRIA_PC", lCount).Item("PC_ACCUMULATED_SI").value)
+			dPCTotalPeriodPrem = dPCTotalPeriodPrem + SafecDbl(.Item("NASRIA").Item("NASRIA_PC", lCount).Item("PC_NASRIA_ANNUAL_PREM").value)
+			dPCTotalPeriodPrevPrem = dPCTotalPeriodPrevPrem + SafecDbl(.Item("NASRIA").Item("NASRIA_PC", lCount).Item("PC_NASRIA_ANNUAL_PREM_PREV").value)			
+			dPCTotalPrem = dPCTotalPrem + SafecDbl(.Item("NASRIA").Item("NASRIA_PC", lCount).Item("PC_NASRIA_PREMIUM").value)
+			dPCRate = SafecDbl(.Item("NASRIA").Item("NASRIA_PC", lCount).Item("PC_NASRIA_RATE").value)
+			
+		Next
+		
+		.Item("NASRIA").Item("PC_ACCUMULATED_SI").value = dPCTotalSi
+		.Item("NASRIA").Item("PC_NASRIA_PERIOD_PREMIUM").value = dPCTotalPeriodPrem
+		.Item("NASRIA").Item("PC_NASRIA_PREMIUM").value	= dPCTotalPrem		
+		
+		'*****************************************************
+		' Output New Business, Renewal or MTA from inception
+		'*****************************************************
+		'Added Muhammad Adam - 15/12/2020
+		Dim AnnualPremiumMOT, AnnualPremiumMD, AnnualPremiumPC 						   
+		If (Extras.TransactionType = "NB") Or (Extras.TransactionType = "REN" ) Or ((CDate(Extras.CoverStartDate) = CDate(inceptionDateTpi)) And (Extras.TransactionType = "MTA")) Then
+		'If (sTransType = "QUOTE") Or (sTransType = "RENEWAL" ) Or ((CDate(Extras.CoverStartDate) = CDate(inceptionDateTpi)) And ((sTransType = "MTAQUOTE") Or (sTransType = "MTAQTETEMP"))) Then
+
+						
+			'Output Material Damage
+			If dMDTotalSi > 0 Then
+				Call GenerateOutput(dMDTotalSi, dMDRate, dMDTotalPrem, "NASRIAMDD", 1)
+				AnnualPremiumMD = AnnualPremiumMD + dMDTotalPrem								
+			End If
+			
+			'Output Motor
+			If dMotTotalSi > 0 Then
+				Call GenerateOutput(dMotTotalSi, dMOTRate, dMOTTotalPrem, "NASRIAMOTD", 1)
+				AnnualPremiumMOT = AnnualPremiumMOT + dMOTTotalPrem								 
+			End If
+			
+			'Output Pleasure Craft
+			If dPCTotalSi > 0 Then
+				Call GenerateOutput(dPCTotalSi, dPCRate, dPCTotalPrem, "NASRIAPCD", 1)
+				AnnualPremiumPC = AnnualPremiumPC + dPCTotalPrem								
+			End If
+		
+		'*****************************************************
+		' MTAs (not from inception)
+		'*****************************************************
+		'ElseIf (sTransType = "MTAQUOTE") And (CDate(Extras.CoverStartDate) <> CDate(inceptionDateTpi))	 Then
+		ElseIf (Extras.TransactionType = "MTA") And (CDate(Extras.CoverStartDate) <> CDate(inceptionDateTpi))	 Then
+
+			'Output Material Damage
+			If dMDTotalSi > 0 Then
+			   Dim dMDPrem
+				dMDPrem = CalculateMTAProRata(lCoverStartDate, dMDTotalPrem, dMDTotalSi, prevMDSumInsured, dMDFullPeriodPremium, lPolicyPeriod, lNumberOfDays,dMDRate,"NPADOM","NASRIAMDD")																																	 
+				Call GenerateOutput(dMDTotalSi, dMDRate, dMDFullPeriodPremium + dMDPrem, "NASRIAMDD", 1)
+				'Call GenerateOutput(dMDTotalSi, dMDRate, 50 + 27.42, "NASRIAMDD", 1)
+				AnnualPremiumMD = CalculateAnnualPremium(AnnualPremiumMD, dMDTotalPeriodPrevPrem, dMDPrem, "NASRIAMDD")
+			End If
+			
+			'Output Motor
+			If dMotTotalSi > 0 Then
+				Dim dMotPrem
+				'Changed dMotTotalPeriodPrevPrem with dMOTFullPeriodPremium in the function call below - 14/01/2021
+				dMotPrem = CalculateMTAProRata(lCoverStartDate, dMOTTotalPrem, dMotTotalSi, prevMOTSumInsured, dMOTFullPeriodPremium, lPolicyPeriod, lNumberOfDays,dMOTRate,"NPAMOTOR","NASRIAMOTD")																																	  
+				Call GenerateOutput(dMotTotalSi, dMOTRate, dMOTFullPeriodPremium + dMotPrem, "NASRIAMOTD", 1)
+				AnnualPremiumMOT = CalculateAnnualPremium(AnnualPremiumMOT, dMotTotalPeriodPrevPrem, dMotPrem, "NASRIAMOTD")																						  
+			End If
+			
+			'Output Pleasure Craft
+			If dPCTotalSi > 0 Then
+			    Dim dPCPrem
+				dPCPrem = CalculateMTAProRata(lCoverStartDate, dPCTotalPrem, dPCTotalSi, prevPCSumInsured,dPCFullPeriodPremium, lPolicyPeriod, lNumberOfDays,dPCPrem,"NPAPC","NASRIAPCD")																															   
+				Call GenerateOutput(dPCTotalSi, dPCRate, dPCFullPeriodPremium + dPCPrem, "NASRIAPCD", 1)
+				AnnualPremiumPC = CalculateAnnualPremium(AnnualPremiumPC, dPCTotalPeriodPrevPrem, dPCPrem, "NASRIAPCD")																					   
+			End If
+		
+		'*************************************************
+		' MTCs - premiums are displayed on the screen as negatives
+		'*************************************************
+		'ElseIf sTransType = "MTAQCAN" Then
+		ElseIf (Extras.TransactionType = "MTC") Then
+			'Materila Damage
+			If dMDFullPeriodPremium > 0 Then
+				If dMDTotalPrem > 0 And Round(dMDTotalPrem,2) <= Round(dMDMinPrem,2) Then
+					dMDTotalPrem = 0 'No refund as we charged minimum premium
+				End If				
+				Call GenerateOutput(dMDTotalSi, dMDRate, dMDFullPeriodPremium + dMDTotalPrem, "NASRIAMDD", 1)
+				AnnualPremiumMD = AnnualPremiumMD + dMDFullPeriodPremium + dMDTotalPrem													   
+			End If
+			
+			'Motor
+			If dMOTFullPeriodPremium > 0 Then
+				If dMOTTotalPrem > 0 And Round(dMOTTotalPrem,2) <= Round(dMOTMinPrem,2) Then
+					dMOTTotalPrem = 0 'No refund as we charged minimum premium
+				End If				
+				Call GenerateOutput(dMotTotalSi, dMOTRate, dMOTFullPeriodPremium + dMOTTotalPrem, "NASRIAMOTD", 1)
+				AnnualPremiumMOT = AnnualPremiumMOT + dMOTFullPeriodPremium + dMOTTotalPrem														 
+			End If
+
+			'Pleasure craft
+			If dPCFullPeriodPremium > 0 Then
+				If dPCTotalPrem > 0 And Round(dPCTotalPrem,2) <= Round(dPCMinPrem,2) Then
+					dPCTotalPrem = 0 'No refund as we charged minimum premium
+				End If				
+				Call GenerateOutput(dPCTotalSi, dPCRate, dPCFullPeriodPremium + dPCTotalPrem, "NASRIAPCD", 1)
+				AnnualPremiumPC = AnnualPremiumPC + dPCFullPeriodPremium + dPCTotalPrem														 
+			End If
+		'*************************************************
+		' MTRs
+		'*************************************************
+		ElseIf Extras.TransactionType = "MTR" Then
+
+		'ElseIf sTransType = "MTAQREINS" Then	
+			'Get the permium this premium that was posted
+			Call Extras.CallNamedStoredProcedure(6722, "GetPreviousVersionRatingSection", vResults)
+			If IsArray(vResults) Then
+				For lCount = 0 To UBound(vResults, 2)
+					sRatingSectionCode = vResults(0, lCount)
+					Select Case sRatingSectionCode
+						
+						'Material Damage
+						Case "NASRIAMDD"
+							dMDPrevPremium = SafecDbl(vResults(1, lCount)) * -1
+						
+						'Motor
+						Case "NASRIAMOTD"
+							dMOTPrevPremium = SafecDbl(vResults(1, lCount)) * -1 
+
+						'Pleasure Craft
+						Case "NASRIAPCD"
+							dPCPrevPremium = SafecDbl(vResults(1, lCount)) * -1 
+					 End Select
+				 Next
+			End If			
+		
+		
+
+			'To output the premium we need we first reverse what the core system will Automatically output and post what we want
+			'Material Damage
+			If dMDTotalSi > 0 Then
+				Call GenerateOutput(dMDTotalSi, dMDRate, dMDPrevPremium + dMDTotalPrem, "NASRIAMDD", 1)
+				AnnualPremiumMD = AnnualPremiumMD + dMDTotalPrem								
+			End If
+			
+			'Motor
+			If dMotTotalSi > 0 Then
+				Call GenerateOutput(dMotTotalSi, dMOTRate, dMOTPrevPremium + dMOTTotalPrem, "NASRIAMOTD", 1)
+				AnnualPremiumMOT = AnnualPremiumMOT + dMOTTotalPrem								 
+			End If
+			
+			'pleasure Craft
+			If dPCTotalSi > 0 Then
+				Call GenerateOutput(dPCTotalSi, dPCRate, dPCPrevPremium + dPCTotalPrem, "NASRIAPCD", 1)
+				AnnualPremiumPC = AnnualPremiumPC + dPCTotalPrem								
+			End If				
+	
+
+		End If
+		
+		.Item("NASRIA").Item("ANNUAL_PREMIUM").value = AnnualPremiumMD * 1.15
+		.Item("NASRIA").Item("ANNUAL_PREMIUM_MOT").value = AnnualPremiumMOT * 1.15
+		.Item("NASRIA").Item("ANNUAL_PREMIUM_PC").value = AnnualPremiumPC * 1.15
+				
+	End With
+End Sub
+
+'************************************************************************************************************
+'  Add risk details
+'************************************************************************************************************
+Sub DeleleRiskDetails(sObject)
+	Dim lCount
+	Dim lTotalCount
+	
+	With Engine
+		'Delete Risks Details First
+		For lTotalCount = .Item("NASRIA", lCount).Count(sObject) To 1 Step -1
+			.Item("NASRIA", lCount).Item(sObject, lTotalCount).DeleteObject()
+		Next		
+	End With
+End Sub
+
+
+Function GenerateOutput(cSumInsured, cRate, cPremium, sRatingSection, bIsDisableProrata)
+	Dim iCount
+	'If cPremium <> 0 Then
+		Engine.NewObject("SDNASRIA_Output")
+		iCount = Engine.Count("SDNASRIA_Output")
+		Engine.Item("SDNASRIA_Output", iCount).Item("SUM_INSURED").Value = cSumInsured
+		Engine.Item("SDNASRIA_Output", iCount).Item("RATE").Value = cRate
+		Engine.Item("SDNASRIA_Output", iCount).Item("PREMIUM").Value = cPremium
+		Engine.Item("SDNASRIA_Output", iCount).Item("RISK_RATING_SECTION").Value = sRatingSection
+		Engine.Item("SDNASRIA_Output", iCount).Item("Disable_New_ProRata").Value = bIsDisableProrata
+		Engine.Item("SDNASRIA_Output", iCount).Item("Disable_Original_ProRata").Value = bIsDisableProrata
+		Engine.Item("SDNASRIA_Output", iCount).Item("country_id").Value = 3 '3 is for Namibia
+		
+	'End If 
+End Function
+
+Function GenerateStampDutyOutput(cSumInsured, cRate, cPremium, sRatingSection)
+	Dim iCount
+	'If cPremium <> 0 Then
+		Engine.NewObject("SDNASRIA_Output")
+		iCount = Engine.Count("SDNASRIA_Output")
+		Engine.Item("SDNASRIA_Output", iCount).Item("SUM_INSURED").Value = cSumInsured
+		Engine.Item("SDNASRIA_Output", iCount).Item("RATE").Value = cRate
+		Engine.Item("SDNASRIA_Output", iCount).Item("PREMIUM").Value = cPremium
+		Engine.Item("SDNASRIA_Output", iCount).Item("RISK_RATING_SECTION").Value = sRatingSection
+		Engine.Item("SDNASRIA_Output", iCount).Item("country_id").Value = 3 '3 is for Namibia
+		
+	'End If 
+End Function
+
+Function CalculateMTAProRata(cCoverStartDate, cAnnualPremium, cTotalSumInsured, cPreviousSumInsured, cPrevAnnual, cPolicyPeriod, cNumberOfDays,dRate,sRiskCode,sRatingCode)
+	Dim proRataPremium
+	Dim dPrevAnnualPremium
+	Dim dCurrentSI
+	Dim dChangedSI
+	Dim dClawback
+	Dim dPrevProRataPrem
+	Dim dCurrAnnualNasria
+	Stop
+	dPrevAnnualPremium = 0
+	dClawback = 0
+	If cAnnualPremium > 0 and cTotalSumInsured > 0 Then
+		Dim dTotalAnnualNasria
+		dTotalAnnualNasria = SafecDbl(cTotalSumInsured * dRate * 0.01)
+		If Round(cAnnualPremium,2) <> Round(dTotalAnnualNasria,2) Then
+			dClawback = dTotalAnnualNasria - cAnnualPremium
+		End If
+	End If
+
+	'Check if the MTA is OOS
+	If DateDiff("d", Extras.CoverStartDate,cCoverStartDate) > 1 Then
+		Dim DayDiff 
+		DayDiff= DateDiff("d", Extras.CoverStartDate,cCoverStartDate)
+		proRataPremium = SafecDbl((cAnnualPremium  - cPrevAnnual)/ cPolicyPeriod * DayDiff)
+	'Normal MTA
+	Else
+		'Calculate the previous Annual Premium based on the Previous SI - If available
+		If cPreviousSumInsured > 0 Then
+			dPrevAnnualPremium = SafecDbl(cPreviousSumInsured * dRate * 0.01)
+		End If
+		
+		If dPrevAnnualPremium > 0 Then
+			proRataPremium = SafecDbl((cAnnualPremium  - dPrevAnnualPremium)  * (cNumberOfDays / cPolicyPeriod))
+			'cPrevAnnual = 0
+		Else
+			proRataPremium = cAnnualPremium * (cNumberOfDays / cPolicyPeriod) 'SafecDbl((cTotalSumInsured) * dRate * 0.01 * (cNumberOfDays / cPolicyPeriod))
+		End If
+		
+		'Added by Muhammad - 11/12/2020 - NASRIA MTA issue
+		Dim NasriaNet, SIChange
+		Dim vResults, lCount, vExtraParameters
+		vExtraParameters = array("sRisk",sRiskCode,"sCode",sRatingCode)
+		Call Extras.CallNamedStoredProcedure(6722, "GetPreviousNASRIANet", vResults, vExtraParameters)
+		If IsArray(vResults) Then
+			NasriaNet = SafecDbl(vResults(0,0))
+			SIChange = SafecDbl(vResults(1,0))
+			dChangedSI = SafecDbl(vResults(2,0))
+			dCurrentSI = SafecDbl(vResults(3,0))
+		End If
+		
+		If sRiskCode = "NPADOM" Then
+			dChangedSI = SafecDbl(dChangedSI/1.15)
+			dCurrentSI = SafecDbl(dCurrentSI/1.15)
+		End If
+		
+		'Check if a monthly policy
+		If cPolicyPeriod < 365 Then
+			proRataPremium = proRataPremium
+		Else
+			If SIChange = 0 Then
+				If dCurrentSI = cPreviousSumInsured or cPreviousSumInsured = 0 Then
+					proRataPremium = SafecDbl((dCurrentSI) * dRate * 0.01 * (cNumberOfDays / cPolicyPeriod))
+					'proRataPremium = proRataPremium  + NasriaNet
+				Else
+					proRataPremium = proRataPremium
+				End If
+			ElseIf SIChange = 1 Then
+				'Check if the transaction is OOS
+				If DateDiff("d", Extras.CoverStartDate,cCoverStartDate) > 1 Then
+					proRataPremium = proRataPremium + NasriaNet
+				Else
+					If dClawback > 0 Then
+						dPrevProRataPrem = SafecDbl(NasriaNet * (cPolicyPeriod - cNumberOfDays) / cPolicyPeriod)
+						dCurrAnnualNasria = SafecDbl((dCurrentSI) * dRate * 0.01)
+						dCurrAnnualNasria = dCurrAnnualNasria - dClawback
+						dClawback = 0
+						proRataPremium = SafecDbl((dCurrAnnualNasria) * (cNumberOfDays / cPolicyPeriod))
+						proRataPremium = proRataPremium + dPrevProRataPrem - NasriaNet
+					Else
+						proRataPremium = SafecDbl((dChangedSI) * dRate * 0.01 * (cNumberOfDays / cPolicyPeriod))
+					End If
+				End IF
+			Else
+				If (Round(NasriaNet,2) <> Round(dPrevAnnualPremium,2)) and (dPrevAnnualPremium <> 0) Then
+					dPrevProRataPrem = SafecDbl(Round(dPrevAnnualPremium,2) * (cPolicyPeriod - cNumberOfDays) / cPolicyPeriod)
+					dCurrAnnualNasria = SafecDbl(((dCurrentSI) * dRate * 0.01) * (cNumberOfDays) / cPolicyPeriod)
+					proRataPremium = (dPrevProRataPrem + dCurrAnnualNasria) - Round(dPrevAnnualPremium,2)
+				ElseIf dChangedSI < 0 Then
+					If NasriaNet > 0 Then
+						dPrevProRataPrem = SafecDbl(NasriaNet * (cPolicyPeriod - cNumberOfDays) / cPolicyPeriod)
+						proRataPremium = (proRataPremium + dPrevProRataPrem) - NasriaNet
+					Else
+						dPrevProRataPrem = SafecDbl(cPrevAnnual * (cPolicyPeriod - cNumberOfDays) / cPolicyPeriod)
+						proRataPremium = (proRataPremium + dPrevProRataPrem) - cPrevAnnual
+					End If
+				Else
+					proRataPremium = proRataPremium - NasriaNet
+				End If
+			End If
+		End If
+		If (cAnnualPremium = cPrevAnnual) Or (cAnnualPremium = 0) Then
+			proRataPremium = 0
+		ElseIf (Round(cPreviousSumInsured,2) = Round(cTotalSumInsured,2)) and (dTotalAnnualNasria <> cPrevAnnual) Then
+			proRataPremium = 0
+		Else
+			If dClawback > 0 Then
+				proRataPremium = proRataPremium - dClawback
+			End If
+		End If
+	End If
+		
+	CalculateMTAProRata = SafecDbl(proRataPremium)
+End Function																																   
+'Created By Muhammad Adam - 15/12/2020 - To accomodate OOS MTA on NASRIA
+Function CalculateAnnualPremium(cAnnualPremium, cPrevAnnual, cCurrent, sRatingCode)
+	Dim vResults, lCount, vExtraParameters, AnnualPrem
+	Dim PreviousPrem, isOOS
+	vExtraParameters = array("sCode",sRatingCode)
+	Call Extras.CallNamedStoredProcedure(6722, "Get_Previous_NASRIA_OOSMTA", vResults, vExtraParameters)
+	
+	If IsArray(vResults) Then
+		PreviousPrem = SafecDbl(vResults(0,0))
+		isOOS = SafecInt(vResults(1,0))
+	End If
+	
+	If isOOS = 1 Then
+		AnnualPrem = cCurrent + PreviousPrem
+	Else
+		If cPrevAnnual = 0 Then
+			AnnualPrem = cCurrent + PreviousPrem
+		Else
+			AnnualPrem = cPrevAnnual + cCurrent
+		End If
+	End If
+		
+	CalculateAnnualPremium = SafecDbl(AnnualPrem)
+End Function																		
+				
+Function SafecInt(vIn)
+    SafecInt = 0
+    On Error Resume Next
+    SafecInt = CInt(vIn)
+    On Error GoTo 0
+End Function
+ 
+ 
+Function SafecDbl(vIn)
+    SafecDbl = 0
+    On Error Resume Next
+    SafecDbl = CDbl(vIn)
+    On Error GoTo 0
+End Function
+ 
+ 
+Function SafecStr(vIn)
+    SafecStr = ""
+    On Error Resume Next
+    SafecStr = CStr(vIn)
+    On Error GoTo 0
+End Function
+
+
+'**************************************************************
+' write to log file
+'**************************************************************
+Sub WriteLog(sMsg)
+	Dim sMsgLocal
+	Dim oLogFile
+	Dim oRegistry
+	Dim oFSO
+	Dim sLogfile
+	sLogfile = "c:\Pure\Nasria.log"
+
+	if sLogfile = "" then
+		Set oRegistry = CreateObject("Wscript.shell")
+		sLogfile = oRegistry.RegRead("HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Pure\Architecture\Common\LogFileName")
+		set oRegistry = nothing
+	end if
+
+	Set oFSO = CreateObject("Scripting.FileSystemObject")
+
+	'create log file or Open log file for appending
+	if oFSO.FileExists(sLogfile) then
+		set oLogFile = oFSO.OpenTextFile(sLogfile, 8)
+	else
+		set oLogFile = oFSO.CreateTextFile(sLogfile, True)
+	end if
+
+	sMsgLocal = "Date\Time: " & Date & " " & Time & vbcrlf
+	sMsgLocal = sMsgLocal & "Message: " & sMsg & vbcrlf
+	sMsgLocal = sMsgLocal & "*************************************************************************" & vbcrlf
+
+	oLogFile.WriteLine(sMsgLocal)
+
+	oLogFile.close
+
+	set oLogFile = nothing
+	set oFSO = nothing
+
+
+End sub

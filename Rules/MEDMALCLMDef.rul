@@ -1,0 +1,1509 @@
+        Dim iObjectInstanceCount
+        
+        Sub FindObjectInstanceCount(strScreenObjectName)
+        	iObjectInstanceCount = 1
+        
+        	' strScreenObjectName is the object that is associate with this screen (if a child), or "" if the root screen.
+        	If strScreenObjectName <> ""  Then
+        		Dim instanceCount
+        		
+        		' How many instance of this object exist?
+        		instanceCount = engine.count(strScreenObjectName)
+        		
+        		Dim i
+        		for i = 1 to instanceCount
+        			if engine.item(strScreenObjectName, i).item("OI").value = vAdditionalData(cAdditionalData_OIKey) then
+        				iObjectInstanceCount = i
+        			end if
+        		next
+        	End If
+        End Sub
+
+        Sub DefaultTextTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultCommentTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultIntegerTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CLng(strValue)
+        End Sub
+
+        
+        Sub DefaultCheckboxTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanListTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanRadioTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	If InStr(1, LCase(strValue), "code:", 1) = 1 Then
+        		' The default value has been specified as a code (code:<thecode>).
+        		Dim code
+        		Dim effectiveDate
+        		Dim version
+        		
+        		code = Mid(strValue, Len("code:")+1)
+        		effectiveDate = Now()
+        		version = 1
+        		
+        		Dim listItemId
+        		listItemId = Extras.GetField(strListCode, strListCode + "_Id", code, effectiveDate, version)
+        		
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(listItemId)
+        	Else
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        	End If
+        End Sub
+
+        
+        Sub DefaultRateListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	' TODO.
+        End Sub
+
+        
+        Sub DefaultDateTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	
+        	Dim location
+        	Dim Interval
+        	Dim Duration
+        	Dim DateValue
+        	
+        	'Upper case the input
+        	DateValue = UCase(strValue)
+        	'Check to see if we want data AND  Time
+        	location = InStr(1,DateValue,"DATETIME")
+        	if location > 0 then
+        		DateValue=  CDate(FormatDateTime(Now,0)) 'use the standard vb datetime
+        	End If
+        	'Check to see if TODAY is specified as a modifier
+        	location  = InStr(1,DateValue,"TODAY")
+        	If location > 0 Then
+        		'Determine if we are adding values
+        		location  = InStr(1,DateValue,"+")
+        		If location > 0 Then 
+        			Interval = Mid(DateValue,location + 1,1)
+        			
+        			If Interval = "Y" Then
+        				Interval = "YYYY"
+        			End If
+        			
+        			If Interval <> "" Then 
+        				Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        				DateValue = DateAdd(Interval,Duration,CDate(FormatDateTime(Now,2)))	
+        				
+        			Else
+        				'No Interval specified 
+        				'Need an error here!!!!
+        			End If	
+        		Else 
+        			'Check to see if we are subtracting values
+        			location  =InStr(1,DateValue,"-")
+        			If location > 0  Then 
+        				Interval = Mid(DateValue,location + 1,1)
+        				
+        				If Interval <> "" Then 
+        					Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        					DateValue = DateAdd(Interval, Duration * -1,CDate(FormatDateTime(Now,2)))	
+        				Else
+        					'No Interval specified 
+        					'Need an error here!!!!
+        				End If
+        			Else
+        				'No Function specified, so assume we are just using today's date as a shortdate
+        				DateValue = CDate(FormatDateTime(Now,2))
+        			End If
+        			
+        		End If
+        		
+        	End If	
+        	
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDate(DateValue)
+        End Sub
+
+        
+        Sub DefaultCurrencyTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+        
+        Sub DefaultPercentageTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+Sub WebRequired(bIsOnStart)
+	If bIsOnStart = True Then
+		Engine.NewObject("MEDMALCLAIM")
+		Engine.NewObject("PRFINDCLAIM")
+		Engine.NewObject("MEDCLM_EMP_LIAB")
+		Engine.NewObject("MEDCLM_POLL_LIABIL")
+		Engine.NewObject("MEDCLM_PROD_LIAB")
+		Engine.NewObject("MEDCLM_PUBLIC_LIAB")
+		Engine.NewObject("MEDCLM_SLD")
+		Engine.NewObject("MEDCLM_WARREST")
+		Engine.NewObject("MEDM_EXTBOC")
+		Engine.NewObject("MEDM_EXTDEFAM")
+		Engine.NewObject("MEDM_DOCUMNT")
+		Engine.NewObject("MEDM_EXTHPCN")
+		Engine.NewObject("MEDM_EXTRUNOFF")
+		Engine.NewObject("MEDM_BUSINDT")
+		Engine.NewObject("MEDMALCLM")
+	End If
+End Sub
+
+Sub onScreenLogic(bIsOnStart)
+        If bIsOnStart = True Then
+        
+        		 'Instantiate Risk object(s)
+        		'Risk Details Tab
+        		Extras.RiskDataEngine.NewObject("RISK_DETAILS")
+        		Extras.RiskDataEngine.NewObject("RSKDETPIPI")
+        
+        		'General Liability Tab
+        		Extras.RiskDataEngine.NewObject("EMP_LIAB")
+        		Extras.RiskDataEngine.NewObject("POLL_LIABIL")
+        		Extras.RiskDataEngine.NewObject("PROD_LIAB")
+        		Extras.RiskDataEngine.NewObject("PUBLIC_LIAB")
+        		Extras.RiskDataEngine.NewObject("SLD")
+        		Extras.RiskDataEngine.NewObject("WARREST")
+        		
+        		'Extensions Tab
+        		Extras.RiskDataEngine.NewObject("EXTBOC")
+        		Extras.RiskDataEngine.NewObject("EXTDEFAM")
+        		Extras.RiskDataEngine.NewObject("DOCUMNT")
+        		Extras.RiskDataEngine.NewObject("EXTHPCN")
+        		Extras.RiskDataEngine.NewObject("EXTRUNOFF")
+        		Extras.RiskDataEngine.NewObject("BUSINDT")
+        
+        		'Instantiate Claims object(s)
+        		'Underwriting Tab
+        		Engine.NewObject("MEDMALCLAIM")
+        		Engine.NewObject("PRFINDCLAIM")
+        
+        		'General Liability Tab
+        		Engine.NewObject("MEDCLM_EMP_LIAB")
+        		Engine.NewObject("MEDCLM_POLL_LIABIL")
+        		Engine.NewObject("MEDCLM_PROD_LIAB")
+        		Engine.NewObject("MEDCLM_PUBLIC_LIAB")
+        		Engine.NewObject("MEDCLM_SLD")
+        		Engine.NewObject("MEDCLM_WARREST")
+        		
+        		Engine.NewObject("MEDM_EXTBOC")
+        		Engine.NewObject("MEDM_EXTDEFAM")
+        		Engine.NewObject("MEDM_DOCUMNT")
+        		Engine.NewObject("MEDM_EXTHPCN")
+        		Engine.NewObject("MEDM_EXTRUNOFF")
+        		Engine.NewObject("MEDM_BUSINDT")
+        
+        		'---------------------------------------------------
+        		'---START: Non-child screen properties population---	
+        		'---------------------------------------------------
+        
+        		Dim Address
+        
+        		Address = Extras.RiskDataEngine.Item("ADDRESS").Item("LINE1").Value
+        		Engine.Item("MEDMALCLAIM").Item("ADDRESS").Value = Address
+        
+        		Dim RiskObject, ClaimObject
+        
+        		RiskObject = "RISK_DETAILS"
+        		ClaimObject = "MEDMALCLAIM"
+        	
+        
+        		'Call ToClaim(RiskObject,ClaimObject,"RETROACTIVE_DATE_EXPIRY")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASE_DEDUCT")
+        		'Call ToClaim(RiskObject,ClaimObject,"RETROACTIVE_DATE_INCEPTION")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASISOFLIMIT")
+        
+        		
+        		'-------Standard Risk Conditions---------'
+        		Call ToClaim(RiskObject,ClaimObject,"FEES_TURN")
+        		Call ToClaim(RiskObject,ClaimObject,"RETROACTIVE_DATE")
+        		Call ToClaim(RiskObject,ClaimObject,"ADD_RETRO_DATE_INFO")
+        		Call ToClaim(RiskObject,ClaimObject,"RETRO_DATE")
+        		'---------Ends Standard Risk Conditions---------'
+        		
+        		
+        		'----------Madical Malpractice-----------'
+        		Call ToClaim(RiskObject,ClaimObject,"MADMALCH")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEMNITY")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_RATE")
+        		'Call ToClaim(RiskObject,ClaimObject,"ADJUSTRATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASISOFLIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"PEROFCLAIM")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLE")
+        		'----------End Madical Malpractice--------' 
+        		
+        		'---------Professional Indemnity-------' 
+        		
+        		RiskObject = "RSKDETPIPI"
+        		ClaimObject = "PRFINDCLAIM"
+        		
+        		
+        		Call ToClaim(RiskObject,ClaimObject,"PROFINDM")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEMNITY")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_RATE")
+        		'Call ToClaim(RiskObject,ClaimObject,"ADJUSTRATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"BASISOFLIMIT")
+        		'Call ToClaim(RiskObject,ClaimObject,"PEROFCLAIM")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLE")
+        		'-----------End Professional Indemnity--------'
+                
+        		
+        		'-------------Rating Criteria------------'
+        		RiskObject = "RISK_DETAILS"
+        		ClaimObject = "MEDMALCLAIM"
+        		
+        		Call ToClaim(RiskObject,ClaimObject,"SIZE")
+        		Call ToClaim(RiskObject,ClaimObject,"MARKET_COND")
+        		Call ToClaim(RiskObject,ClaimObject,"QUALITY")
+        		Call ToClaim(RiskObject,ClaimObject,"DISCRETION")
+        		
+        		Call ToClaim(RiskObject,ClaimObject,"CLAIMSHISTORY")
+        		Call ToClaim(RiskObject,ClaimObject,"EXTENSION")
+        		Call ToClaim(RiskObject,ClaimObject,"REASON")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"CUST_INFO")
+        		Call ToClaim(RiskObject,ClaimObject,"CUST_DEDUCT_INFO")
+        		'Call ToClaim(RiskObject,ClaimObject,"PERC_CLAIM")
+        		'Call ToClaim(RiskObject,ClaimObject,"MINAMT")
+        		'Call ToClaim(RiskObject,ClaimObject,"EXTNSIONS")
+        		Call ToClaim(RiskObject,ClaimObject,"EXTENDED")
+        	
+        		'---------------------------------------------------
+        		'---START: General Liability Screen properties population---	
+        		'---------------------------------------------------
+        	
+                  '--------Employers Liability--------'
+        		RiskObject = "EMP_LIAB"
+        		ClaimObject = "MEDCLM_EMP_LIAB"
+        	
+        		Call ToClaim(RiskObject,ClaimObject,"EMP_CHK")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEMNITY")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCT")
+        		'----------End Employers Liability----------------------'
+        		
+        		
+        		'------------Pollution Liability------------'
+        		
+        		RiskObject ="POLL_LIABIL"
+        		ClaimObject ="MEDCLM_POLL_LIABIL"
+        		
+        		Call ToClaim(RiskObject,ClaimObject,"POLL_LIABIL_CHCK")
+        		Call ToClaim(RiskObject,ClaimObject,"POLL_BASE_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"POLL_LIMIT_OF_INDEMNITY")
+        		Call ToClaim(RiskObject,ClaimObject,"POLL_BASE_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"POLL_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"POLL_BASE_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"POLL_DEDUCT")
+        		
+        		'-----------End Pollution Liability---------------'
+        		
+        		
+               '------------------Product Liability---------------'
+        		RiskObject = "PROD_LIAB"
+        		ClaimObject = "MEDCLM_PROD_LIAB"
+        	
+        		Call ToClaim(RiskObject,ClaimObject,"PROD_CHK")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEMNITY")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCT")
+        		
+        		'-------------End Product Liability--------------'
+        		
+        		
+        		'--------------Public Liability ------------'
+        	
+        		RiskObject = "PUBLIC_LIAB"
+        		ClaimObject = "MEDCLM_PUBLIC_LIAB"
+        	
+        		Call ToClaim(RiskObject,ClaimObject,"PUBLIC_CHK")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEMNITY")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCT")
+        		'--------------End Public Liability ----------'
+        		
+        		'---------------Statutory Legal Defence Costs---------'
+        		RiskObject = "SLD"
+        		ClaimObject = "MEDCLM_SLD"
+        	
+        		Call ToClaim(RiskObject,ClaimObject,"SLDC_CHCK")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEMNITY")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCT")
+                  '---------------Statutory Legal Defence Costs---------'
+        		  
+        		  '----------------Wrongful Arrest and Defamation--------------'
+        		RiskObject = "WARREST"
+        		ClaimObject = "MEDCLM_WARREST"
+        	
+        		Call ToClaim(RiskObject,ClaimObject,"WARREST_CHK")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEMNITY")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCT")
+        		'----------------End Wrongful Arrest and Defamation--------------'
+        		
+        		'---------------------------------------------------
+        		'---START: Extensions Screen properties population---	
+        		'---------------------------------------------------
+        
+        		'----------------Breach of Confidentiality---------'
+        		RiskObject = "EXTBOC"
+        		ClaimObject = "MEDM_EXTBOC"
+        		
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEM")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLE")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH_TOP_UP")
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH_TOP_UP_AMOUNT")
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH_TOP_UP_DEDUCT")
+        		'----------------End Beach of Confidentiality----------'
+        		
+        		'----------------Defamation-----------------'
+        		RiskObject ="EXTDEFAM"
+        		ClaimObject ="MEDM_EXTDEFAM"
+        		
+        		Call ToClaim(RiskObject,ClaimObject,"DEFAM")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEM")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLE")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEFAM_TOP_UP")
+        		Call ToClaim(RiskObject,ClaimObject,"DEFAM_TOP_UP_AMOUNT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEFAM_TOP_UP_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"DEFAM_TOP_UP_DEDUCT")
+        		'--------------End Defamation------------------'
+        		
+        		'----------------Documents------------------'
+        		RiskObject ="DOCUMNT"
+        		ClaimObject ="MEDM_DOCUMNT"
+        		Call ToClaim(RiskObject,ClaimObject,"DOC_CHK")
+        		Call ToClaim(RiskObject,ClaimObject,"DOC_LIMIT_OF_IND")
+        		'Call ToClaim(RiskObject,ClaimObject,"DOC_BASIS_OF_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"DOC_DEDUCTIBLE")
+        		'Call ToClaim(RiskObject,ClaimObject,"DOC_BASIS_OF_DED")
+        		Call ToClaim(RiskObject,ClaimObject,"DOC_TOP_UP")
+        		Call ToClaim(RiskObject,ClaimObject,"DOC_TOP_UP_AMOUNT")
+        		Call ToClaim(RiskObject,ClaimObject,"DOC_TOP_UP_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"DOC_TOP_UP_DEDUCT")
+        		'----------------End Documents--------------'
+        		
+        		'----------------HPCN/Other Statutory Costs--------------'
+        		RiskObject ="EXTHPCN"
+        		ClaimObject ="MEDM_EXTHPCN"
+        		Call ToClaim(RiskObject,ClaimObject,"HPCN_OTH_ST")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEM")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLE")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"HPCN_OTH_TOP_UP")
+        		Call ToClaim(RiskObject,ClaimObject,"HPCN_OTH_TOP_AMOUNT")
+        		Call ToClaim(RiskObject,ClaimObject,"HPCN_OTH_TOP_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"HPCN_OTH_TOP_DEDUCT")
+        		'-------------End HPCN/Other Statutory Costs--------------'
+        		
+        		'--------------Run Off Cover------------------'
+        		 RiskObject="EXTRUNOFF"
+        		 ClaimObject="MEDM_EXTRUNOFF"
+        		Call ToClaim(RiskObject,ClaimObject,"RUN_OFF_COV")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEM")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_LIMIT")
+        		'Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLE")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"RUN_OFF_TOP_UP")
+        		Call ToClaim(RiskObject,ClaimObject,"RUN_OFF_TOP_UP_AMNT")
+        		Call ToClaim(RiskObject,ClaimObject,"RUN_OFF_TOP_UP_PREM")
+        		Call ToClaim(RiskObject,ClaimObject,"RUN_OFF_TOP_DEDUCT")
+        		'--------------End Run Off Cover--------------'
+        		
+        		'--------------Business Identity Theft------------------'
+        		RiskObject="BUSINDT"
+        		ClaimObject="MEDM_BUSINDT"
+        		Call ToClaim(RiskObject,ClaimObject,"BUS_IDENT_THEFT")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEMNITY")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLE")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH_TOP_UP")
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH_TOP_UP_AMOUNT")
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH_TOP_UP_DEDUCT")
+        		'--------------End Run Off Cover--------------'
+        		
+        
+        		Call DoInstanceCount
+         End If
+        End Sub
+
+        
+        Function ToClaim(RObject, CObject, PropName)
+        	Dim Val	
+        	Val = Extras.RiskDataEngine.Item(RObject).Item(PropName).Value
+        	Engine.Item(CObject).Item(PropName).Value = Val
+        End Function
+        
+        Sub DoInstanceCount
+        
+        If bIsOnStart = True Then
+        
+        		 'Instantiate Risk object(s)
+        		'Risk Details Tab
+        		Extras.RiskDataEngine.NewObject("RISK_DETAILS")
+        		Extras.RiskDataEngine.NewObject("RSKDETPIPI")
+        
+        		'General Liability Tab
+        		Extras.RiskDataEngine.NewObject("EMP_LIAB")
+        		Extras.RiskDataEngine.NewObject("POLL_LIABIL")
+        		Extras.RiskDataEngine.NewObject("PROD_LIAB")
+        		Extras.RiskDataEngine.NewObject("PUBLIC_LIAB")
+        		Extras.RiskDataEngine.NewObject("SLD")
+        		Extras.RiskDataEngine.NewObject("WARREST")
+        		
+        		'Extensions Tab
+        		Extras.RiskDataEngine.NewObject("EXTBOC")
+        		Extras.RiskDataEngine.NewObject("EXTDEFAM")
+        		Extras.RiskDataEngine.NewObject("DOCUMNT")
+        		Extras.RiskDataEngine.NewObject("EXTHPCN")
+        		Extras.RiskDataEngine.NewObject("EXTRUNOFF")
+        		Extras.RiskDataEngine.NewObject("BUSINDT")
+        
+        		'Instantiate Claims object(s)
+        		'Underwriting Tab
+        		Engine.NewObject("MEDMALCLAIM")
+        		Engine.NewObject("PRFINDCLAIM")
+        
+        		'General Liability Tab
+        		Engine.NewObject("MEDCLM_EMP_LIAB")
+        		Engine.NewObject("MEDCLM_POLL_LIABIL")
+        		Engine.NewObject("MEDCLM_PROD_LIAB")
+        		Engine.NewObject("MEDCLM_PUBLIC_LIAB")
+        		Engine.NewObject("MEDCLM_SLD")
+        		Engine.NewObject("MEDCLM_WARREST")
+        		
+        		Engine.NewObject("MEDM_EXTBOC")
+        		Engine.NewObject("MEDM_EXTDEFAM")
+        		Engine.NewObject("MEDM_DOCUMNT")
+        		Engine.NewObject("MEDM_EXTHPCN")
+        		Engine.NewObject("MEDM_EXTRUNOFF")
+        		Engine.NewObject("MEDM_BUSINDT")
+        
+        		'---------------------------------------------------
+        		'---START: Non-child screen properties population---	
+        		'---------------------------------------------------
+        
+        		Dim Address
+        
+        		Address = Extras.RiskDataEngine.Item("ADDRESS").Item("LINE1").Value
+        		Engine.Item("MEDMALCLAIM").Item("ADDRESS").Value = Address
+        
+        		Dim RiskObject, ClaimObject
+        
+        		RiskObject = "RISK_DETAILS"
+        		ClaimObject = "MEDMALCLAIM"
+        	
+        
+        		'Call ToClaim(RiskObject,ClaimObject,"RETROACTIVE_DATE_EXPIRY")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASE_DEDUCT")
+        		'Call ToClaim(RiskObject,ClaimObject,"RETROACTIVE_DATE_INCEPTION")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASISOFLIMIT")
+        
+        		
+        		'-------Standard Risk Conditions---------'
+        		Call ToClaim(RiskObject,ClaimObject,"FEES_TURN")
+        		Call ToClaim(RiskObject,ClaimObject,"RETROACTIVE_DATE")
+        		Call ToClaim(RiskObject,ClaimObject,"ADD_RETRO_DATE_INFO")
+        		Call ToClaim(RiskObject,ClaimObject,"RETRO_DATE")
+        		'---------Ends Standard Risk Conditions---------'
+        		
+        		
+        		'----------Madical Malpractice-----------'
+        		Call ToClaim(RiskObject,ClaimObject,"MADMALCH")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEMNITY")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_RATE")
+        		'Call ToClaim(RiskObject,ClaimObject,"ADJUSTRATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASISOFLIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"PEROFCLAIM")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLE")
+        		'----------End Madical Malpractice--------' 
+        		
+        		'---------Professional Indemnity-------' 
+        		
+        		RiskObject = "RSKDETPIPI"
+        		ClaimObject = "PRFINDCLAIM"
+        		
+        		
+        		Call ToClaim(RiskObject,ClaimObject,"PROFINDM")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEMNITY")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_RATE")
+        		'Call ToClaim(RiskObject,ClaimObject,"ADJUSTRATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"BASISOFLIMIT")
+        		'Call ToClaim(RiskObject,ClaimObject,"PEROFCLAIM")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLE")
+        		'-----------End Professional Indemnity--------'
+                
+        		
+        		'-------------Rating Criteria------------'
+        		RiskObject = "RISK_DETAILS"
+        		ClaimObject = "MEDMALCLAIM"
+        		
+        		Call ToClaim(RiskObject,ClaimObject,"SIZE")
+        		Call ToClaim(RiskObject,ClaimObject,"MARKET_COND")
+        		Call ToClaim(RiskObject,ClaimObject,"QUALITY")
+        		Call ToClaim(RiskObject,ClaimObject,"DISCRETION")
+        		
+        		Call ToClaim(RiskObject,ClaimObject,"CLAIMSHISTORY")
+        		Call ToClaim(RiskObject,ClaimObject,"EXTENSION")
+        		Call ToClaim(RiskObject,ClaimObject,"REASON")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"CUST_INFO")
+        		Call ToClaim(RiskObject,ClaimObject,"CUST_DEDUCT_INFO")
+        		'Call ToClaim(RiskObject,ClaimObject,"PERC_CLAIM")
+        		'Call ToClaim(RiskObject,ClaimObject,"MINAMT")
+        		'Call ToClaim(RiskObject,ClaimObject,"EXTNSIONS")
+        		Call ToClaim(RiskObject,ClaimObject,"EXTENDED")
+        	
+        		'---------------------------------------------------
+        		'---START: General Liability Screen properties population---	
+        		'---------------------------------------------------
+        	
+                  '--------Employers Liability--------'
+        		RiskObject = "EMP_LIAB"
+        		ClaimObject = "MEDCLM_EMP_LIAB"
+        	
+        		Call ToClaim(RiskObject,ClaimObject,"EMP_CHK")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEMNITY")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCT")
+        		'----------End Employers Liability----------------------'
+        		
+        		
+        		'------------Pollution Liability------------'
+        		
+        		RiskObject ="POLL_LIABIL"
+        		ClaimObject ="MEDCLM_POLL_LIABIL"
+        		
+        		Call ToClaim(RiskObject,ClaimObject,"POLL_LIABIL_CHCK")
+        		Call ToClaim(RiskObject,ClaimObject,"POLL_BASE_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"POLL_LIMIT_OF_INDEMNITY")
+        		Call ToClaim(RiskObject,ClaimObject,"POLL_BASE_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"POLL_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"POLL_BASE_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"POLL_DEDUCT")
+        		
+        		'-----------End Pollution Liability---------------'
+        		
+        		
+               '------------------Product Liability---------------'
+        		RiskObject = "PROD_LIAB"
+        		ClaimObject = "MEDCLM_PROD_LIAB"
+        	
+        		Call ToClaim(RiskObject,ClaimObject,"PROD_CHK")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEMNITY")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCT")
+        		
+        		'-------------End Product Liability--------------'
+        		
+        		
+        		'--------------Public Liability ------------'
+        	
+        		RiskObject = "PUBLIC_LIAB"
+        		ClaimObject = "MEDCLM_PUBLIC_LIAB"
+        	
+        		Call ToClaim(RiskObject,ClaimObject,"PUBLIC_CHK")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEMNITY")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCT")
+        		'--------------End Public Liability ----------'
+        		
+        		'---------------Statutory Legal Defence Costs---------'
+        		RiskObject = "SLD"
+        		ClaimObject = "MEDCLM_SLD"
+        	
+        		Call ToClaim(RiskObject,ClaimObject,"SLDC_CHCK")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEMNITY")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCT")
+                  '---------------Statutory Legal Defence Costs---------'
+        		  
+        		  '----------------Wrongful Arrest and Defamation--------------'
+        		RiskObject = "WARREST"
+        		ClaimObject = "MEDCLM_WARREST"
+        	
+        		Call ToClaim(RiskObject,ClaimObject,"WARREST_CHK")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEMNITY")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCT")
+        		'----------------End Wrongful Arrest and Defamation--------------'
+        		
+        		'---------------------------------------------------
+        		'---START: Extensions Screen properties population---	
+        		'---------------------------------------------------
+        
+        		'----------------Breach of Confidentiality---------'
+        		RiskObject = "EXTBOC"
+        		ClaimObject = "MEDM_EXTBOC"
+        		
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEM")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLE")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH_TOP_UP")
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH_TOP_UP_AMOUNT")
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH_TOP_UP_DEDUCT")
+        		'----------------End Beach of Confidentiality----------'
+        		
+        		'----------------Defamation-----------------'
+        		RiskObject ="EXTDEFAM"
+        		ClaimObject ="MEDM_EXTDEFAM"
+        		
+        		Call ToClaim(RiskObject,ClaimObject,"DEFAM")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEM")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLE")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEFAM_TOP_UP")
+        		Call ToClaim(RiskObject,ClaimObject,"DEFAM_TOP_UP_AMOUNT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEFAM_TOP_UP_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"DEFAM_TOP_UP_DEDUCT")
+        		'--------------End Defamation------------------'
+        		
+        		'----------------Documents------------------'
+        		RiskObject ="DOCUMNT"
+        		ClaimObject ="MEDM_DOCUMNT"
+        		Call ToClaim(RiskObject,ClaimObject,"DOC_CHK")
+        		Call ToClaim(RiskObject,ClaimObject,"DOC_LIMIT_OF_IND")
+        		'Call ToClaim(RiskObject,ClaimObject,"DOC_BASIS_OF_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"DOC_DEDUCTIBLE")
+        		'Call ToClaim(RiskObject,ClaimObject,"DOC_BASIS_OF_DED")
+        		Call ToClaim(RiskObject,ClaimObject,"DOC_TOP_UP")
+        		Call ToClaim(RiskObject,ClaimObject,"DOC_TOP_UP_AMOUNT")
+        		Call ToClaim(RiskObject,ClaimObject,"DOC_TOP_UP_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"DOC_TOP_UP_DEDUCT")
+        		'----------------End Documents--------------'
+        		
+        		'----------------HPCN/Other Statutory Costs--------------'
+        		RiskObject ="EXTHPCN"
+        		ClaimObject ="MEDM_EXTHPCN"
+        		Call ToClaim(RiskObject,ClaimObject,"HPCN_OTH_ST")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEM")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLE")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"HPCN_OTH_TOP_UP")
+        		Call ToClaim(RiskObject,ClaimObject,"HPCN_OTH_TOP_AMOUNT")
+        		Call ToClaim(RiskObject,ClaimObject,"HPCN_OTH_TOP_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"HPCN_OTH_TOP_DEDUCT")
+        		'-------------End HPCN/Other Statutory Costs--------------'
+        		
+        		'--------------Run Off Cover------------------'
+        		 RiskObject="EXTRUNOFF"
+        		 ClaimObject="MEDM_EXTRUNOFF"
+        		Call ToClaim(RiskObject,ClaimObject,"RUN_OFF_COV")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEM")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_LIMIT")
+        		'Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLE")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"RUN_OFF_TOP_UP")
+        		Call ToClaim(RiskObject,ClaimObject,"RUN_OFF_TOP_UP_AMNT")
+        		Call ToClaim(RiskObject,ClaimObject,"RUN_OFF_TOP_UP_PREM")
+        		Call ToClaim(RiskObject,ClaimObject,"RUN_OFF_TOP_DEDUCT")
+        		'--------------End Run Off Cover--------------'
+        		
+        		'--------------Business Identity Theft------------------'
+        		RiskObject="BUSINDT"
+        		ClaimObject="MEDM_BUSINDT"
+        		Call ToClaim(RiskObject,ClaimObject,"BUS_IDENT_THEFT")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEMNITY")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLE")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH_TOP_UP")
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH_TOP_UP_AMOUNT")
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH_TOP_UP_DEDUCT")
+        		'--------------End Run Off Cover--------------'
+        		
+        
+        		Call DoInstanceCount
+         End If
+        End Sub
+
+        
+        Function ToClaim(RObject, CObject, PropName)
+        	Dim Val	
+        	Val = Extras.RiskDataEngine.Item(RObject).Item(PropName).Value
+        	Engine.Item(CObject).Item(PropName).Value = Val
+        End Function
+        
+        Sub DoInstanceCount
+        
+        If bIsOnStart = True Then
+        
+        		 'Instantiate Risk object(s)
+        		'Risk Details Tab
+        		Extras.RiskDataEngine.NewObject("RISK_DETAILS")
+        		Extras.RiskDataEngine.NewObject("RSKDETPIPI")
+        
+        		'General Liability Tab
+        		Extras.RiskDataEngine.NewObject("EMP_LIAB")
+        		Extras.RiskDataEngine.NewObject("POLL_LIABIL")
+        		Extras.RiskDataEngine.NewObject("PROD_LIAB")
+        		Extras.RiskDataEngine.NewObject("PUBLIC_LIAB")
+        		Extras.RiskDataEngine.NewObject("SLD")
+        		Extras.RiskDataEngine.NewObject("WARREST")
+        		
+        		'Extensions Tab
+        		Extras.RiskDataEngine.NewObject("EXTBOC")
+        		Extras.RiskDataEngine.NewObject("EXTDEFAM")
+        		Extras.RiskDataEngine.NewObject("DOCUMNT")
+        		Extras.RiskDataEngine.NewObject("EXTHPCN")
+        		Extras.RiskDataEngine.NewObject("EXTRUNOFF")
+        		Extras.RiskDataEngine.NewObject("BUSINDT")
+        
+        		'Instantiate Claims object(s)
+        		'Underwriting Tab
+        		Engine.NewObject("MEDMALCLAIM")
+        		Engine.NewObject("PRFINDCLAIM")
+        
+        		'General Liability Tab
+        		Engine.NewObject("MEDCLM_EMP_LIAB")
+        		Engine.NewObject("MEDCLM_POLL_LIABIL")
+        		Engine.NewObject("MEDCLM_PROD_LIAB")
+        		Engine.NewObject("MEDCLM_PUBLIC_LIAB")
+        		Engine.NewObject("MEDCLM_SLD")
+        		Engine.NewObject("MEDCLM_WARREST")
+        		
+        		Engine.NewObject("MEDM_EXTBOC")
+        		Engine.NewObject("MEDM_EXTDEFAM")
+        		Engine.NewObject("MEDM_DOCUMNT")
+        		Engine.NewObject("MEDM_EXTHPCN")
+        		Engine.NewObject("MEDM_EXTRUNOFF")
+        		Engine.NewObject("MEDM_BUSINDT")
+        
+        		'---------------------------------------------------
+        		'---START: Non-child screen properties population---	
+        		'---------------------------------------------------
+        
+        		Dim Address
+        
+        		Address = Extras.RiskDataEngine.Item("ADDRESS").Item("LINE1").Value
+        		Engine.Item("MEDMALCLAIM").Item("ADDRESS").Value = Address
+        
+        		Dim RiskObject, ClaimObject
+        
+        		RiskObject = "RISK_DETAILS"
+        		ClaimObject = "MEDMALCLAIM"
+        	
+        
+        		'Call ToClaim(RiskObject,ClaimObject,"RETROACTIVE_DATE_EXPIRY")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASE_DEDUCT")
+        		'Call ToClaim(RiskObject,ClaimObject,"RETROACTIVE_DATE_INCEPTION")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASISOFLIMIT")
+        
+        		
+        		'-------Standard Risk Conditions---------'
+        		Call ToClaim(RiskObject,ClaimObject,"FEES_TURN")
+        		Call ToClaim(RiskObject,ClaimObject,"RETROACTIVE_DATE")
+        		Call ToClaim(RiskObject,ClaimObject,"ADD_RETRO_DATE_INFO")
+        		Call ToClaim(RiskObject,ClaimObject,"RETRO_DATE")
+        		'---------Ends Standard Risk Conditions---------'
+        		
+        		
+        		'----------Madical Malpractice-----------'
+        		Call ToClaim(RiskObject,ClaimObject,"MADMALCH")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEMNITY")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_RATE")
+        		'Call ToClaim(RiskObject,ClaimObject,"ADJUSTRATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASISOFLIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"PEROFCLAIM")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLE")
+        		'----------End Madical Malpractice--------' 
+        		
+        		'---------Professional Indemnity-------' 
+        		
+        		RiskObject = "RSKDETPIPI"
+        		ClaimObject = "PRFINDCLAIM"
+        		
+        		
+        		Call ToClaim(RiskObject,ClaimObject,"PROFINDM")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEMNITY")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_RATE")
+        		'Call ToClaim(RiskObject,ClaimObject,"ADJUSTRATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"BASISOFLIMIT")
+        		'Call ToClaim(RiskObject,ClaimObject,"PEROFCLAIM")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLE")
+        		'-----------End Professional Indemnity--------'
+                
+        		
+        		'-------------Rating Criteria------------'
+        		RiskObject = "RISK_DETAILS"
+        		ClaimObject = "MEDMALCLAIM"
+        		
+        		Call ToClaim(RiskObject,ClaimObject,"SIZE")
+        		Call ToClaim(RiskObject,ClaimObject,"MARKET_COND")
+        		Call ToClaim(RiskObject,ClaimObject,"QUALITY")
+        		Call ToClaim(RiskObject,ClaimObject,"DISCRETION")
+        		
+        		Call ToClaim(RiskObject,ClaimObject,"CLAIMSHISTORY")
+        		Call ToClaim(RiskObject,ClaimObject,"EXTENSION")
+        		Call ToClaim(RiskObject,ClaimObject,"REASON")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"CUST_INFO")
+        		Call ToClaim(RiskObject,ClaimObject,"CUST_DEDUCT_INFO")
+        		'Call ToClaim(RiskObject,ClaimObject,"PERC_CLAIM")
+        		'Call ToClaim(RiskObject,ClaimObject,"MINAMT")
+        		'Call ToClaim(RiskObject,ClaimObject,"EXTNSIONS")
+        		Call ToClaim(RiskObject,ClaimObject,"EXTENDED")
+        	
+        		'---------------------------------------------------
+        		'---START: General Liability Screen properties population---	
+        		'---------------------------------------------------
+        	
+                  '--------Employers Liability--------'
+        		RiskObject = "EMP_LIAB"
+        		ClaimObject = "MEDCLM_EMP_LIAB"
+        	
+        		Call ToClaim(RiskObject,ClaimObject,"EMP_CHK")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEMNITY")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCT")
+        		'----------End Employers Liability----------------------'
+        		
+        		
+        		'------------Pollution Liability------------'
+        		
+        		RiskObject ="POLL_LIABIL"
+        		ClaimObject ="MEDCLM_POLL_LIABIL"
+        		
+        		Call ToClaim(RiskObject,ClaimObject,"POLL_LIABIL_CHCK")
+        		Call ToClaim(RiskObject,ClaimObject,"POLL_BASE_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"POLL_LIMIT_OF_INDEMNITY")
+        		Call ToClaim(RiskObject,ClaimObject,"POLL_BASE_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"POLL_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"POLL_BASE_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"POLL_DEDUCT")
+        		
+        		'-----------End Pollution Liability---------------'
+        		
+        		
+               '------------------Product Liability---------------'
+        		RiskObject = "PROD_LIAB"
+        		ClaimObject = "MEDCLM_PROD_LIAB"
+        	
+        		Call ToClaim(RiskObject,ClaimObject,"PROD_CHK")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEMNITY")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCT")
+        		
+        		'-------------End Product Liability--------------'
+        		
+        		
+        		'--------------Public Liability ------------'
+        	
+        		RiskObject = "PUBLIC_LIAB"
+        		ClaimObject = "MEDCLM_PUBLIC_LIAB"
+        	
+        		Call ToClaim(RiskObject,ClaimObject,"PUBLIC_CHK")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEMNITY")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCT")
+        		'--------------End Public Liability ----------'
+        		
+        		'---------------Statutory Legal Defence Costs---------'
+        		RiskObject = "SLD"
+        		ClaimObject = "MEDCLM_SLD"
+        	
+        		Call ToClaim(RiskObject,ClaimObject,"SLDC_CHCK")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEMNITY")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCT")
+                  '---------------Statutory Legal Defence Costs---------'
+        		  
+        		  '----------------Wrongful Arrest and Defamation--------------'
+        		RiskObject = "WARREST"
+        		ClaimObject = "MEDCLM_WARREST"
+        	
+        		Call ToClaim(RiskObject,ClaimObject,"WARREST_CHK")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEMNITY")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCT")
+        		'----------------End Wrongful Arrest and Defamation--------------'
+        		
+        		'---------------------------------------------------
+        		'---START: Extensions Screen properties population---	
+        		'---------------------------------------------------
+        
+        		'----------------Breach of Confidentiality---------'
+        		RiskObject = "EXTBOC"
+        		ClaimObject = "MEDM_EXTBOC"
+        		
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEM")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLE")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH_TOP_UP")
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH_TOP_UP_AMOUNT")
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH_TOP_UP_DEDUCT")
+        		'----------------End Beach of Confidentiality----------'
+        		
+        		'----------------Defamation-----------------'
+        		RiskObject ="EXTDEFAM"
+        		ClaimObject ="MEDM_EXTDEFAM"
+        		
+        		Call ToClaim(RiskObject,ClaimObject,"DEFAM")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEM")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLE")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEFAM_TOP_UP")
+        		Call ToClaim(RiskObject,ClaimObject,"DEFAM_TOP_UP_AMOUNT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEFAM_TOP_UP_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"DEFAM_TOP_UP_DEDUCT")
+        		'--------------End Defamation------------------'
+        		
+        		'----------------Documents------------------'
+        		RiskObject ="DOCUMNT"
+        		ClaimObject ="MEDM_DOCUMNT"
+        		Call ToClaim(RiskObject,ClaimObject,"DOC_CHK")
+        		Call ToClaim(RiskObject,ClaimObject,"DOC_LIMIT_OF_IND")
+        		'Call ToClaim(RiskObject,ClaimObject,"DOC_BASIS_OF_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"DOC_DEDUCTIBLE")
+        		'Call ToClaim(RiskObject,ClaimObject,"DOC_BASIS_OF_DED")
+        		Call ToClaim(RiskObject,ClaimObject,"DOC_TOP_UP")
+        		Call ToClaim(RiskObject,ClaimObject,"DOC_TOP_UP_AMOUNT")
+        		Call ToClaim(RiskObject,ClaimObject,"DOC_TOP_UP_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"DOC_TOP_UP_DEDUCT")
+        		'----------------End Documents--------------'
+        		
+        		'----------------HPCN/Other Statutory Costs--------------'
+        		RiskObject ="EXTHPCN"
+        		ClaimObject ="MEDM_EXTHPCN"
+        		Call ToClaim(RiskObject,ClaimObject,"HPCN_OTH_ST")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEM")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLE")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"HPCN_OTH_TOP_UP")
+        		Call ToClaim(RiskObject,ClaimObject,"HPCN_OTH_TOP_AMOUNT")
+        		Call ToClaim(RiskObject,ClaimObject,"HPCN_OTH_TOP_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"HPCN_OTH_TOP_DEDUCT")
+        		'-------------End HPCN/Other Statutory Costs--------------'
+        		
+        		'--------------Run Off Cover------------------'
+        		 RiskObject="EXTRUNOFF"
+        		 ClaimObject="MEDM_EXTRUNOFF"
+        		Call ToClaim(RiskObject,ClaimObject,"RUN_OFF_COV")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEM")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_LIMIT")
+        		'Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLE")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"RUN_OFF_TOP_UP")
+        		Call ToClaim(RiskObject,ClaimObject,"RUN_OFF_TOP_UP_AMNT")
+        		Call ToClaim(RiskObject,ClaimObject,"RUN_OFF_TOP_UP_PREM")
+        		Call ToClaim(RiskObject,ClaimObject,"RUN_OFF_TOP_DEDUCT")
+        		'--------------End Run Off Cover--------------'
+        		
+        		'--------------Business Identity Theft------------------'
+        		RiskObject="BUSINDT"
+        		ClaimObject="MEDM_BUSINDT"
+        		Call ToClaim(RiskObject,ClaimObject,"BUS_IDENT_THEFT")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEMNITY")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLE")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH_TOP_UP")
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH_TOP_UP_AMOUNT")
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH_TOP_UP_DEDUCT")
+        		'--------------End Run Off Cover--------------'
+        		
+        
+        		Call DoInstanceCount
+         End If
+        End Sub
+
+        
+        Function ToClaim(RObject, CObject, PropName)
+        	Dim Val	
+        	Val = Extras.RiskDataEngine.Item(RObject).Item(PropName).Value
+        	Engine.Item(CObject).Item(PropName).Value = Val
+        End Function
+        
+        Sub DoInstanceCount
+        
+        If bIsOnStart = True Then
+        
+        		 'Instantiate Risk object(s)
+        		'Risk Details Tab
+        		Extras.RiskDataEngine.NewObject("RISK_DETAILS")
+        		Extras.RiskDataEngine.NewObject("RSKDETPIPI")
+        
+        		'General Liability Tab
+        		Extras.RiskDataEngine.NewObject("EMP_LIAB")
+        		Extras.RiskDataEngine.NewObject("POLL_LIABIL")
+        		Extras.RiskDataEngine.NewObject("PROD_LIAB")
+        		Extras.RiskDataEngine.NewObject("PUBLIC_LIAB")
+        		Extras.RiskDataEngine.NewObject("SLD")
+        		Extras.RiskDataEngine.NewObject("WARREST")
+        		
+        		'Extensions Tab
+        		Extras.RiskDataEngine.NewObject("EXTBOC")
+        		Extras.RiskDataEngine.NewObject("EXTDEFAM")
+        		Extras.RiskDataEngine.NewObject("DOCUMNT")
+        		Extras.RiskDataEngine.NewObject("EXTHPCN")
+        		Extras.RiskDataEngine.NewObject("EXTRUNOFF")
+        		Extras.RiskDataEngine.NewObject("BUSINDT")
+        
+        		'Instantiate Claims object(s)
+        		'Underwriting Tab
+        		Engine.NewObject("MEDMALCLAIM")
+        		Engine.NewObject("PRFINDCLAIM")
+        
+        		'General Liability Tab
+        		Engine.NewObject("MEDCLM_EMP_LIAB")
+        		Engine.NewObject("MEDCLM_POLL_LIABIL")
+        		Engine.NewObject("MEDCLM_PROD_LIAB")
+        		Engine.NewObject("MEDCLM_PUBLIC_LIAB")
+        		Engine.NewObject("MEDCLM_SLD")
+        		Engine.NewObject("MEDCLM_WARREST")
+        		
+        		Engine.NewObject("MEDM_EXTBOC")
+        		Engine.NewObject("MEDM_EXTDEFAM")
+        		Engine.NewObject("MEDM_DOCUMNT")
+        		Engine.NewObject("MEDM_EXTHPCN")
+        		Engine.NewObject("MEDM_EXTRUNOFF")
+        		Engine.NewObject("MEDM_BUSINDT")
+        
+        		'---------------------------------------------------
+        		'---START: Non-child screen properties population---	
+        		'---------------------------------------------------
+        
+        		Dim Address
+        
+        		Address = Extras.RiskDataEngine.Item("ADDRESS").Item("LINE1").Value
+        		Engine.Item("MEDMALCLAIM").Item("ADDRESS").Value = Address
+        
+        		Dim RiskObject, ClaimObject
+        
+        		RiskObject = "RISK_DETAILS"
+        		ClaimObject = "MEDMALCLAIM"
+        	
+        
+        		'Call ToClaim(RiskObject,ClaimObject,"RETROACTIVE_DATE_EXPIRY")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASE_DEDUCT")
+        		'Call ToClaim(RiskObject,ClaimObject,"RETROACTIVE_DATE_INCEPTION")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASISOFLIMIT")
+        
+        		
+        		'-------Standard Risk Conditions---------'
+        		Call ToClaim(RiskObject,ClaimObject,"FEES_TURN")
+        		Call ToClaim(RiskObject,ClaimObject,"RETROACTIVE_DATE")
+        		Call ToClaim(RiskObject,ClaimObject,"ADD_RETRO_DATE_INFO")
+        		Call ToClaim(RiskObject,ClaimObject,"RETRO_DATE")
+        		'---------Ends Standard Risk Conditions---------'
+        		
+        		
+        		'----------Madical Malpractice-----------'
+        		Call ToClaim(RiskObject,ClaimObject,"MADMALCH")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEMNITY")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_RATE")
+        		'Call ToClaim(RiskObject,ClaimObject,"ADJUSTRATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASISOFLIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"PEROFCLAIM")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLE")
+        		'----------End Madical Malpractice--------' 
+        		
+        		'---------Professional Indemnity-------' 
+        		
+        		RiskObject = "RSKDETPIPI"
+        		ClaimObject = "PRFINDCLAIM"
+        		
+        		
+        		Call ToClaim(RiskObject,ClaimObject,"PROFINDM")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEMNITY")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_RATE")
+        		'Call ToClaim(RiskObject,ClaimObject,"ADJUSTRATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"BASISOFLIMIT")
+        		'Call ToClaim(RiskObject,ClaimObject,"PEROFCLAIM")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLE")
+        		'-----------End Professional Indemnity--------'
+                
+        		
+        		'-------------Rating Criteria------------'
+        		RiskObject = "RISK_DETAILS"
+        		ClaimObject = "MEDMALCLAIM"
+        		
+        		Call ToClaim(RiskObject,ClaimObject,"SIZE")
+        		Call ToClaim(RiskObject,ClaimObject,"MARKET_COND")
+        		Call ToClaim(RiskObject,ClaimObject,"QUALITY")
+        		Call ToClaim(RiskObject,ClaimObject,"DISCRETION")
+        		
+        		Call ToClaim(RiskObject,ClaimObject,"CLAIMSHISTORY")
+        		Call ToClaim(RiskObject,ClaimObject,"EXTENSION")
+        		Call ToClaim(RiskObject,ClaimObject,"REASON")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"CUST_INFO")
+        		Call ToClaim(RiskObject,ClaimObject,"CUST_DEDUCT_INFO")
+        		'Call ToClaim(RiskObject,ClaimObject,"PERC_CLAIM")
+        		'Call ToClaim(RiskObject,ClaimObject,"MINAMT")
+        		'Call ToClaim(RiskObject,ClaimObject,"EXTNSIONS")
+        		Call ToClaim(RiskObject,ClaimObject,"EXTENDED")
+        	
+        		'---------------------------------------------------
+        		'---START: General Liability Screen properties population---	
+        		'---------------------------------------------------
+        	
+                  '--------Employers Liability--------'
+        		RiskObject = "EMP_LIAB"
+        		ClaimObject = "MEDCLM_EMP_LIAB"
+        	
+        		Call ToClaim(RiskObject,ClaimObject,"EMP_CHK")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEMNITY")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCT")
+        		'----------End Employers Liability----------------------'
+        		
+        		
+        		'------------Pollution Liability------------'
+        		
+        		RiskObject ="POLL_LIABIL"
+        		ClaimObject ="MEDCLM_POLL_LIABIL"
+        		
+        		Call ToClaim(RiskObject,ClaimObject,"POLL_LIABIL_CHCK")
+        		Call ToClaim(RiskObject,ClaimObject,"POLL_BASE_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"POLL_LIMIT_OF_INDEMNITY")
+        		Call ToClaim(RiskObject,ClaimObject,"POLL_BASE_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"POLL_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"POLL_BASE_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"POLL_DEDUCT")
+        		
+        		'-----------End Pollution Liability---------------'
+        		
+        		
+               '------------------Product Liability---------------'
+        		RiskObject = "PROD_LIAB"
+        		ClaimObject = "MEDCLM_PROD_LIAB"
+        	
+        		Call ToClaim(RiskObject,ClaimObject,"PROD_CHK")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEMNITY")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCT")
+        		
+        		'-------------End Product Liability--------------'
+        		
+        		
+        		'--------------Public Liability ------------'
+        	
+        		RiskObject = "PUBLIC_LIAB"
+        		ClaimObject = "MEDCLM_PUBLIC_LIAB"
+        	
+        		Call ToClaim(RiskObject,ClaimObject,"PUBLIC_CHK")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEMNITY")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCT")
+        		'--------------End Public Liability ----------'
+        		
+        		'---------------Statutory Legal Defence Costs---------'
+        		RiskObject = "SLD"
+        		ClaimObject = "MEDCLM_SLD"
+        	
+        		Call ToClaim(RiskObject,ClaimObject,"SLDC_CHCK")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEMNITY")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCT")
+                  '---------------Statutory Legal Defence Costs---------'
+        		  
+        		  '----------------Wrongful Arrest and Defamation--------------'
+        		RiskObject = "WARREST"
+        		ClaimObject = "MEDCLM_WARREST"
+        	
+        		Call ToClaim(RiskObject,ClaimObject,"WARREST_CHK")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEMNITY")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"BASE_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCT")
+        		'----------------End Wrongful Arrest and Defamation--------------'
+        		
+        		'---------------------------------------------------
+        		'---START: Extensions Screen properties population---	
+        		'---------------------------------------------------
+        
+        		'----------------Breach of Confidentiality---------'
+        		RiskObject = "EXTBOC"
+        		ClaimObject = "MEDM_EXTBOC"
+        		
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEM")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLE")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH_TOP_UP")
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH_TOP_UP_AMOUNT")
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH_TOP_UP_DEDUCT")
+        		'----------------End Beach of Confidentiality----------'
+        		
+        		'----------------Defamation-----------------'
+        		RiskObject ="EXTDEFAM"
+        		ClaimObject ="MEDM_EXTDEFAM"
+        		
+        		Call ToClaim(RiskObject,ClaimObject,"DEFAM")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEM")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLE")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEFAM_TOP_UP")
+        		Call ToClaim(RiskObject,ClaimObject,"DEFAM_TOP_UP_AMOUNT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEFAM_TOP_UP_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"DEFAM_TOP_UP_DEDUCT")
+        		'--------------End Defamation------------------'
+        		
+        		'----------------Documents------------------'
+        		RiskObject ="DOCUMNT"
+        		ClaimObject ="MEDM_DOCUMNT"
+        		Call ToClaim(RiskObject,ClaimObject,"DOC_CHK")
+        		Call ToClaim(RiskObject,ClaimObject,"DOC_LIMIT_OF_IND")
+        		'Call ToClaim(RiskObject,ClaimObject,"DOC_BASIS_OF_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"DOC_DEDUCTIBLE")
+        		'Call ToClaim(RiskObject,ClaimObject,"DOC_BASIS_OF_DED")
+        		Call ToClaim(RiskObject,ClaimObject,"DOC_TOP_UP")
+        		Call ToClaim(RiskObject,ClaimObject,"DOC_TOP_UP_AMOUNT")
+        		Call ToClaim(RiskObject,ClaimObject,"DOC_TOP_UP_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"DOC_TOP_UP_DEDUCT")
+        		'----------------End Documents--------------'
+        		
+        		'----------------HPCN/Other Statutory Costs--------------'
+        		RiskObject ="EXTHPCN"
+        		ClaimObject ="MEDM_EXTHPCN"
+        		Call ToClaim(RiskObject,ClaimObject,"HPCN_OTH_ST")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEM")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLE")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"HPCN_OTH_TOP_UP")
+        		Call ToClaim(RiskObject,ClaimObject,"HPCN_OTH_TOP_AMOUNT")
+        		Call ToClaim(RiskObject,ClaimObject,"HPCN_OTH_TOP_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"HPCN_OTH_TOP_DEDUCT")
+        		'-------------End HPCN/Other Statutory Costs--------------'
+        		
+        		'--------------Run Off Cover------------------'
+        		 RiskObject="EXTRUNOFF"
+        		 ClaimObject="MEDM_EXTRUNOFF"
+        		Call ToClaim(RiskObject,ClaimObject,"RUN_OFF_COV")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEM")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_LIMIT")
+        		'Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLE")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"RUN_OFF_TOP_UP")
+        		Call ToClaim(RiskObject,ClaimObject,"RUN_OFF_TOP_UP_AMNT")
+        		Call ToClaim(RiskObject,ClaimObject,"RUN_OFF_TOP_UP_PREM")
+        		Call ToClaim(RiskObject,ClaimObject,"RUN_OFF_TOP_DEDUCT")
+        		'--------------End Run Off Cover--------------'
+        		
+        		'--------------Business Identity Theft------------------'
+        		RiskObject="BUSINDT"
+        		ClaimObject="MEDM_BUSINDT"
+        		Call ToClaim(RiskObject,ClaimObject,"BUS_IDENT_THEFT")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMIT_OF_INDEMNITY")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLE")
+        		'Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH_TOP_UP")
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH_TOP_UP_AMOUNT")
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH_PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"BOCCH_TOP_UP_DEDUCT")
+        		'--------------End Run Off Cover--------------'
+        		
+        
+        		Call DoInstanceCount
+         End If
+        End Sub
+
+        
+        Function ToClaim(RObject, CObject, PropName)
+        	Dim Val	
+        	Val = Extras.RiskDataEngine.Item(RObject).Item(PropName).Value
+        	Engine.Item(CObject).Item(PropName).Value = Val
+        End Function
+        
+        Sub DoInstanceCount
+        
+        ' The ScreenMain rule is added to every screen automatically.
+        
+        
+        Call FindObjectInstanceCount("")
+End Sub
+
+Sub onValidate_MEDMALCLAIM__THIRDPARTY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MEDMALCLAIM", "THIRDPARTY", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MEDMALCLAIM__SALVAGE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MEDMALCLAIM", "SALVAGE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MEDMALCLAIM__RECOVERY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MEDMALCLAIM", "RECOVERY", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MEDMALCLAIM__IS_THRDTLS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MEDMALCLAIM", "IS_THRDTLS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MEDMALCLAIM__IS_ASSESSDETAIL(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MEDMALCLAIM", "IS_ASSESSDETAIL", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MEDMALCLAIM__IS_NAMAPP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MEDMALCLAIM", "IS_NAMAPP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MEDMALCLM__ASSESSOR(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MEDMALCLM", "ASSESSOR", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MEDMALCLM__LAWYRS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MEDMALCLM", "LAWYRS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MEDMALCLM__WITNESS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MEDMALCLM", "WITNESS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub DoDefaults(bIsOnStart)
+    Call WebRequired(bIsOnStart)
+    Call onScreenLogic(bIsOnStart)
+    Call onValidate_MEDMALCLAIM__THIRDPARTY(bIsOnStart)
+    Call onValidate_MEDMALCLAIM__SALVAGE(bIsOnStart)
+    Call onValidate_MEDMALCLAIM__RECOVERY(bIsOnStart)
+    Call onValidate_MEDMALCLAIM__IS_THRDTLS(bIsOnStart)
+    Call onValidate_MEDMALCLAIM__IS_ASSESSDETAIL(bIsOnStart)
+    Call onValidate_MEDMALCLAIM__IS_NAMAPP(bIsOnStart)
+    Call onValidate_MEDMALCLM__ASSESSOR(bIsOnStart)
+    Call onValidate_MEDMALCLM__LAWYRS(bIsOnStart)
+    Call onValidate_MEDMALCLM__WITNESS(bIsOnStart)
+End Sub
+
+Sub Start()
+    Call DoDefaults(True)
+End Sub
+
+Sub Main()
+    Call DoDefaults(False)
+End Sub
+

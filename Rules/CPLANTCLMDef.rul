@@ -1,0 +1,829 @@
+        Dim iObjectInstanceCount
+        
+        Sub FindObjectInstanceCount(strScreenObjectName)
+        	iObjectInstanceCount = 1
+        
+        	' strScreenObjectName is the object that is associate with this screen (if a child), or "" if the root screen.
+        	If strScreenObjectName <> ""  Then
+        		Dim instanceCount
+        		
+        		' How many instance of this object exist?
+        		instanceCount = engine.count(strScreenObjectName)
+        		
+        		Dim i
+        		for i = 1 to instanceCount
+        			if engine.item(strScreenObjectName, i).item("OI").value = vAdditionalData(cAdditionalData_OIKey) then
+        				iObjectInstanceCount = i
+        			end if
+        		next
+        	End If
+        End Sub
+
+        Sub DefaultTextTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultCommentTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultIntegerTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CLng(strValue)
+        End Sub
+
+        
+        Sub DefaultCheckboxTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanListTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanRadioTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	If InStr(1, LCase(strValue), "code:", 1) = 1 Then
+        		' The default value has been specified as a code (code:<thecode>).
+        		Dim code
+        		Dim effectiveDate
+        		Dim version
+        		
+        		code = Mid(strValue, Len("code:")+1)
+        		effectiveDate = Now()
+        		version = 1
+        		
+        		Dim listItemId
+        		listItemId = Extras.GetField(strListCode, strListCode + "_Id", code, effectiveDate, version)
+        		
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(listItemId)
+        	Else
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        	End If
+        End Sub
+
+        
+        Sub DefaultRateListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	' TODO.
+        End Sub
+
+        
+        Sub DefaultDateTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	
+        	Dim location
+        	Dim Interval
+        	Dim Duration
+        	Dim DateValue
+        	
+        	'Upper case the input
+        	DateValue = UCase(strValue)
+        	'Check to see if we want data AND  Time
+        	location = InStr(1,DateValue,"DATETIME")
+        	if location > 0 then
+        		DateValue=  CDate(FormatDateTime(Now,0)) 'use the standard vb datetime
+        	End If
+        	'Check to see if TODAY is specified as a modifier
+        	location  = InStr(1,DateValue,"TODAY")
+        	If location > 0 Then
+        		'Determine if we are adding values
+        		location  = InStr(1,DateValue,"+")
+        		If location > 0 Then 
+        			Interval = Mid(DateValue,location + 1,1)
+        			
+        			If Interval = "Y" Then
+        				Interval = "YYYY"
+        			End If
+        			
+        			If Interval <> "" Then 
+        				Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        				DateValue = DateAdd(Interval,Duration,CDate(FormatDateTime(Now,2)))	
+        				
+        			Else
+        				'No Interval specified 
+        				'Need an error here!!!!
+        			End If	
+        		Else 
+        			'Check to see if we are subtracting values
+        			location  =InStr(1,DateValue,"-")
+        			If location > 0  Then 
+        				Interval = Mid(DateValue,location + 1,1)
+        				
+        				If Interval <> "" Then 
+        					Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        					DateValue = DateAdd(Interval, Duration * -1,CDate(FormatDateTime(Now,2)))	
+        				Else
+        					'No Interval specified 
+        					'Need an error here!!!!
+        				End If
+        			Else
+        				'No Function specified, so assume we are just using today's date as a shortdate
+        				DateValue = CDate(FormatDateTime(Now,2))
+        			End If
+        			
+        		End If
+        		
+        	End If	
+        	
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDate(DateValue)
+        End Sub
+
+        
+        Sub DefaultCurrencyTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+        
+        Sub DefaultPercentageTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+Sub WebRequired(bIsOnStart)
+	If bIsOnStart = True Then
+		Engine.NewObject("CPLANTCLAIM")
+		Engine.NewObject("HIP_MOBCRANE")
+		Engine.NewObject("HIP_MOBPLANT")
+		Engine.NewObject("HIP_NONMOB")
+		Engine.NewObject("HIP_PLANTENVI")
+		Engine.NewObject("HIP_SURVEQUIP")
+		Engine.NewObject("HIPCPLANTCLM")
+		Engine.NewObject("CPLDETAILSCLM")
+		Engine.NewObject("CPLDEDCLM")
+		Engine.NewObject("BANDONE_CPCLM")
+		Engine.NewObject("BANDTWO_CPCLM")
+		Engine.NewObject("BANDTHREE_CPCLM")
+		Engine.NewObject("BANDFOUR_CPCLM")
+		Engine.NewObject("CPDEDUCCLM")
+		Engine.NewObject("AUTOEXTCLM")
+		Engine.NewObject("HIREEXTCLM")
+		Engine.NewObject("CREDEXTCLM")
+		Engine.NewObject("DAMEXTCLM")
+		Engine.NewObject("HOLEEXTCLM")
+		Engine.NewObject("EXPEXTCLM")
+		Engine.NewObject("CRANEEXTCLM")
+		Engine.NewObject("REPEXTCLM")
+		Engine.NewObject("WRECKEXTCLM")
+		Engine.NewObject("EXTCLM")
+		Engine.NewObject("CPLANTCLM")
+	End If
+End Sub
+
+Sub onScreenLogic(bIsOnStart)
+        If bIsOnStart = True Then
+        
+        		'Instantiate Risk object(s)
+        		Extras.RiskDataEngine.NewObject("CPLANT")
+        		Extras.RiskDataEngine.NewObject("OWNPLANT")
+        		Extras.RiskDataEngine.NewObject("MOBCRANE")
+        		Extras.RiskDataEngine.NewObject("MOBPLANT")
+        		Extras.RiskDataEngine.NewObject("NONMOB")
+        		Extras.RiskDataEngine.NewObject("PLANTENVI")
+        		Extras.RiskDataEngine.NewObject("SURVEQUIP")
+        		Extras.RiskDataEngine.NewObject("ADDPLANT")
+        		Extras.RiskDataEngine.NewObject("CHLDSCR")
+        		Extras.RiskDataEngine.NewObject("AGGRE")
+        		Extras.RiskDataEngine.NewObject("PREM")
+        		Extras.RiskDataEngine.NewObject("CPLDETAILS")
+        		Extras.RiskDataEngine.NewObject("CPLDED")
+        		Extras.RiskDataEngine.NewObject("ADDDECTIBLES")
+        		Extras.RiskDataEngine.NewObject("EXTNTIONS")
+        		Extras.RiskDataEngine.NewObject("BANDONE")
+        		Extras.RiskDataEngine.NewObject("BANDTWO")
+        		Extras.RiskDataEngine.NewObject("BANDTHREE")
+        		Extras.RiskDataEngine.NewObject("BANDFOUR")
+        		Extras.RiskDataEngine.NewObject("AUTOADD")
+        		Extras.RiskDataEngine.NewObject("HIRECHARGE")
+        		Extras.RiskDataEngine.NewObject("CREDSHORT")
+        		Extras.RiskDataEngine.NewObject("DAMAGE")
+        		Extras.RiskDataEngine.NewObject("HOLECOVER")
+        		Extras.RiskDataEngine.NewObject("EXPENSE")
+        		Extras.RiskDataEngine.NewObject("CRANELIFT")
+        		Extras.RiskDataEngine.NewObject("REPLACE")
+        		Extras.RiskDataEngine.NewObject("WRECKING")
+        		Extras.RiskDataEngine.NewObject("ADDITION")
+        
+        		'Instantiate Claims object(s)
+        		Engine.NewObject("CPLANTCLAIM")
+        		Engine.NewObject("HIP_MOBCRANE")
+        		Engine.NewObject("HIP_MOBPLANT")
+        		Engine.NewObject("HIP_NONMOB")
+        		Engine.NewObject("HIP_PLANTENVI")
+        		Engine.NewObject("HIP_SURVEQUIP")
+        		Engine.NewObject("HIPCPLANTCLM")
+        		Engine.NewObject("CPLDETAILSCLM")
+        		Engine.NewObject("CPLDEDCLM")
+        		Engine.NewObject("CPLEXTCLM")
+        		Engine.NewObject("BANDONE_CPCLM")
+        		Engine.NewObject("BANDTWO_CPCLM")
+        		Engine.NewObject("BANDTHREE_CPCLM")
+        		Engine.NewObject("BANDFOUR_CPCLM")
+        		Engine.NewObject("CPDEDUCCLM")
+        		Engine.NewObject("AUTOEXTCLM")
+        		Engine.NewObject("HIREEXTCLM")
+        		Engine.NewObject("CREDEXTCLM")
+        		Engine.NewObject("DAMEXTCLM")
+        		Engine.NewObject("HOLEEXTCLM")
+        		Engine.NewObject("EXPEXTCLM")
+        		Engine.NewObject("CRANEEXTCLM")
+        		Engine.NewObject("REPEXTCLM")
+        		Engine.NewObject("WRECKEXTCLM")
+        		Engine.NewObject("EXTCLM")
+        
+        		Dim RiskObject, ClaimObject, Cnt, nIndex
+        		Dim ClaimParent, ClaimChild
+        
+        		'---------------------------------------------------
+        		'---START: Non-child screen properties population---	
+        		'---------------------------------------------------
+        
+        		RiskObject = "CPLANT"
+        		ClaimObject = "CPLANTCLAIM"
+        
+        		Call ToClaim(RiskObject,ClaimObject,"OWNPLANT")
+        		Call ToClaim(RiskObject,ClaimObject,"HIREDPLANT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEPPREM")
+        		Call ToClaim(RiskObject,ClaimObject,"PUBLIAB")
+        
+        		'Owned Plant Tab
+        
+        		RiskObject = "PLANTDET"
+        		ClaimParent = "CPLANTCLAIM"
+        		ClaimChild = "PLANTDETCLM"
+        
+        		Cnt = Extras.RiskDataEngine.Count(RiskObject)
+        
+        		For nIndex = 1 to Cnt
+        			Engine.Item(ClaimParent).NewObject(ClaimChild)
+        
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"PLANTYPE")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"PLANT_DES")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"BASIS_INS")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"YEAR")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"MODEL")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"SERIAL_NUM")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"VIN_NUM")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"ENGINE_NUM")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"IS_GROUPED")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"CATEGORY")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"SUMINSURED")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"OCCU_LIMIT")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"MAX_ITEM")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"RATE")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"PREMIUM")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"IS_MAN_APP")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"IS_ROAD_LIA")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"ROAD_LIAB")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"LIMIT_OF_RL")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"RATE_RL")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"PREMIUM_RL")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"MIN_DEDU_RL")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"MAX_DEDU_RL")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"DEDU_MIN_RL")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"DEDU_MAX_RL")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"BASIS_DED_RL")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"IS_SITE_LIA")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"SITE_LIAB")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"LIMIT_OF_SL")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"RATE_SL")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"PREMIUM_SL")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"MIN_DEDU_SL")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"MAX_DEDU_SL")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"DEDU_MIN_SL")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"DEDU_MAX_SL")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"BASIS_DED_SL")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"IS_WINDSCR")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"WINDS_LIAB")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"LIMIT_OF_WSC")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"RATE_WSC")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"PREMIUM_WSC")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"MIN_DEDU_WSC")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"MAX_DEDU_WSC")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"DEDU_MIN_WSC")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"DEDU_MAX_WSC")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"BASIS_DED_WSC")
+        
+        			Dim isGroup, GChildCnt, cIndex, RiskGChild, ClaimGChild
+        			isGroup = Extras.RiskDataEngine.Item(RiskObject,nIndex).Item("IS_GROUPED").Value
+        
+        			If isGroup = 1 Then
+        				RiskGChild = "VALUEBD"
+        				ClaimGChild = "OPVALBD"
+        				GChildCnt = Extras.RiskDataEngine.Item(RiskObject,nIndex).Count(RiskGChild)
+        
+        				For cIndex = 1 to GChildCnt
+        					Engine.Item(ClaimParent).Item(ClaimChild,nIndex).NewObject(ClaimGChild)
+        
+        					Call ToGrandChildClaim(RiskObject,RiskGChild,ClaimParent,ClaimChild,ClaimGChild,nIndex,cIndex,"DESCRIPTION")
+        					Call ToGrandChildClaim(RiskObject,RiskGChild,ClaimParent,ClaimChild,ClaimGChild,nIndex,cIndex,"VALUE_EXC")
+        					Call ToGrandChildClaim(RiskObject,RiskGChild,ClaimParent,ClaimChild,ClaimGChild,nIndex,cIndex,"VAL_NOTEXC")
+        					Call ToGrandChildClaim(RiskObject,RiskGChild,ClaimParent,ClaimChild,ClaimGChild,nIndex,cIndex,"MINIMUM")
+        					Call ToGrandChildClaim(RiskObject,RiskGChild,ClaimParent,ClaimChild,ClaimGChild,nIndex,cIndex,"BASIS_DENV")
+        					Call ToGrandChildClaim(RiskObject,RiskGChild,ClaimParent,ClaimChild,ClaimGChild,nIndex,cIndex,"MAXIMUM")
+        					Call ToGrandChildClaim(RiskObject,RiskGChild,ClaimParent,ClaimChild,ClaimGChild,nIndex,cIndex,"BASI_DENVB")
+        					Call ToGrandChildClaim(RiskObject,RiskGChild,ClaimParent,ClaimChild,ClaimGChild,nIndex,cIndex,"MINIMUM_AM")
+        					Call ToGrandChildClaim(RiskObject,RiskGChild,ClaimParent,ClaimChild,ClaimGChild,nIndex,cIndex,"MAXIMUM_AM")
+        				Next
+        
+        			Else
+        				RiskGChild = "NON_VALUEBD"
+        				ClaimGChild = "OPNON_VALBD"
+        				GChildCnt = Extras.RiskDataEngine.Item(RiskObject,nIndex).Count(RiskGChild)
+        
+        				For cIndex = 1 to GChildCnt
+        					Engine.Item(ClaimParent).Item(ClaimChild,nIndex).NewObject(ClaimGChild)
+        
+        					Call ToGrandChildClaim(RiskObject,RiskGChild,ClaimParent,ClaimChild,ClaimGChild,nIndex,cIndex,"DESCRIPTION")
+        					Call ToGrandChildClaim(RiskObject,RiskGChild,ClaimParent,ClaimChild,ClaimGChild,nIndex,cIndex,"VALUE_EXC")
+        					Call ToGrandChildClaim(RiskObject,RiskGChild,ClaimParent,ClaimChild,ClaimGChild,nIndex,cIndex,"VAL_NOTEXC")
+        					Call ToGrandChildClaim(RiskObject,RiskGChild,ClaimParent,ClaimChild,ClaimGChild,nIndex,cIndex,"MINIMUM")
+        					Call ToGrandChildClaim(RiskObject,RiskGChild,ClaimParent,ClaimChild,ClaimGChild,nIndex,cIndex,"BASIS_DENV")
+        					Call ToGrandChildClaim(RiskObject,RiskGChild,ClaimParent,ClaimChild,ClaimGChild,nIndex,cIndex,"MAXIMUM")
+        					Call ToGrandChildClaim(RiskObject,RiskGChild,ClaimParent,ClaimChild,ClaimGChild,nIndex,cIndex,"BASI_DENVB")
+        					Call ToGrandChildClaim(RiskObject,RiskGChild,ClaimParent,ClaimChild,ClaimGChild,nIndex,cIndex,"MINIMUM_AM")
+        					Call ToGrandChildClaim(RiskObject,RiskGChild,ClaimParent,ClaimChild,ClaimGChild,nIndex,cIndex,"MAXIMUM_AM")
+        				Next
+        			End If
+        		Next
+        
+        		'Hired in Plant Tab
+        
+        		RiskObject = "MOBCRANE"
+        		ClaimObject = "HIP_MOBCRANE"
+        
+        		Call ToClaim(RiskObject,ClaimObject,"CRANE_CHK")
+        		Call ToClaim(RiskObject,ClaimObject,"MAX_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"HIREFEES")
+        		Call ToClaim(RiskObject,ClaimObject,"RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        
+        		RiskObject = "MOBPLANT"
+        		ClaimObject = "HIP_MOBPLANT"
+        
+        		Call ToClaim(RiskObject,ClaimObject,"PLANT_CHK")
+        		Call ToClaim(RiskObject,ClaimObject,"MAX_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"HIREFEES")
+        		Call ToClaim(RiskObject,ClaimObject,"RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        
+        		RiskObject = "NONMOB"
+        		ClaimObject = "HIP_NONMOB"
+        
+        		Call ToClaim(RiskObject,ClaimObject,"NON_CHK")
+        		Call ToClaim(RiskObject,ClaimObject,"MAX_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"HIREFEES")
+        		Call ToClaim(RiskObject,ClaimObject,"RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        
+        		RiskObject = "PLANTENVI"
+        		ClaimObject = "HIP_PLANTENVI"
+        
+        		Call ToClaim(RiskObject,ClaimObject,"PNE_CHK")
+        		Call ToClaim(RiskObject,ClaimObject,"MAX_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"HIREFEES")
+        		Call ToClaim(RiskObject,ClaimObject,"RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        
+        		RiskObject = "SURVEQUIP"
+        		ClaimObject = "HIP_SURVEQUIP"
+        
+        		Call ToClaim(RiskObject,ClaimObject,"SURV_CHK")
+        		Call ToClaim(RiskObject,ClaimObject,"MAX_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"HIREFEES")
+        		Call ToClaim(RiskObject,ClaimObject,"RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        
+        		RiskObject = "ADDPLANT"
+        		ClaimObject = "HIPCPLANTCLM"
+        
+        		Call ToClaim(RiskObject,ClaimObject,"ADD_CHK")
+        
+        		Dim isAddPlant
+        		Dim ClaimChild2, RiskObject2
+        
+        		isAddPlant = Extras.RiskDataEngine.Item(RiskObject).Item("ADD_CHK").Value
+        
+        		If isAddPlant = 1 Then
+        			RiskObject = "ADDPITEMS"
+        			RiskObject2 = "DEDUCADD"
+        
+        			ClaimParent = "HIPCPLANTCLM"
+        			ClaimChild = "HIPADDITEMS"
+        			ClaimChild2 = "HIPDEDUC"
+        
+        			Cnt = Extras.RiskDataEngine.Count(RiskObject)
+        
+        			For nIndex = 1 to Cnt
+        				Engine.Item(ClaimParent).NewObject(ClaimChild)
+        				Engine.Item(ClaimParent).NewObject(ClaimChild2)
+        
+        				Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"DESCRIP")
+        				Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"MAXITEM")
+        				Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"ANNHIRE")
+        				Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"RATE")
+        				Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"PREMIUM")
+        
+        				Call ToChildClaim(RiskObject2,ClaimParent,ClaimChild2,nIndex,"DESCRIPTION")
+        				Call ToChildClaim(RiskObject2,ClaimParent,ClaimChild2,nIndex,"VALUE_EXC")
+        				Call ToChildClaim(RiskObject2,ClaimParent,ClaimChild2,nIndex,"VAL_NOTEXC")
+        				Call ToChildClaim(RiskObject2,ClaimParent,ClaimChild2,nIndex,"MINIMUM")
+        				Call ToChildClaim(RiskObject2,ClaimParent,ClaimChild2,nIndex,"BASIS_DENV")
+        				Call ToChildClaim(RiskObject2,ClaimParent,ClaimChild2,nIndex,"MAXIMUM")
+        				Call ToChildClaim(RiskObject2,ClaimParent,ClaimChild2,nIndex,"BASI_DENVB")
+        				Call ToChildClaim(RiskObject2,ClaimParent,ClaimChild2,nIndex,"MINIMUM_AM")
+        				Call ToChildClaim(RiskObject2,ClaimParent,ClaimChild2,nIndex,"MAXIMUM_AM")
+        			Next
+        		End If
+        
+        		'Construction Public Liability Tab
+        
+        		RiskObject = "CPLDETAILS"
+        		ClaimObject = "CPLDETAILSCLM"
+        
+        		Call ToClaim(RiskObject,ClaimObject,"LOINDEM")
+        		Call ToClaim(RiskObject,ClaimObject,"TURNOVER")
+        		Call ToClaim(RiskObject,ClaimObject,"RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTIBLES")
+        		Call ToClaim(RiskObject,ClaimObject,"EXTNSIONS")
+        
+        		RiskObject = "CPLDED"
+        		ClaimObject = "CPLDEDCLM"
+        
+        		Call ToClaim(RiskObject,ClaimObject,"DUSERVICE")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"MMINIM")
+        		Call ToClaim(RiskObject,ClaimObject,"MMAXIMUM")
+        		Call ToClaim(RiskObject,ClaimObject,"BDEDUCTIBLE")
+        		Call ToClaim(RiskObject,ClaimObject,"THRDPARTY")
+        		Call ToClaim(RiskObject,ClaimObject,"THRDDEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"THRDMIN")
+        		Call ToClaim(RiskObject,ClaimObject,"THDMAX")
+        		Call ToClaim(RiskObject,ClaimObject,"THDBDEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"THDPINJURY")
+        		Call ToClaim(RiskObject,ClaimObject,"THDPDEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"THDPMIN")
+        		Call ToClaim(RiskObject,ClaimObject,"THDPMAX")
+        		Call ToClaim(RiskObject,ClaimObject,"THDPBDEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"BDAMAGE")
+        		Call ToClaim(RiskObject,ClaimObject,"BDDEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"BDMIN")
+        		Call ToClaim(RiskObject,ClaimObject,"BDMAX")
+        		Call ToClaim(RiskObject,ClaimObject,"BDBDEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"BDSFIRE")
+        		Call ToClaim(RiskObject,ClaimObject,"BDSFDEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"BDSFMIN")
+        		Call ToClaim(RiskObject,ClaimObject,"BDSFMAX")
+        		Call ToClaim(RiskObject,ClaimObject,"BDSFBASIS")
+        		Call ToClaim(RiskObject,ClaimObject,"OTHR")
+        		Call ToClaim(RiskObject,ClaimObject,"OTHDEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"OTHMIN")
+        		Call ToClaim(RiskObject,ClaimObject,"OTHMAX")
+        		Call ToClaim(RiskObject,ClaimObject,"OTHBDEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"ADDITIONAL")
+        
+        		'---------------------------------------------------
+        		'---START: Child screen properties population---	
+        		'---------------------------------------------------
+        
+        		RiskObject = "CPLINSUR"
+        		ClaimParent = "CPLDEDCLM"
+        		ClaimChild = "INSCLM"
+        
+        		Cnt = Extras.RiskDataEngine.Count(RiskObject)
+        
+        		For nIndex = 1 to Cnt
+        			Engine.Item(ClaimParent).NewObject(ClaimChild)
+        
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"ADDESCRIPT")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"ADPERC")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"ADMIN")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"ADMAX")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"ADBDED")
+        		Next
+        
+        		RiskObject = "CPLLIABEXT"
+        		ClaimParent = "CPLDEDCLM"
+        		ClaimChild = "EXTCLAIM"
+        
+        		Cnt = Extras.RiskDataEngine.Count(RiskObject)
+        
+        		For nIndex = 1 to Cnt
+        			Engine.Item(ClaimParent).NewObject(ClaimChild)
+        
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"EXTDESC")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"SLIMIT")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"EXTRATE")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"EXTPREMIUM")
+        		Next
+        
+        		'Deposit Premium Tab
+        		
+        		RiskObject = "PREM"
+        		ClaimObject = "CPLANTCLAIM"
+        
+        		Call ToClaim(RiskObject,ClaimObject,"DEP_PREM")
+        		Call ToClaim(RiskObject,ClaimObject,"CONVPREM")
+        		Call ToClaim(RiskObject,ClaimObject,"DPSTPREM")
+        		Call ToClaim(RiskObject,ClaimObject,"DEFPREM")
+        
+        		RiskObject = "BANDONE"
+        		ClaimObject = "BANDONE_CPCLM"
+        
+        		Call ToClaim(RiskObject,ClaimObject,"LOSSDEP")
+        		Call ToClaim(RiskObject,ClaimObject,"LOSSAMT")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMDUE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMAMT")
+        
+        		RiskObject = "BANDTWO"
+        		ClaimObject = "BANDTWO_CPCLM"
+        
+        		Call ToClaim(RiskObject,ClaimObject,"LOSSDEP")
+        		Call ToClaim(RiskObject,ClaimObject,"LOSSAMT")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMDUE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMAMT")
+        
+        		RiskObject = "BANDTHREE"
+        		ClaimObject = "BANDTHREE_CPCLM"
+        
+        		Call ToClaim(RiskObject,ClaimObject,"LOSSDEP")
+        		Call ToClaim(RiskObject,ClaimObject,"LOSSAMT")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMDUE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMAMT")
+        
+        		RiskObject = "BANDFOUR"
+        		ClaimObject = "BANDFOUR_CPCLM"
+        
+        		Call ToClaim(RiskObject,ClaimObject,"LOSSDEP")
+        		Call ToClaim(RiskObject,ClaimObject,"LOSSAMT")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMDUE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMAMT")
+        
+        		'Deductibles Tab
+        
+        		RiskObject = "AGGRE"
+        		ClaimObject = "CPDEDUCCLM"
+        
+        		Call ToClaim(RiskObject,ClaimObject,"AGGDEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTFUND")
+        		Call ToClaim(RiskObject,ClaimObject,"STOPLOSS")
+        		
+        		Dim isDeduct
+        
+        		isDeduct = Extras.RiskDataEngine.Item(RiskObject).Item("AGGDEDUCT").Value
+        
+        		If isDeduct = 1 Then
+        			RiskObject = "DED_BAND"
+        			ClaimParent = "CPDEDUCCLM"
+        			ClaimChild = "DED_CPCLM"
+        		Else
+        			RiskObject = "DED_NON_BAND"
+        			ClaimParent = "CPDEDUCCLM"
+        			ClaimChild = "NONBAND_CPCLM"
+        		End If
+        
+        		Cnt = Extras.RiskDataEngine.Count(RiskObject)
+        
+        		For nIndex = 1 to Cnt
+        			Engine.Item(ClaimParent).NewObject(ClaimChild)
+        
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"DESCRIPTION")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"VALUE_EXC")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"VAL_NOTEXC")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"MINIMUM")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"BASIS_DENV")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"MAXIMUM")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"BASI_DENVB")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"MINIMUM_AM")
+        			Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"MAXIMUM_AM")
+        		Next
+        
+        		'Extensions Tab
+        
+        		RiskObject = "AUTOADD"
+        		ClaimObject = "AUTOEXTCLM"
+        
+        		Call ToClaim(RiskObject,ClaimObject,"AUTOADD_CHK")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMITIND")
+        
+        		RiskObject = "HIRECHARGE"
+        		ClaimObject = "HIREEXTCLM"
+        
+        		Call ToClaim(RiskObject,ClaimObject,"HIRE_CHK")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMITIND")
+        		Call ToClaim(RiskObject,ClaimObject,"TIMEDEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"INDEMPER")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTCLM")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTAMT")
+        		Call ToClaim(RiskObject,ClaimObject,"RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        
+        		RiskObject = "CREDSHORT"
+        		ClaimObject = "CREDEXTCLM"
+        
+        		Call ToClaim(RiskObject,ClaimObject,"CRED_CHK")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMITIND")
+        		Call ToClaim(RiskObject,ClaimObject,"RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        
+        		RiskObject = "DAMAGE"
+        		ClaimObject = "DAMEXTCLM"
+        
+        		Call ToClaim(RiskObject,ClaimObject,"DAMAGE_CHK")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMITIND")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTCLAIM")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTAMT")
+        		Call ToClaim(RiskObject,ClaimObject,"RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        
+        		RiskObject = "HOLECOVER"
+        		ClaimObject = "HOLEEXTCLM"
+        
+        		Call ToClaim(RiskObject,ClaimObject,"HOLECOVER_CHK")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMITIND")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTCLAIM")
+        		Call ToClaim(RiskObject,ClaimObject,"DEDUCTAMT")
+        		Call ToClaim(RiskObject,ClaimObject,"RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        
+        		RiskObject = "EXPENSE"
+        		ClaimObject = "EXPEXTCLM"
+        
+        		Call ToClaim(RiskObject,ClaimObject,"EXPENSE_CHK")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMITIND")
+        		Call ToClaim(RiskObject,ClaimObject,"RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        
+        		RiskObject = "CRANELIFT"
+        		ClaimObject = "CRANEEXTCLM"
+        
+        		Call ToClaim(RiskObject,ClaimObject,"CRANE_CHK")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        
+        		RiskObject = "REPLACE"
+        		ClaimObject = "REPEXTCLM"
+        
+        		Call ToClaim(RiskObject,ClaimObject,"REPLACE_CHK")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMITIND")
+        		Call ToClaim(RiskObject,ClaimObject,"TIMEDEDUCT")
+        		Call ToClaim(RiskObject,ClaimObject,"INDEMPER")
+        		Call ToClaim(RiskObject,ClaimObject,"RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        
+        		RiskObject = "WRECKING"
+        		ClaimObject = "WRECKEXTCLM"
+        
+        		Call ToClaim(RiskObject,ClaimObject,"WRECK_CHK")
+        		Call ToClaim(RiskObject,ClaimObject,"LIMITIND")
+        		Call ToClaim(RiskObject,ClaimObject,"RATE")
+        		Call ToClaim(RiskObject,ClaimObject,"PREMIUM")
+        
+        		RiskObject = "ADDITION"
+        		ClaimObject = "EXTCLM"
+        
+        		Call ToClaim(RiskObject,ClaimObject,"OTHERADD")
+        
+        		Dim isAdd
+        
+        		isAdd = Extras.RiskDataEngine.Item(RiskObject).Item("OTHERADD").Value
+        
+        		If isAdd = 1 Then
+        			RiskObject = "OTHERSPEC"
+        			ClaimParent = "EXTCLM"
+        			ClaimChild = "ADDEXTCLM"
+        
+        			Cnt = Extras.RiskDataEngine.Count(RiskObject)
+        
+        			For nIndex = 1 to Cnt
+        				Engine.Item(ClaimParent).NewObject(ClaimChild)
+        
+        				Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"DESCADD")
+        				Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"LIMITIND")
+        				Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"INDEMPER")
+        				Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"DEDUCTCLM")
+        				Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"TIMEDEDUCT")
+        				Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"DEDUCTAMT")
+        				Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"RATE")
+        				Call ToChildClaim(RiskObject,ClaimParent,ClaimChild,nIndex,"PREMIUM")
+        			Next
+        		End If
+        
+        		
+        		Call DoInstanceCount
+         End If
+        End Sub
+
+        
+        Function ToClaim(RObject, CObject, PropName)
+        	Dim Val	
+        	Val = Extras.RiskDataEngine.Item(RObject).Item(PropName).Value
+        	Engine.Item(CObject).Item(PropName).Value = Val
+        End Function
+        
+        Function ToChildClaim(RChild, CParent, Cobject, Index, PropName)
+        	Dim Val
+        	Val = Extras.RiskDataEngine.Item(RChild,Index).Item(PropName).Value
+        	Engine.Item(CParent).Item(CObject, Index).Item(PropName).Value = Val
+        End Function
+        
+        Function ToGrandChildClaim(RParent, RObject, CParent, CChild, Cobject, PIndex, CIndex, PropName)
+        	Dim Val
+        	Val = Extras.RiskDataEngine.Item(RParent,PIndex).Item(RObject,CIndex).Item(PropName).Value
+        	Engine.Item(CParent).Item(CChild, PIndex).Item(CObject,CIndex).Item(PropName).Value = Val
+        End Function
+        
+        Sub DoInstanceCount
+        ' The ScreenMain rule is added to every screen automatically.
+        
+        
+        Call FindObjectInstanceCount("")
+End Sub
+
+Sub onValidate_CPLANTCLAIM__THIRDPARTY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CPLANTCLAIM", "THIRDPARTY", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CPLANTCLAIM__RECOVERY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CPLANTCLAIM", "RECOVERY", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CPLANTCLAIM__SALVAGE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CPLANTCLAIM", "SALVAGE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CPLANTCLAIM__IS_THRDTLS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CPLANTCLAIM", "IS_THRDTLS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CPLANTCLAIM__IS_ASSESSDETAIL(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CPLANTCLAIM", "IS_ASSESSDETAIL", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CPLANTCLAIM__IS_NAMAPP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CPLANTCLAIM", "IS_NAMAPP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CPLANTCLAIM__IS_EXGRAT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CPLANTCLAIM", "IS_EXGRAT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CPLANTCLM__ASSESSOR(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CPLANTCLM", "ASSESSOR", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CPLANTCLM__LAWYRS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CPLANTCLM", "LAWYRS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CPLANTCLM__WITNESS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CPLANTCLM", "WITNESS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub DoDefaults(bIsOnStart)
+    Call WebRequired(bIsOnStart)
+    Call onScreenLogic(bIsOnStart)
+    Call onValidate_CPLANTCLAIM__THIRDPARTY(bIsOnStart)
+    Call onValidate_CPLANTCLAIM__RECOVERY(bIsOnStart)
+    Call onValidate_CPLANTCLAIM__SALVAGE(bIsOnStart)
+    Call onValidate_CPLANTCLAIM__IS_THRDTLS(bIsOnStart)
+    Call onValidate_CPLANTCLAIM__IS_ASSESSDETAIL(bIsOnStart)
+    Call onValidate_CPLANTCLAIM__IS_NAMAPP(bIsOnStart)
+    Call onValidate_CPLANTCLAIM__IS_EXGRAT(bIsOnStart)
+    Call onValidate_CPLANTCLM__ASSESSOR(bIsOnStart)
+    Call onValidate_CPLANTCLM__LAWYRS(bIsOnStart)
+    Call onValidate_CPLANTCLM__WITNESS(bIsOnStart)
+End Sub
+
+Sub Start()
+    Call DoDefaults(True)
+End Sub
+
+Sub Main()
+    Call DoDefaults(False)
+End Sub
+

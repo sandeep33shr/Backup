@@ -1,0 +1,236 @@
+Sub Start()
+	Dim baseRate, vatFreeSumInsured, Premium, vatFreePremium, OverridePrem
+	Dim prodCode, branchName, iTOOFlag
+	Dim TotalLD, totalPrem, LDPrem, totalSI
+	
+	'Getting Product Code, Branch Name and ITOO flag
+	prodCode  = SafecStr(Engine.Item("GENERAL").Item("PRODCODE").value)
+	branchName = SafecStr(Engine.Item("GENERAL").Item("BRANCH").value)
+	iTOOFlag = ConvertToBool(Engine.Item("RISK_DETAILS").Item("ITOOAPPROV").value)
+	
+	'Public Liability Section 
+	Dim pubSI, pubRate, pubPrem
+	pubSI = SafecDbl(Engine.Item("RISK_DETAILS").Item("PUBLIC_LIABILITY_LIMIT").value)
+	pubRate = SafecDbl(Engine.Item("RISK_DETAILS").Item("PUBLIC_LIABILITY_RATE").value)
+	pubPrem = pubSI * (pubRate * 0.01)
+	'Product Liability Section
+	Dim prodSI, prodRate, prodPrem
+	prodSI = SafecDbl(Engine.Item("RISK_DETAILS").Item("PRODUCT_LIABILITY_LIMIT").value)
+	prodRate = SafecDbl(Engine.Item("RISK_DETAILS").Item("PRODUCT_LIABILITY_RATE").value)
+	prodPrem = prodSI * (prodRate * 0.01)
+	'Employers Liability
+	Dim empSI, empRate, empPrem
+	empSI = SafecDbl(Engine.Item("RISK_DETAILS").Item("EMPLOYERS_LIABILITY_LIMIT").value)
+	empRate = SafecDbl(Engine.Item("RISK_DETAILS").Item("EMPLOYERS_LIABILITY_RATE").value)
+	empPrem = empSI * (empRate * 0.01)
+	
+	'********************Extension section**************************************
+	
+	'Automatic Acquisition
+	Dim AAPremium, isAutoAcq
+	
+	isAutoAcq = ConvertToBool(Engine.Item("RISK_EXTENSIONS").Item("TURNOVER").value)
+	AAPremium = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("TURNOVER_PREM").value)
+	
+	'Vendors Liability
+	Dim VendorPrem, isVendor
+	
+	isVendor = ConvertToBool(Engine.Item("RISK_EXTENSIONS").Item("VENDOR").value)
+	VendorPrem = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("VENDOR_PREM").value)	
+	
+	'********************End Extension section**************************************
+	
+	totalPrem = pubPrem + prodPrem + empPrem + AAPremium + VendorPrem
+	totalSI = pubSI '+ prodSI + empSI
+	
+	'Annual Product
+	If prodCode = "CLA" Then
+		If branchName = "ITOO" and iTOOFlag = True Then
+			
+			'Rating Section for Public Liability
+			If pubPrem > 0 Then
+				
+				vatFreeSumInsured = SafecDbl(pubSI / 1.15)
+				vatFreePremium = SafecDbl(pubPrem / 1.15)
+				
+				GenerateOutput vatFreeSumInsured, pubRate, vatFreePremium, "GENLIAB"
+			End If
+			
+			'Rating section for Product Extension
+			If prodPrem > 0 Then
+				
+				'vatFreeSumInsured = SafecDbl(prodSI / 1.15)
+				vatFreePremium = SafecDbl(prodPrem / 1.15)
+				
+				'GenerateOutput vatFreeSumInsured, prodRate, vatFreePremium, "LIABPROD"
+				GenerateOutput 0, 0, vatFreePremium, "LIABPROD"
+			End If
+			
+			'Rating secction for Employers Extension
+			If empPrem > 0 Then
+				
+				'vatFreeSumInsured = SafecDbl(empSI / 1.15)
+				vatFreePremium = SafecDbl(empPrem / 1.15)
+				
+				'GenerateOutput vatFreeSumInsured, empRate, vatFreePremium, "LIABEMP"
+				GenerateOutput 0, 0, vatFreePremium, "LIABEMP"
+			End If
+			
+			If AAPremium > 0 Then
+				Dim vatFreeAAPrem
+				vatFreeAAPrem = SafecDbl(AAPremium/1.15)
+				
+				GenerateOutput 0, 0, vatFreeAAPrem, "GLEXAA"
+			End If
+			
+			If VendorPrem > 0 Then
+				Dim vatFreeVendorPrem
+				
+				vatFreeVendorPrem = SafecDbl(VendorPrem/1.15)
+				
+				GenerateOutput 0, 0, vatFreeVendorPrem, "GLEXTVL"
+			End If
+			
+		Else
+		'If the branch is not ITOO then sum the extensions and display one rating section
+			baseRate = (totalPrem / totalSI) * 100
+			
+			'Strip VAT
+			vatFreeSumInsured = SafecDbl(totalSI / 1.15)
+			vatFreePremium = SafecDbl(totalPrem / 1.15)
+			
+			GenerateOutput vatFreeSumInsured, baseRate, vatFreePremium, "GENLIABEXC"
+		End If
+	End If
+		
+	'Monthly Product
+	If prodCode = "CLM" Then
+		If branchName = "ITOO" and iTOOFlag = True Then
+			
+			'Rating Section for Public Liability
+			If pubPrem > 0 Then
+				Dim MonthlyPubPrem, MonthlyPubRate
+				MonthlyPubRate = pubRate/12
+				MonthlyPubPrem = pubSI * (MonthlyPubRate * 0.01)
+				
+				vatFreeSumInsured = SafecDbl(pubSI / 1.15)
+				vatFreePremium = SafecDbl(MonthlyPubPrem / 1.15)
+				
+				GenerateOutput vatFreeSumInsured, MonthlyPubRate, vatFreePremium, "GENLIAB"
+			End If
+			
+			'Rating section for Product Extension
+			If prodPrem > 0 Then
+				Dim MonthlyProdPrem, MonthlyProdRate
+				
+				MonthlyProdRate = prodRate/12
+				MonthlyProdPrem = prodSI * (MonthlyProdRate * 0.01)
+				
+				'vatFreeSumInsured = SafecDbl(prodSI / 1.15)
+				vatFreePremium = SafecDbl(MonthlyProdPrem / 1.15)
+				
+				'GenerateOutput vatFreeSumInsured, MonthlyProdRate, vatFreePremium, "LIABPROD"
+				GenerateOutput 0, 0, vatFreePremium, "LIABPROD"
+			End If
+			
+			'Rating section for Employers Extension
+			If empPrem > 0 Then
+				Dim MonthlyEmpPrem, MonthlyEmpRate
+				
+				MonthlyEmpRate = empRate/12
+				MonthlyEmpPrem = empSI * (MonthlyEmpRate * 0.01)
+				
+				'vatFreeSumInsured = SafecDbl(empSI / 1.15)
+				vatFreePremium = SafecDbl(MonthlyEmpPrem / 1.15)
+				
+				'GenerateOutput vatFreeSumInsured, MonthlyEmpRate, vatFreePremium, "LIABEMP"
+				GenerateOutput 0, 0, vatFreePremium, "LIABEMP"
+			End If
+			
+			If AAPremium > 0 Then
+				Dim vatFreeMonthlyAAPrem, MonthlyAAPrem
+				
+				MonthlyAAPrem = SafecDbl(AAPremium/12)
+				
+				vatFreeMonthlyAAPrem = SafecDbl(MonthlyAAPrem/1.15)
+				
+				GenerateOutput 0, 0, vatFreeMonthlyAAPrem, "GLEXAA"
+			End If
+			
+			If VendorPrem > 0 Then
+				Dim MonthlyVendorPrem
+				
+				MonthlyVendorPrem = SafecDbl(VendorPrem/12)
+				
+				vatFreeMonthlyVendorPrem = SafecDbl(MonthlyVendorPrem/1.15)
+				
+				GenerateOutput 0, 0, vatFreeMonthlyVendorPrem, "GLEXTVL"
+			End If
+			
+		Else
+		'If the branch is not ITOO then sum the extensions and display one rating section
+			Dim TotalMonthlyPrem, MonthlyBaseRate
+			
+			MonthlyBaseRate = ((totalPrem / totalSI) * 100)/12
+			TotalMonthlyPrem = totalPrem/12
+			
+			
+			'Strip VAT
+			vatFreeSumInsured = SafecDbl(totalSI / 1.15)
+			vatFreePremium = SafecDbl(TotalMonthlyPrem / 1.15)
+			
+			GenerateOutput vatFreeSumInsured, MonthlyBaseRate, vatFreePremium, "GENLIABEXC"
+		End If
+	End If
+	
+
+End Sub
+
+Function GenerateOutput(cSI, cRate, cPrem, cRatingSection)
+
+    Dim iCount
+
+    Engine.NewObject("GENLIAB_Output")
+    iCount = Engine.Count("GENLIAB_Output")
+
+    Engine.Item("GENLIAB_Output", iCount).Item("Sum_insured").Value = cSI
+    Engine.Item("GENLIAB_Output", iCount).Item("Rate").Value = cRate
+    Engine.Item("GENLIAB_Output", iCount).Item("Premium").Value = cPrem
+    Engine.Item("GENLIAB_Output", iCount).Item("risk_rating_section").Value = cRatingSection
+
+End Function
+
+Function SafecDbl(value)
+		SafecDbl = 0
+		On Error Resume Next
+		SafecDbl = CDbl(value)
+		On Error GoTo 0
+End Function
+
+Function SafeInt(value)
+	SafeInt = 0
+	On Error Resume Next
+	SafeInt = CInt(value)
+	On Error GoTo 0
+End Function
+
+Function SafecStr(value)
+    SafecStr = ""
+    On Error Resume Next
+    SafecStr = CStr(value)
+    On Error GoTo 0
+End Function
+
+Function SafecDate(value)
+    SafecDate = 0
+    On Error Resume Next
+    SafecDate = CDate(value)
+    On Error GoTo 0
+End Function
+
+Function ConvertToBool(value)
+    ConvertToBool = 0
+    On Error Resume Next
+    ConvertToBool = CBool(value)
+    On Error GoTo 0
+End Function

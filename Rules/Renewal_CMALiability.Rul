@@ -1,0 +1,28 @@
+Sub Start()
+	
+	'Check if the cover has been added
+	If	Engine.Item("GENERAL").Item("IS_CYBER").Value = 1 Then
+		Engine.Item("CYBER").Item("EFFECTIVEDATE").Value = Extras.CoverStartDate
+	End If
+	
+	If	Engine.Item("GENERAL").Item("IS_EMPLOYERS").Value = 1 Then
+		Engine.Item("EMPLIAB").Item("EFFECTIVEDATE").Value = Extras.CoverStartDate
+	End If
+	
+	If	Engine.Item("GENERAL").Item("IS_COMBINED").Value = 1 Then
+		Engine.Item("COMLIAB").Item("EFFECTIVEDATE").Value = Extras.CoverStartDate
+	End If
+	
+	If	Engine.Item("GENERAL").Item("IS_DNO").Value = 1 Then
+		Engine.Item("DNOLIAB").Item("EFFECTIVEDATE").Value = Extras.CoverStartDate
+	End If
+	
+	If	Engine.Item("GENERAL").Item("IS_PUBLIC").Value = 1 Then
+		Engine.Item("PUBLIAB").Item("EFFECTIVEDATE").Value = Extras.CoverStartDate
+	End If
+	
+	If	Engine.Item("GENERAL").Item("IS_FARE").Value = 1 Then
+		Engine.Item("FPPLIAB").Item("EFFECTIVEDATE").Value = Extras.CoverStartDate
+	End If
+
+End Sub

@@ -1,0 +1,76 @@
+Sub Start()
+
+            Dim dMinPremium, dMaxPremium, dStampDuty
+	Dim iRet, iCount, lNumberOfMonthsinRF
+	Dim vExtraParam, arrSPResult1, arrSPResult2, arrSPResult3
+	Dim isMTA, isAdd, isDelete
+	Dim retPrem, origPrem
+	Dim TransactionType,vExtraParameters
+
+	Dim BusinessType, BrokerShare
+	Dim iRet2
+	
+	'Maximum Stamp Duty Premium is same for all the Cover Sections across the Products
+	dMaxPremium = 250.00
+	dMinPremium = 0.10
+	dStampDuty = 0
+	
+	TransactionType = SafecStr(Extras.TransactionType)
+	vExtraParameters = array("sTransactionType",TransactionType)
+	
+	
+	iRet = Extras.CallNamedStoredProcedure(CLng(6722), CStr("GetStampDutyPremium"), arrSPResult2,vExtraParameters)
+
+	If IsArray(arrSPResult2) Then
+		dStampDuty = SafecDbl(arrSPResult2(0,0))
+		 
+		GenerateOutput 0.00, 0.0, dStampDuty, "STAMPDUTY"
+
+	End If			
+		iRet2 = Extras.CallNamedStoredProcedure(CLng(6722), CStr("GetNamfisa"), arrSPResult2, vExtraParameters)
+		If IsArray(arrSPResult2) Then
+			BusinessType = SafecInt(arrSPResult2(0,0))
+			
+			If BusinessType = 7 Then
+				BrokerShare = SafecDbl(arrSPResult2(1,0))
+				GenerateOutput 0.00, 0.0, BrokerShare, "NAMFISA"
+			End If
+		End If
+End Sub
+
+Function GenerateOutput(cSumInsured, cRate, cPremium, sRatingSection)
+	Dim iCount
+	
+	Engine.NewObject("STAMPDUTY_Output")
+	iCount = Engine.Count("STAMPDUTY_Output")
+	Engine.Item("STAMPDUTY_Output", iCount).Item("SUM_INSURED").Value = cSumInsured
+	Engine.Item("STAMPDUTY_Output", iCount).Item("RATE").Value = cRate
+	Engine.Item("STAMPDUTY_Output", iCount).Item("PREMIUM").Value = cPremium
+	Engine.Item("STAMPDUTY_Output", iCount).Item("RISK_RATING_SECTION").Value = sRatingSection
+	Engine.Item("STAMPDUTY_Output", iCount).Item("Disable_New_ProRata").Value = 1
+	Engine.Item("STAMPDUTY_Output", iCount).Item("Disable_Original_ProRata").Value = 1
+
+End Function
+
+Function SafecInt(vIn)
+    SafecInt = 0
+    On Error Resume Next
+    SafecInt = CInt(vIn)
+    On Error GoTo 0
+End Function
+ 
+ 
+Function SafecDbl(vIn)
+    SafecDbl = 0
+    On Error Resume Next
+    SafecDbl = CDbl(vIn)
+    On Error GoTo 0
+End Function
+ 
+ 
+Function SafecStr(vIn)
+    SafecStr = ""
+    On Error Resume Next
+    SafecStr = CStr(vIn)
+    On Error GoTo 0
+End Function

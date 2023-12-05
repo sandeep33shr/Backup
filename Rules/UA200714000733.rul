@@ -1,0 +1,164 @@
+Sub Start()
+    Dim originalLimit	
+	Dim RiskCode, sProdCode, sMandate, sUser
+	Dim vExtraParameters, iRet
+	Dim arrSPUserGroup, arrSPMandate, sUserGroup, sUdl
+	
+	RiskCode = Extras.RiskTypeCode
+	sUser = Extras.Username
+	sProdCode = Engine.item("GENERAL").item("PRODCODE").Value
+	
+	If RiskCode = "NPAMOTOR" Then
+		'Retrieve Risk information
+		Dim dSumInsured, sVehicleType
+		Dim dMaxSI, sIsExempt, dPremium
+		
+		sVehicleType = Engine.item("MOTOR").item("VEHTYPECODE").Value
+		dPremium = Engine.item("MOTOR").item("PREMIUM").Value
+		If dPremium > 0 And sVehicleType = "106" Then
+
+			dSumInsured = Engine.item("MOTOR").item("VEH_VALUE").Value
+			
+			'Get User group of logged in User
+			sMandate = "SI"
+			
+			vExtraParameters = array("sUsername",sUser,"sMandateType",sMandate)
+			iRet = Extras.CallNamedStoredProcedure(CLng(6722), CStr("GetUserGroups"), arrSPUserGroup,vExtraParameters)
+			
+			If IsArray(arrSPUserGroup) Then
+				sUserGroup = arrSPUserGroup(0,0)
+				sIsExempt = arrSPUserGroup(1,0)
+			End If
+			
+			If sIsExempt = "False" Then
+			
+				'Retrieve Mandate values for the usergroup
+				sUdl = "UDL_KSANCMOT"
+				vExtraParameters = array("sUDLName",sUdl,"sCode",sUserGroup,"sProdCode",sProdCode)
+				iRet = Extras.CallNamedStoredProcedure(CLng(6722), CStr("GetMandateAmounts"), arrSPMandate,vExtraParameters)
+				
+				If IsArray(arrSPMandate) Then
+					dMaxSI = arrSPMandate(0,0)
+				End If
+
+				dSumInsured = CDbl(dSumInsured)
+				dMaxSI = CDbl(dMaxSI)
+				
+				If dSumInsured > dMaxSI Then
+					Call ReferIt("MOTORRSK_Output","The Sum Insured exceeds the maximum allowed")
+					Call CreateTask("Sum insured entered exceeds maximum allowed")
+				End If
+			End If
+	   End If
+	End If
+	
+	 If RiskCode = "NPADOM" Then
+		Dim iBuildCover, iContentCover, iBuildSL, iContentSL, iCommune, iMECHCover, iPLIPCover, iAllRiskCover
+		Dim dBuildPrem, dContPrem, dAllRiskPrem, dMBrkPrem, dPLIPPrem, cnt, Index, x, dAllRisk
+		
+		iBuildCover = Engine.item("GENERAL").item("IS_BUILDINGS").Value
+		iContentCover = Engine.item("GENERAL").item("IS_CONTENTS").Value
+		iAllRiskCover = Engine.item("GENERAL").item("IS_ALLRISKS").Value
+		iPLIPCover = Engine.item("GENERAL").item("IS_PLIP").Value
+		iMECHCover = Engine.item("GENERAL").item("IS_MECH_ELECT").Value
+		
+		dBuildPrem = Engine.item("BUILDINGS").item("PREMIUM").Value
+		dContPrem = Engine.item("CONTENTS").item("PREMIUM").Value
+		dPLIPPrem = Engine.item("PLIP").item("PREMIUM").Value
+		dMBrkPrem = Engine.item("MECHELECTRIC").item("PREMIUM").Value
+		iCommune = Engine.item("GENERAL").item("IS_COMMUNE").Value
+		
+		cnt = Engine.Count("ALLRISKCHLD")
+		
+		If iAllRiskCover = 1 Then
+			x = 1
+			dAllRiskPrem = 1
+			For Index = x to cnt
+				dAllRisk = Engine.Item("ALLRISK").Item("ALLRISKCHLD",Index).Item("PREMIUM").Value
+				If ((IsNull(dAllRisk)) OR (dAllRisk = "")) Then
+					dAllRiskPrem = 0
+				End If
+			Next
+		End If
+		
+		If iBuildCover = 1 AND iContentCover = 1 Then
+			If dBuildPrem > 0 AND dContPrem > 0 AND ((iAllRiskCover = 1 AND dAllRiskPrem > 0) OR iAllRiskCover = 0) AND ((iPLIPCover = 1 AND dPLIPPrem > 0) OR iPLIPCover = 0) AND ((iMECHCover = 1 AND dMBrkPrem > 0) OR iMECHCover = 0) Then
+				If iCommune = 1 Then
+					Call ReferIt("NPADOMRISK_Output","Commune was selected")
+					Call CreateTask("Commune was selected")
+				End If
+				
+				dPremium = Engine.item("BUILDINGS").item("PREMIUM").Value
+				iBuildSL = Engine.item("BUILDINGS").item("IS_SUBSIDENCE").Value
+				
+				If dPremium > 0 And iBuildSL = 1 Then
+					Call ReferIt("NPADOMRISK_Output","Subsidence and Landslip was selected for Buildings Cover")
+					Call CreateTask("Subsidence and Landslip was selected for Buildings Cover")
+				End If
+				
+				dPremium = Engine.item("CONTENTS").item("PREMIUM").Value
+				iContentSL = Engine.item("CONTENTS").item("IS_SUBSIDENCE").Value
+				
+				If dPremium > 0 And iContentSL = 1 Then
+					Call ReferIt("NPADOMRISK_Output","Subsidence and Landslip was selected for Contents Cover")
+					Call CreateTask("Subsidence and Landslip was selected for Contents Cover")
+				End If
+			
+			End If
+		ElseIf iBuildCover = 1 AND iContentCover = 0 Then
+			If dBuildPrem > 0 And ((iPLIPCover = 1 AND dPLIPPrem > 0) OR iPLIPCover = 0) Then
+				If iCommune = 1 Then
+					Call ReferIt("NPADOMRISK_Output","Commune was selected")
+					Call CreateTask("Commune was selected")
+				End If
+				
+				dPremium = Engine.item("BUILDINGS").item("PREMIUM").Value
+				iBuildSL = Engine.item("BUILDINGS").item("IS_SUBSIDENCE").Value
+				
+				If dPremium > 0 And iBuildSL = 1 Then
+					Call ReferIt("NPADOMRISK_Output","Subsidence and Landslip was selected for Buildings Cover")
+					Call CreateTask("Subsidence and Landslip was selected for Buildings Cover")
+				End If
+				
+			End If
+		ElseIf iBuildCover = 0 AND iContentCover = 1 Then
+			If dContPrem > 0 And ((iAllRiskCover = 1 AND dAllRiskPrem > 0) OR iAllRiskCover = 0) AND ((iPLIPCover = 1 AND dPLIPPrem > 0) OR iPLIPCover = 0) AND ((iMECHCover = 1 AND dMBrkPrem > 0) OR iMECHCover = 0) Then
+				If iCommune = 1 Then
+					Call ReferIt("NPADOMRISK_Output","Commune was selected")
+					Call CreateTask("Commune was selected")
+				End If
+				
+				dPremium = Engine.item("CONTENTS").item("PREMIUM").Value
+				iContentSL = Engine.item("CONTENTS").item("IS_SUBSIDENCE").Value
+				
+				If dPremium > 0 And iContentSL = 1 Then
+					Call ReferIt("NPADOMRISK_Output","Subsidence and Landslip was selected for Contents Cover")
+					Call CreateTask("Subsidence and Landslip was selected for Contents Cover")
+				End If
+				
+			End If
+		 End If
+	 End If
+	
+
+End Sub
+
+Function ReferIt(mObject, mRefMessage)
+    Dim mCnt
+    With Engine
+        .NewObject(mObject)
+        mCnt = .Count(mObject)
+        .Item(mObject, mCnt).Item("Refer_reason").value = mRefMessage
+    End With
+End Function
+
+Function CreateTask(vRefMessage)
+    Extras.TaskUser = "All Users"
+    Extras.TaskUrgent = 1
+	Extras.TaskCode = "UNDERNB"
+    Extras.TaskUserGroup = "SFORU"
+    Extras.TaskGroup = "UNDER"
+    Extras.TaskDescription = vRefMessage
+    Dim mReturn
+    mReturn = Extras.AddTaskToWorkManager()
+End Function

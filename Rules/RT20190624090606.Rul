@@ -1,0 +1,425 @@
+Sub Start()
+	'--------------------------------variables-----------------------------------'
+    '-----------------------Medical Malpractice variables----------------------------'
+	Dim SumInsured, baseRate, adjustRate, finalRate, Premium, VatFreeSumInsured, VatFreePremium
+	'------------------------End Medical Malpractice variables----------------------------'
+	
+	'--------------------------Professional Indemnity variables----------------------------'
+	Dim ProfSumInsured, ProfbaseRate, ProfPremium,  VatFreeProfSumInsured, VatFreeProfPremium
+	'--------------------------End Professional Indemnity-------------------------'
+
+	'------------------------branch selection variables -------------------'
+	Dim prodCode, branchName, iTOOFlag
+	'------------------------End branch selection variables -----------------'
+	
+	'---------------------Totals Variables---------------------------'
+	Dim TotalExtenPrem, TotalAddExt, AddExtSI, ExtenSI, TotalSI
+	'---------------------End Totals Variables---------------------------'
+	
+	 '---------------------General Liability variables--------------------------------'
+	Dim employersPrem, pollutionPrem, productPrem, publicPrem, legalPrem, warrestPrem
+	Dim employerSI, pollutionSI, productSI, publicSI, legalSI, warrestSI
+	Dim employersRate, pollutionRate, productRate, publicRate, legalRate, warrestRate
+	 '---------------------End General Liability--------------------------------'
+	 
+	 '----------------------Extensions variables-----------------------'
+	Dim ExtbocBocchPremium
+	Dim DefamPremium
+	Dim DocPremium
+	Dim HpcnaPremium
+	Dim RunOffTopUpPrem
+	Dim BusindtPremium
+	Dim Ext_Rate
+	'----------------------End Extensions variables-----------------------'
+	'--------------------------------End Variables-----------------------------------------------------------'
+	
+	'---------------------------Branch Selection from Risk Screen------------------------'
+	prodCode  = SafecStr(Engine.Item("GENERAL").Item("PRODCODE").value)
+	branchName = SafecStr(Engine.Item("GENERAL").Item("BRANCH").value)
+	iTOOFlag = ConvertToBool(Engine.Item("RISK_DETAILS").Item("ITOOAPPROV").value)
+    '---------------------------Branch Selection from Risk Screen------------------------'
+     '-----------------------Selection Medical Malpractice from Risk Screen----------------------------'
+	SumInsured = SafecDbl(Engine.Item("RISK_DETAILS").Item("LIMIT_OF_INDEMNITY").value)
+	baseRate = SafecDbl(Engine.Item("RISK_DETAILS").Item("BASE_RATE").value)
+	Premium = SafecDbl(Engine.Item("RISK_DETAILS").Item("PREMIUM").value)
+	'------------------------End Selection Medical Malpractice from Risk Screen----------------------------'
+	'--------------------------Professional Indemnity Select from Risk Screen----------------------------'
+	ProfSumInsured = SafecDbl(Engine.Item("RSKDETPIPI").Item("LIMIT_OF_INDEMNITY").value)
+	ProfbaseRate = SafecDbl(Engine.Item("RSKDETPIPI").Item("BASE_RATE").value)
+     ProfPremium = SafecDbl(Engine.Item("RSKDETPIPI").Item("PREMIUM").value)
+	'--------------------------End Professional Indemnity Select from Risk Screen--------------------------'
+	'adjustRate = SafecDbl(Engine.Item("RISK_DETAILS").Item("ADJUSTRATE").value)
+
+	'-------------------------Select General Liability From Risk Screen-----------------------------'
+	
+	'=============================Premium Calculations===================='
+	'Premium will be calculate as Limit of indemnity * rate * 0.01
+	'----------------------------------------------------------------'
+	employerSI = SafecDbl(Engine.Item("EMP_LIAB").Item("LIMIT_OF_INDEMNITY").value)
+	employersRate = SafecDbl(Engine.Item("EMP_LIAB").Item("BASE_RATE").value)
+	employersPrem = employerSI * (employersRate *0.01)
+	
+	pollutionSI = SafecDbl(Engine.Item("POLL_LIABIL").Item("POLL_LIMIT_OF_INDEMNITY").value)
+	pollutionRate =  SafecDbl(Engine.Item("POLL_LIABIL").Item("POLL_BASE_RATE").value)
+	pollutionPrem =  pollutionSI * (pollutionRate * 0.01)
+	
+	
+	productSI = SafecDbl(Engine.Item("PROD_LIAB").Item("LIMIT_OF_INDEMNITY").value)
+	productRate = SafecDbl(Engine.Item("PROD_LIAB").Item("BASE_RATE").value)
+	productPrem = productSI * (productRate * 0.01)
+	
+	publicSI = SafecDbl(Engine.Item("PUBLIC_LIAB").Item("LIMIT_OF_INDEMNITY").value)
+	publicRate = SafecDbl(Engine.Item("PUBLIC_LIAB").Item("BASE_RATE").value)
+	publicPrem = publicSI * (publicRate * 0.01)
+	
+	legalSI = SafecDbl(Engine.Item("SLD").Item("LIMIT_OF_INDEMNITY").value)
+	legalRate = SafecDbl(Engine.Item("SLD").Item("BASE_RATE").value)
+	legalPrem = legalSI * (legalRate * 0.01)
+	
+	warrestSI = SafecDbl(Engine.Item("WARREST").Item("LIMIT_OF_INDEMNITY").value)
+	warrestRate = SafecDbl(Engine.Item("WARREST").Item("BASE_RATE").value)
+	warrestPrem = warrestSI * (warrestRate * 0.01)
+	'--------------------------------End General Liability----------------------------------'
+	'---------------------------------Extensions-------------------------------------------------'
+	 ExtbocBocchPremium = SafecDbl(Engine.Item("EXTBOC").Item("BOCCH_PREMIUM").value)
+	 DefamPremium = SafecDbl(Engine.Item("EXTDEFAM").Item("DEFAM_TOP_UP_PREMIUM").value)
+	 DocPremium = SafecDbl(Engine.Item("DOCUMNT").Item("DOC_TOP_UP_PREMIUM").value)
+	 HpcnaPremium  = SafecDbl(Engine.Item("EXTHPCN").Item("HPCN_OTH_TOP_PREMIUM").value)
+	 RunOffTopUpPrem = SafecDbl(Engine.Item("EXTRUNOFF").Item("RUN_OFF_TOP_UP_PREM").value)
+	 BusindtPremium  = SafecDbl(Engine.Item("BUSINDT").Item("BOCCH_PREMIUM").value)
+	
+	'------------------------------- End Extensions----------------------------------------------'
+	'----------------------------Add all Sum insured -----------------------------------------'
+	'ExtenSI = employerSI + pollutionSI + productSI + publicSI + legalSI + warrestSI
+	TotalExtenPrem = ProfPremium + Premium + employersPrem + pollutionPrem + productPrem + 	publicPrem + legalPrem + warrestPrem + ExtbocBocchPremium + DefamPremium + DocPremium + RunOffTopUpPrem + HpcnaPremium + BusindtPremium
+	'---------------------------- Add all Sum insured----------------------------------------'
+
+	'----------Statutory Legal Defence Costs Sum Insured plus Wrongful Arrest and Defamation Sum Insured------'
+	'AddExtSI = legalSI + warrestSI
+	'------------------------------------End ---------------------------------------------------'
+	
+	'------------Statutory Legal Defence Costs Premium plus Wrongful Arrest and Defamation Premium------'
+	'TotalAddExt = legalPrem + warrestPrem
+	'--------------End Statutory Legal Defence Costs Premium plus Wrongful Arrest and Defamation Premium ------'
+	
+	'If adjustRate > 0 Then
+	'	finalRate = adjustRate
+	'Else
+		'finalRate = baseRate
+	'End If
+	
+	If prodCode = "CLA" Then
+		If branchName = "ITOO" and iTOOFlag = True Then
+
+                       If SumInsured > 0 Then 
+		VatFreePremium  = SafecDbl(Premium/1.15)
+		VatFreeSumInsured = SafecDbl(SumInsured/1.15)
+		GenerateOutput VatFreeSumInsured, baseRate, VatFreePremium, "MEDMAL"
+		End If 
+		
+			'-------------------------Employers Liability Rating----------------------------'
+			If employersPrem > 0 Then
+				'Premium = employerSI * (employersRate * 0.01)
+                                                VatFreeSumInsured = 0.00
+				employersRate = 0.00
+				VatFreePremium = SafecDbl(employersPrem/1.15)
+				'VatFreeSumInsured = SafecDbl(employerSI/1.15)
+				GenerateOutput VatFreeSumInsured, employersRate, VatFreePremium, "LIABEMP"
+			End If
+	 '-----------------------End Employers Liability Rating----------------------------'
+	 
+		'---------------Professional Indemnity rating---------------------'
+			 If ProfPremium > 0 Then
+			   ProfbaseRate = 0.00
+			   VatFreeSumInsured = 0.00
+			   'ProfPremium = (ProfSumInsured * (ProfbaseRate * 0.01))
+              ' VatFreeProfSumInsured = SafecDbl(ProfSumInsured / 1.15)
+			    VatFreePremium = SafecDbl(ProfPremium / 1.15)
+			 GenerateOutput VatFreeSumInsured, ProfbaseRate, VatFreePremium,"MEDMALEXC"
+			 End If
+	  '----------------End Professional Indemnity rating---------------------'
+	
+
+	 '-------------------------Pollution Liability Rating-------------------------------'
+			If pollutionPrem > 0 Then
+			     VatFreeSumInsured = 0.00
+			     pollutionRate = 0.00
+				'Premium = pollutionSI* (pollutionRate * 0.01)
+				VatFreePremium = SafecDbl(pollutionPrem/1.15)
+				'VatFreeSumInsured = SafecDbl(pollutionSI/1.15)
+				GenerateOutput VatFreeSumInsured, pollutionRate, VatFreePremium, "POLLIAB"
+			End If
+	'------------------------End Pollution Liability Rating-------------------------------'
+	'--------------------------	Product Liability Rating----------------------------------'	
+			If productPrem > 0 Then
+			    productRate = 0.00
+				VatFreeSumInsured = 0.00
+				'Premium = productSI * (productRate * 0.01)
+				VatFreePremium = SafecDbl(productPrem/1.15)
+				'VatFreeSumInsured = SafecDbl(productSI/1.15)
+				GenerateOutput VatFreeSumInsured, productRate, VatFreePremium, "LIABPROD"
+			End If
+    '--------------------------End Product Liability Rating----------------------------------'	
+	
+	'------------------------- Public Liability Rating -----------------------------------'
+			If publicPrem > 0 Then
+			    publicRate = 0.00
+				VatFreeSumInsured = 0.00 
+				'Premium = publicSI * (publicRate * 0.01)
+				VatFreePremium = SafecDbl(publicPrem/1.15)
+				'VatFreeSumInsured = SafecDbl(publicSI/1.15)
+				GenerateOutput VatFreeSumInsured, publicRate, VatFreePremium, "PUBLIAB"
+			End If
+	'----------------------- End Public Liability Rating -----------------------------------'	
+
+'------------------------------Statutory Legal Defence Costs-------------------------------'
+	If legalPrem > 0 Then
+	         legalRate = 0.00
+			 VatFreeSumInsured  = 0.00
+	           VatFreePremium = SafecDbl(legalPrem/1.15)
+			 	GenerateOutput VatFreeSumInsured, legalRate, VatFreePremium, "COMPROXSDC"
+	End If
+	
+	'------------------------------End Statutory Legal Defence Costs-----------------------------'
+
+'-----------------Wrongful Arrest---------------------'
+
+             If warrestSI > 0 Then
+			 warrestRate = 0.00
+			 VatFreeSumInsured  = 0.00
+			 VatFreePremium = SafecDbl(warrestPrem/1.15)
+			 	GenerateOutput VatFreeSumInsured, warrestRate, VatFreePremium, "COMPROXWA"
+			 End If 
+	 '-----------------------End Wrongful Arrest--------------------'
+	 '----------------------Selection Medical Malpractice Sum Insured and premium /plus statuary defence----------'
+	 
+	 '-----Statutory Legal Defence Costs Sum Insured plus Wrongful Arrest and Defamation Sum Insured-------'
+			'TotalSI = SumInsured + AddExtSI
+			''-------------Premium calculations plus  Wrongful Arrest and Defamation Premium
+			'Premium = (SumInsured * (finalRate * 0.01)) + TotalAddExt
+			'VatFreeSumInsured = SafecDbl(TotalSI/1.15)
+			'VatFreePremium = SafecDbl(Premium/1.15)
+			'GenerateOutput VatFreeSumInsured, finalRate, VatFreePremium, "MEDMAL"
+	 '--------------------------End Selection Medical Malpractice premium plus--------------'
+	 
+	 
+	 '--------------------------------Extensions----------------------------------------------'
+	 '------------------------------Breach of Confidentiality----------------------------------'
+				If ExtbocBocchPremium > 0 Then
+				VatFreeSumInsured = 0.00
+				Ext_Rate = 0.00
+				VatFreePremium = SafecDbl(ExtbocBocchPremium/1.15)
+			    GenerateOutput VatFreeSumInsured, Ext_Rate, VatFreePremium, "MEDBOC"
+				End If
+'---------------------------- End Breach of Confidentiality----------------------------------'
+        '--------------------------------Run of Cover--------------------------------------'
+				If RunOffTopUpPrem > 0 Then
+				VatFreeSumInsured = 0.00
+				Ext_Rate = 0.00
+				VatFreePremium = SafecDbl(RunOffTopUpPrem/1.15)
+			    GenerateOutput VatFreeSumInsured, Ext_Rate, VatFreePremium, "MEDROFF"
+				
+				End If
+		'-----------------------------End Run of Cover--------------------------------------'
+	
+	'-----------------------------------Defamation----------------------------------'
+				If DefamPremium > 0 Then
+				VatFreeSumInsured = 0.00
+				Ext_Rate = 0.00
+				VatFreePremium = SafecDbl(DefamPremium/1.15)
+				GenerateOutput VatFreeSumInsured, Ext_Rate, VatFreePremium, "MEDDDC"
+				
+				End If
+  '-----------------------------------End Defamation----------------------------------'		
+      '------------------------------------Documents--------------------------------'
+				If DocPremium > 0 Then
+				VatFreeSumInsured = 0.00
+				Ext_Rate = 0.00
+				VatFreePremium = SafecDbl(DocPremium/1.15)
+			    GenerateOutput VatFreeSumInsured, Ext_Rate, VatFreePremium, "MEDDOC"
+				End If
+	'-------------------------------------End Documents-------------------------------'
+	'-----------------------------------HPCNA/Other Statutory Costs------------------------------'
+	            If HpcnaPremium > 0 Then
+				VatFreeSumInsured = 0.00
+				Ext_Rate = 0.00
+				VatFreePremium = SafecDbl(HpcnaPremium/1.15)
+			    GenerateOutput VatFreeSumInsured, Ext_Rate, VatFreePremium, "MEDSPCSA"
+				End If
+	
+    '-----------------------------------End HPCNA/Other Statutory Costs------------------------------'
+	''------------------------------------Run Off Cover----------------------------------------------'
+	'            If RunOffTopUpPrem > 0 Then
+	'			VatFreeSumInsured = 0.00
+	'			Ext_Rate = 0.00
+	'			VatFreePremium = SafecDbl(RunOffTopUpPrem/1.15)
+	'		    GenerateOutput VatFreeSumInsured, Ext_Rate, VatFreePremium, "MEDROFF"
+	'			End If
+	''------------------------------------End Run Off Cover------------------------------------------'
+	 '------------------------------------Business identity theft--------------------------------'
+	          If BusindtPremium > 0 Then
+				VatFreeSumInsured = 0.00
+				Ext_Rate = 0.00
+				VatFreePremium = SafecDbl(BusindtPremium/1.15)
+			    GenerateOutput VatFreeSumInsured, Ext_Rate, VatFreePremium, "MEDBIT"
+				End If
+	 '------------------------------------End Business identity theft--------------------------------'
+	
+	 '-------------------------------End Extensions--------------------------------------------'
+
+	 
+		Else
+		
+			If TotalExtenPrem > 0 Then
+				'employersPrem = employerSI * (employersRate * 0.01)
+				
+				VatFreePremium = SafecDbl(TotalExtenPrem/1.15)
+				VatFreeSumInsured = SafecDbl(employerSI/1.15)
+				GenerateOutput VatFreeSumInsured, employersRate, VatFreePremium, "MEDMALTEX"
+			End If
+			
+			'TotalSI = SumInsured + ExtenSI
+			'Premium = (SumInsured * (finalRate * 0.01)) + TotalExtenPrem
+			'
+			'VatFreeSumInsured = SafecDbl(TotalSI/1.15)
+			'VatFreePremium = SafecDbl(Premium/1.15)
+			'
+			'GenerateOutput VatFreeSumInsured, finalRate, VatFreePremium, "MEDMALEXC"
+			'
+			'  ProfPremium = (ProfSumInsured * (ProfbaseRate * 0.01))
+			'  VatFreeProfSumInsured = SafecDbl(ProfSumInsured / 1.15)
+            '  VatFreeProfPremium = SafecDbl(ProfPremium / 1.15)
+            '  GenerateOutput VatFreeProfSumInsured, ProfbaseRate, VatFreeProfPremium,"COMPROFTE"
+
+		End If
+	End If
+	
+	If prodCode = "CLM" Then
+		If branchName = "ITOO" and iTOOFlag = True Then
+			Dim monthlyRate, monthlyPremium
+	   ProfPremium = (ProfSumInsured * (ProfbaseRate * 0.01))
+       VatFreeProfSumInsured = SafecDbl(ProfSumInsured / 1.15)
+       VatFreeProfPremium = SafecDbl(ProfPremium / 1.15)
+       GenerateOutput VatFreeProfSumInsured, ProfbaseRate, VatFreeProfPremium,"COMPROFIND"
+	   
+			If employersPrem > 0 Then
+				monthlyRate = employersRate/12
+				monthlyPremium = employerSI * (monthlyRate * 0.01)
+				VatFreePremium = SafecDbl(monthlyPremium/1.15)
+				VatFreeSumInsured = SafecDbl(employerSI/1.15)
+				GenerateOutput VatFreeSumInsured, monthlyRate, VatFreePremium, "MEDMAL"
+			End If
+			
+			
+			If pollutionPrem > 0 Then
+				monthlyRate = pollutionRate/12
+				monthlyPremium = pollutionSI * (monthlyRate * 0.01)
+				VatFreePremium = SafecDbl(monthlyPremium/1.15)
+				VatFreeSumInsured = SafecDbl(pollutionSI/1.15)
+				GenerateOutput VatFreeSumInsured, monthlyRate, VatFreePremium, "POLLIAB"
+			End If
+			
+			
+			If productPrem > 0 Then
+				monthlyRate = productRate/12
+				monthlyPremium = productSI * (monthlyRate * 0.01)
+				VatFreePremium = SafecDbl(monthlyPremium/1.15)
+				VatFreeSumInsured = SafecDbl(productSI/1.15)
+				GenerateOutput VatFreeSumInsured, monthlyRate, VatFreePremium, "LIABPROD"
+			End If
+			
+			If publicPrem > 0 Then
+				monthlyRate = publicRate/12
+				monthlyPremium = publicSI * (monthlyRate * 0.01)
+				VatFreePremium = SafecDbl(monthlyPremium/1.15)
+				VatFreeSumInsured = SafecDbl(publicSI/1.15)
+				GenerateOutput VatFreeSumInsured, monthlyRate, VatFreePremium, "PUBLIAB"
+			End If
+			
+			monthlyRate = finalRate/12
+			
+			If TotalAddExt > 0 Then
+				TotalSI = SumInsured + AddExtSI
+				Premium = (SumInsured * (monthlyRate * 0.01)) + (TotalAddExt/12)
+			Else
+				TotalSI = SumInsured
+				Premium = SumInsured*(monthlyRate*0.01)
+			End If
+
+			VatFreeSumInsured = SafecDbl(TotalSI/1.15)
+			VatFreePremium = SafecDbl(Premium/1.15)
+
+			GenerateOutput VatFreeSumInsured, monthlyRate, VatFreePremium, "MEDMAL"
+		Else
+			monthlyRate = finalRate/12
+			If TotalExtenPrem > 0 Then
+				TotalSI = SumInsured + ExtenSI
+				Premium = (SumInsured * (finalRate * 0.01)) + (TotalExtenPrem/12)
+			Else
+				TotalSI = SumInsured
+				Premium = SumInsured * (finalRate * 0.01)
+			End If
+	
+			VatFreeSumInsured = SafecDbl(TotalSI/1.15)
+			VatFreePremium = SafecDbl(Premium/1.15)
+
+			GenerateOutput VatFreeSumInsured, finalRate, VatFreePremium, "MEDMALEXC"
+			
+			  ProfPremium = (ProfSumInsured * (ProfbaseRate * 0.01))
+			  VatFreeProfSumInsured = SafecDbl(ProfSumInsured / 1.15)
+              VatFreeProfPremium = SafecDbl(ProfPremium / 1.15)
+              GenerateOutput VatFreeProfSumInsured, ProfbaseRate, VatFreeProfPremium,"COMPROFTE"
+
+		End If
+	End If
+	
+End Sub
+
+Function GenerateOutput(cSI, cRate, cPrem, cRatingSection)
+
+    Dim iCount
+
+    Engine.NewObject("MEDMAL_Output")
+    iCount = Engine.Count("MEDMAL_Output")
+
+    Engine.Item("MEDMAL_Output", iCount).Item("Sum_insured").Value = cSI
+    Engine.Item("MEDMAL_Output", iCount).Item("Rate").Value = cRate
+    Engine.Item("MEDMAL_Output", iCount).Item("Premium").Value = cPrem
+    Engine.Item("MEDMAL_Output", iCount).Item("risk_rating_section").Value = cRatingSection
+
+End Function
+
+Function SafecDbl(value)
+	SafecDbl = 0
+	On Error Resume Next
+	SafecDbl = CDbl(value)
+	On Error GoTo 0
+End Function
+
+Function SafeInt(value)
+	SafeInt = 0
+	On Error Resume Next
+	SafeInt = CInt(value)
+	On Error GoTo 0
+End Function
+
+Function SafecStr(value)
+    SafecStr = ""
+    On Error Resume Next
+    SafecStr = CStr(value)
+    On Error GoTo 0
+End Function
+
+Function SafecDate(value)
+    SafecDate = 0
+    On Error Resume Next
+    SafecDate = CDate(value)
+    On Error GoTo 0
+End Function
+
+Function ConvertToBool(value)
+    ConvertToBool = 0
+    On Error Resume Next
+    ConvertToBool = CBool(value)
+    On Error GoTo 0
+End Function

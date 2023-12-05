@@ -1,0 +1,384 @@
+Sub Start()
+	Dim ownPlant_chk, plantHire_chk, PublicLiab_chk
+	
+	ownPlant_chk = Engine.Item("CPLANT").Item("OWNPLANT").value 
+	plantHire_chk = Engine.Item("CPLANT").Item("HIREDPLANT").value
+	PublicLiab_chk = Engine.Item("CPLANT").Item("PUBLIAB").value
+	
+	If (ownPlant_chk) Then 
+		RatingOwnPlant()
+	End If
+	
+	If (plantHire_chk) Then
+		RatingHiredPlant()
+	End If
+	
+	If (PublicLiab_chk) Then
+		RatingPubLiab()
+	End If
+
+End Sub
+
+Function RatingOwnPlant()
+	
+	Dim ProdCode_OP
+	Dim Premium_OP, SI_OP, Rate_OP
+	Dim ChildOPSI, ChildOPPrem, ChildRoadSI, ChildRoadPrem, ChildWindSI, ChildWindPrem, ChildSiteSI, ChildSitePrem
+	Dim roadLiabSI, siteLiabSI, windLiabSI
+	Dim roadLiabRate, siteLiabRate, windLiabRate
+	Dim roadLiabPrem, siteLiabPrem, windLiabPrem
+	Dim x, opIndex, OPCnt
+	
+	ProdCode_OP = SafecStr(Engine.Item("GENERAL").Item("PRODCODE").value)
+	OPCnt = Engine.Count("PLANTDET")
+	
+	SI_OP = 0
+	Premium_OP = 0
+	
+	roadLiabSI = 0
+	roadLiabPrem = 0
+	
+	siteLiabSI = 0
+	siteLiabPrem = 0
+	
+	windLiabSI = 0
+	windLiabPrem = 0
+	
+	x = 1
+	For opIndex = x to OPCnt
+		Dim RoadChk, SiteChk, WindChk
+		'Total the plant SI and Premium
+		ChildOPSI = SafecDbl(Engine.Item("OWNPLANT").Item("PLANTDET", opIndex).Item("SUMINSURED").Value)
+		ChildOPPrem = SafecDbl(Engine.Item("OWNPLANT").Item("PLANTDET", opIndex).Item("PREMIUM").Value)
+		SI_OP = SI_OP + ChildOPSI
+		Premium_OP = Premium_OP + ChildOPPrem
+		
+		'Total the Road Liability Extension
+		RoadChk = SafecBool(Engine.Item("OWNPLANT").Item("PLANTDET", opIndex).Item("IS_ROAD_LIA").Value)
+		
+		If (RoadChk) Then
+			ChildRoadSI = SafecDbl(Engine.Item("OWNPLANT").Item("PLANTDET", opIndex).Item("LIMIT_OF_RL").Value)
+			ChildRoadPrem = SafecDbl(Engine.Item("OWNPLANT").Item("PLANTDET", opIndex).Item("PREMIUM_RL").Value)
+			roadLiabSI = roadLiabSI + ChildRoadSI
+			roadLiabPrem = roadLiabPrem + ChildRoadPrem
+		End If
+		
+		'Total the Site Liability Extension
+		SiteChk = SafecBool(Engine.Item("OWNPLANT").Item("PLANTDET", opIndex).Item("IS_SITE_LIA").Value)
+		
+		If (SiteChk) Then
+			ChildSiteSI = SafecDbl(Engine.Item("OWNPLANT").Item("PLANTDET", opIndex).Item("LIMIT_OF_SL").Value)
+			ChildSitePrem = SafecDbl(Engine.Item("OWNPLANT").Item("PLANTDET", opIndex).Item("PREMIUM_SL").Value)
+			siteLiabSI = siteLiabSI + ChildSiteSI
+			siteLiabPrem = siteLiabPrem + ChildSitePrem
+		End If
+		
+		'Total the Windscreen Liability Extension
+		WindChk = SafecBool(Engine.Item("OWNPLANT").Item("PLANTDET", opIndex).Item("IS_WINDSCR").Value)
+		
+		If (WindChk) Then
+			ChildWindSI = SafecDbl(Engine.Item("OWNPLANT").Item("PLANTDET", opIndex).Item("LIMIT_OF_WSC").Value)
+			ChildWindPrem = SafecDbl(Engine.Item("OWNPLANT").Item("PLANTDET", opIndex).Item("PREMIUM_WSC").Value)
+			windLiabSI = windLiabSI + ChildWindSI
+			windLiabPrem = windLiabPrem + ChildWindPrem
+		End If
+	Next
+	
+	
+	Rate_OP = SafecDbl(Premium_OP/SI_OP) * 100
+	
+	If ProdCode_OP = "CCA" Then
+		Dim vatFreePrem, vatFreeSI
+	
+		vatFreePrem = SafecDbl(Premium_OP/1.15)
+		vatFreeSI = SafecDbl(SI_OP/1.15)
+		GenerateOutput vatFreeSI, Rate_OP, vatFreePrem, "CCACPOP"
+		
+		If roadLiabPrem > 0 Then
+			Dim VatFreeRoadPrem, VatFreeRoadSI
+			roadLiabRate = SafecDbl(roadLiabPrem/roadLiabSI) * 100
+			VatFreeRoadPrem = SafecDbl(roadLiabPrem/1.15)
+			VatFreeRoadSI = SafecDbl(roadLiabSI/1.15)
+			GenerateOutput VatFreeRoadSI, roadLiabRate, VatFreeRoadPrem, "CCAOPRL"
+		End If
+		
+		If siteLiabPrem > 0 Then
+			Dim VatFreeSitePrem, VatFreeSiteSI
+			siteLiabRate = SafecDbl(siteLiabPrem/siteLiabSI) * 100
+			VatFreeSitePrem = SafecDbl(siteLiabPrem/1.15)
+			VatFreeSiteSI = SafecDbl(siteLiabSI/1.15)
+			GenerateOutput VatFreeSiteSI, siteLiabRate, VatFreeSitePrem, "CCAOPSLC"
+		End If
+		
+		If windLiabPrem > 0 Then
+			Dim VatFreeWindPrem, VatFreeWindSI
+			windLiabRate = SafecDbl(windLiabPrem/windLiabSI) * 100
+			VatFreeWindPrem = SafecDbl(windLiabPrem/1.15)
+			VatFreeWindSI = SafecDbl(windLiabSI/1.15)
+			GenerateOutput VatFreeWindSI, windLiabRate, VatFreeWindPrem, "CCAOPWLC"
+		End If
+		
+	End If
+	
+	If ProdCode_OP = "CCM" Then
+		Dim vatFreePrem_, vatFreeSI_
+		Dim MonthlyRate_OP, MonthlyPrem_OP
+		
+		MonthlyRate_OP = SafecDbl(Rate_OP/12)
+		MonthlyPrem_OP = SafecDbl(SI_OP * (MonthlyRate_OP * 0.01))
+		vatFreePrem_ = SafecDbl(MonthlyPrem_OP/1.15)
+		vatFreeSI_ = SafecDbl(SI_OP/1.15)
+		GenerateOutput vatFreeSI_, MonthlyRate_OP, vatFreePrem_, "CCACPOP"
+		
+		If roadLiabPrem > 0 Then
+			Dim VatFreeRoadPrem_, VatFreeRoadSI_
+			Dim RoadMonthlyRate, RoadMonthlyPrem
+			roadLiabRate = SafecDbl((roadLiabPrem/roadLiabSI) * 100)
+			RoadMonthlyRate = SafecDbl(roadLiabRate/12)
+			RoadMonthlyPrem = SafecDbl(roadLiabSI * (RoadMonthlyRate * 0.01))
+			VatFreeRoadPrem_ = SafecDbl(RoadMonthlyPrem/1.15)
+			VatFreeRoadSI_ = SafecDbl(roadLiabSI/1.15)
+			GenerateOutput VatFreeRoadSI_, RoadMonthlyRate, VatFreeRoadPrem_, "CCAOPRL"
+		End If
+		
+		If siteLiabPrem > 0 Then
+			Dim VatFreeSitePrem_, VatFreeSiteSI_
+			Dim SiteMonthlyRate, SiteMonthlyPrem
+			siteLiabRate = SafecDbl((siteLiabPrem/siteLiabSI) * 100)
+			SiteMonthlyRate = SafecDbl(siteLiabRate/12)
+			SiteMonthlyPrem = SafecDbl(siteLiabSI * (SiteMonthlyRate * 0.01))
+			VatFreeSitePrem_ = SafecDbl(SiteMonthlyPrem/1.15)
+			VatFreeSiteSI_ = SafecDbl(siteLiabSI/1.15)
+			GenerateOutput VatFreeSiteSI_, SiteMonthlyRate, VatFreeSitePrem_, "CCAOPSLC"
+		End If
+		
+		If windLiabPrem > 0 Then
+			Dim VatFreeWindPrem_, VatFreeWindSI_
+			Dim WindMonthlyRate, WindMonthlyPrem
+			windLiabRate = SafecDbl((windLiabPrem/windLiabSI) * 100)
+			WindMonthlyRate = SafecDbl(windLiabRate/12)
+			WindMonthlyPrem = SafecDbl(windLiabSI * (WindMonthlyRate * 0.01))
+			VatFreeWindPrem_ = SafecDbl(WindMonthlyPrem/1.15)
+			VatFreeWindSI_ = SafecDbl(windLiabSI/1.15)
+			GenerateOutput VatFreeWindSI_, WindMonthlyRate, VatFreeWindPrem_, "CCAOPWLC"
+		End If
+	
+	End If
+
+End Function
+
+Function RatingHiredPlant()
+	
+	Dim ProdCode
+	Dim hirePremium, hireSI, hireRate
+	Dim MonthlyRate, MonthlyPrem
+	Dim hireVatFreePrem, hireVatFreeSI
+	
+	ProdCode = SafecStr(Engine.Item("GENERAL").Item("PRODCODE").value)
+	
+	hirePremium = 0
+	hireSI = 0
+    
+	'Mobile Cranes
+	Dim cranePremium, craneSI
+	
+	craneSI = SafecDbl(Engine.Item("MOBCRANE").Item("HIREFEES").value)
+	cranePremium = SafecDbl(Engine.Item("MOBCRANE").Item("PREMIUM").value)
+	
+	If cranePremium > 0 Then 
+		hireSI = hireSI + craneSI
+		hirePremium = hirePremium + cranePremium
+	End if
+		
+	'Mobile Plant	
+	Dim plantPremium, plantSI
+
+	plantSI = SafecDbl(Engine.Item("MOBPLANT").Item("HIREFEES").value)
+	plantPremium = SafecDbl(Engine.Item("MOBPLANT").Item("PREMIUM").value)	
+	
+	If plantPremium > 0 Then 
+		hireSI = hireSI + plantSI
+		hirePremium = hirePremium + plantPremium
+	End if
+		
+	'Non-Mobile Cranes	
+	Dim nonmobPremium, nonmobSI
+
+	nonmobSI = SafecDbl(Engine.Item("NONMOB").Item("HIREFEES").value)
+	nonmobPremium = SafecDbl(Engine.Item("NONMOB").Item("PREMIUM").value)		
+	
+	If nonmobPremium > 0 Then 
+		hireSI = hireSI + nonmobSI
+		hirePremium = hirePremium + nonmobPremium
+	End if
+		
+	'Plant and Equipment
+	Dim plantEquipPremium, plantEquipSI
+
+	plantEquipSI = SafecDbl(Engine.Item("PLANTENVI").Item("HIREFEES").value)
+	plantEquipPremium = SafecDbl(Engine.Item("PLANTENVI").Item("PREMIUM").value)
+	
+	If plantEquipPremium > 0 Then 
+		hireSI = hireSI + plantEquipSI
+		hirePremium = hirePremium + plantEquipPremium
+	End if
+
+	'Survey Equipment
+	Dim surveyPremium, surveySI
+
+	surveySI = SafecDbl(Engine.Item("SURVEQUIP").Item("HIREFEES").value)
+	surveyPremium = SafecDbl(Engine.Item("SURVEQUIP").Item("PREMIUM").value)
+	
+	If surveyPremium > 0 Then 
+		hireSI = hireSI + surveySI
+		hirePremium = hirePremium + surveyPremium
+	End if
+
+	'Additional Hired In Plant Items
+	Dim addSI, addPremium, addChildSI, addChildPrem
+	Dim y, hipIndex, hipCnt
+	
+	hipCnt = Engine.Count("ADDPITEMS")
+	
+	addSI = 0
+	addPremium = 0
+	y = 1
+	For hipIndex = y To hipCnt
+		addChildSI = SafecDbl(Engine.Item("CHLDSCR").Item("ADDPITEMS", hipIndex).Item("ANNHIRE").value)
+		addChildPrem = SafecDbl(Engine.Item("CHLDSCR").Item("ADDPITEMS", hipIndex).Item("PREMIUM").value)
+		addSI = addSI + addChildSI
+		addPremium = addPremium + addChildPrem
+	Next
+	
+	'addSI = SafecDbl(Engine.Item("CHLDSCR").Item("ADD_ESTANN").value)
+	'addPremium = SafecDbl(Engine.Item("CHLDSCR").Item("ADD_PREMIUM").value)
+	
+	hireSI = hireSI + addSI
+	hirePremium = hirePremium + addPremium
+	
+	'Final Calculations
+	hireRate = (hirePremium/hireSI) * 100
+	
+	If ProdCode = "CCA" Then
+	
+		hireVatFreePrem = hirePremium/1.15
+		hireVatFreeSI = hireSI/1.15
+		
+		GenerateOutput hireVatFreeSI, hireRate, hireVatFreePrem, "CCACPHP"
+	
+	End If
+	
+	If ProdCode = "CCM" Then
+		
+		MonthlyRate = hireRate/12
+		MonthlyPrem = hireSI * (MonthlyRate * 0.01)
+		
+		hireVatFreePrem = MonthlyPrem/1.15
+		hireVatFreeSI = hireSI/1.15
+		
+		GenerateOutput hireVatFreeSI, MonthlyRate, hireVatFreePrem, "CCACPHP"
+		
+	End If
+
+End Function
+
+Function RatingPubLiab()
+	
+	Dim ProdCode_PL
+	Dim TotalSI, TotalPremium
+	Dim SI_PL, Rate_PL, Premium_PL
+	Dim ExtSI, ExtPrem
+	Dim MonthlyRate_PL, MonthlyPrem_PL
+	Dim VatFreeSI_PL, VatFreePremium_PL
+	Dim pubChildSI, pubChildPrem
+	Dim z, pubIndex, pubCnt
+	
+	ProdCode_PL = SafecStr(Engine.Item("GENERAL").Item("PRODCODE").value)
+	
+	SI_PL = SafecDbl(Engine.Item("CPLDETAILS").Item("TURNOVER").Value)
+	Premium_PL = SafecDbl(Engine.Item("CPLDETAILS").Item("PREMIUM").Value)
+	
+	pubCnt = Engine.Count("CPLLIABEXT")
+	
+	ExtSI = 0
+	ExtPrem = 0
+	z = 1
+	
+	For pubIndex = z to pubCnt
+		pubChildSI = SafecDbl(Engine.Item("EXTNTIONS").Item("CPLLIABEXT", pubIndex).Item("SLIMIT").value)
+		pubChildPrem = SafecDbl(Engine.Item("EXTNTIONS").Item("CPLLIABEXT", pubIndex).Item("EXTPREMIUM").value)
+		ExtSI = ExtSI + pubChildSI
+		ExtPrem = ExtPrem + pubChildPrem
+	Next
+	
+	'ExtSI = SafecDbl(Engine.Item("EXTNTIONS").Item("EXTSITOTAL").Value)
+	'ExtPrem = SafecDbl(Engine.Item("EXTNTIONS").Item("EXTPREMTOTAL").Value)
+	
+	TotalSI = SI_PL + ExtSI
+	TotalPremium = Premium_PL + ExtPrem
+	
+	Rate_PL = (TotalPremium/TotalSI) * 100
+	
+	If ProdCode_PL = "CCA" Then
+		
+		VatFreeSI_PL = TotalSI/1.15
+		VatFreePremium_PL = TotalPremium/1.15
+		
+		GenerateOutput VatFreeSI_PL, Rate_PL, VatFreePremium_PL, "CCACPL"
+	
+	End If
+	
+	If ProdCode_PL = "CCM" Then
+		
+		MonthlyRate_PL = Rate_PL/12
+		MonthlyPrem_PL = TotalSI * (MonthlyRate_PL * 0.01)
+		
+		VatFreeSI_PL = TotalSI/1.15
+		VatFreePremium_PL = MonthlyPrem_PL/1.15
+		
+		GenerateOutput VatFreeSI_PL, MonthlyRate_PL, VatFreePremium_PL, "CCACPL"
+	
+	End If
+	
+End Function
+
+Function GenerateOutput(cSI, cRate, cPrem, cRatingSection)
+	
+	Dim iCount
+	
+	Engine.NewObject("CPINSURE_Output")
+	iCount = Engine.Count("CPINSURE_Output")
+	
+	Engine.Item("CPINSURE_Output", iCount).Item("Sum_insured").Value = cSI
+	Engine.Item("CPINSURE_Output", iCount).Item("Rate").Value = cRate
+	Engine.Item("CPINSURE_Output", iCount).Item("Premium").Value = cPrem
+	Engine.Item("CPINSURE_Output", iCount).Item("risk_rating_section").Value = cRatingSection
+
+End Function
+
+Function SafecDbl(value)
+	
+    SafecDbl=0
+    On Error Resume Next
+    SafecDbl=CDbl(value)
+    On Error GoTo 0
+
+End Function
+
+Function SafeCStr(value)
+	
+	SafeCStr = ""
+	On Error Resume Next
+	SafeCStr = CStr(value)
+	On Error GoTo 0
+	
+End Function
+
+Function SafecBool(value)
+	
+	SafecBool = 0
+    On Error Resume Next
+    SafecBool = CBool(value)
+    On Error GoTo 0
+
+End Function

@@ -1,0 +1,12 @@
+Sub DoValidation()
+'Write validation code here
+End Sub
+
+Sub Start()
+    Call DoValidation()
+End Sub
+
+Sub Main()
+    Call DoValidation()
+End Sub
+

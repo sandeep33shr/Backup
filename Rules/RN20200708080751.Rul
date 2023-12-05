@@ -1,0 +1,43 @@
+Sub Start()
+
+Dim vResults
+Dim vExtraParameters
+Dim Months
+Dim Days
+Dim SQLString
+Dim currentDate: currentDate =Engine.Item("GENERAL").item("RENEWAL_DATE").Value        'FormatDateTime(Now) 'Date("yyyy/mm/dd hh:mm:ss")
+Dim PurchaseDate: PurchaseDate = Engine.Item("VAP").item("PURCHASE_DATE").Value 
+Dim YearDifference
+Dim TypeOfVeh: TypeOfVeh = Engine.Item("VAP").item("VEHTYPE").Value
+Dim MotorRetToInvoice: MotorRetToInvoice = Engine.Item("VAP").item("RET_INVOICE").Value
+Dim CheckAnnuallyOrMonthly: CheckAnnuallyOrMonthly = Engine.Item("GENERAL").item("PRODCODE").Value
+
+If CheckAnnuallyOrMonthly = "PVA" Then 
+	If (MotorRetToInvoice = "1" And TypeOfVeh="1") or (MotorRetToInvoice = "1" And TypeOfVeh="2") or (MotorRetToInvoice = "1" And TypeOfVeh="3") Then
+		Call Extras.CallNamedStoredProcedure(CLng(6722), CStr("Insurance_File_UpdateStatus"), vResults)
+	End If
+End If
+
+
+If CheckAnnuallyOrMonthly = "PVM" Then
+
+'Call Extras.CallNamedStoredProcedure(6723, CStr("Insurance_File_SelectTransDate"), vResults)', vExtraParameters)
+'If IsArray(vResults) Then
+'	PurchaseDate = vResults(0,0)
+'End If
+
+  YearDifference = DateDiff("yyyy",PurchaseDate,currentDate)
+  Months = DateDiff("m",PurchaseDate,currentDate)
+  Days  = DateDiff("d",PurchaseDate,currentDate)
+  
+If YearDifference > 3 or Months > 36 or Days > 1095  Then
+	If (MotorRetToInvoice = "1" And TypeOfVeh="1") or (MotorRetToInvoice = "1" And TypeOfVeh="2") or (MotorRetToInvoice = "1" And TypeOfVeh="3") Then
+		Engine.Item("VAP").item("RET_INVOICE").Value = "0"
+		Engine.Item("VAPRET").item("PURCHA_AMT").Value = 0.0
+		Engine.Item("VAPRET").item("RETURN_TO_INVOICE_PREMIUM").Value = 0.0
+		End If
+	End If
+End If
+
+
+End Sub

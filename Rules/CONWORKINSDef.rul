@@ -1,0 +1,752 @@
+        Sub SetUserDetails()
+            Dim vUserResult 
+        	Dim lUserId
+            Call Extras.CallNamedStoredProcedure(CLng(6722), CStr("GetUserDetails"), vUserResult,Array("sUserName", Extras.Username))
+            If IsArray(vUserResult) Then
+                Engine.Item("GENERAL").Item("LoggedInUser").Value = Extras.Username
+        		lUserId = vUserResult(0,0)
+        		Engine.Item("GENERAL").Item("LoggedInUserFullName").Value = vUserResult(1,0)
+        		Engine.Item("GENERAL").Item("LoggedInUserEmail").Value = vUserResult(2,0)
+            End If
+        
+            'Get user authority level
+            Dim vExtraParameters
+            Dim sRiskCode
+            Dim vResults
+        	Dim sProdCode
+            sProdCode = Extras.ProductCode
+        	
+            vExtraParameters = array( "lUserId", lUserId, "sProdCode", sProdCode)
+            Call Extras.CallNamedStoredProcedure(CLng(6722), "GetUserAuthorityLevel", vResults, vExtraParameters)
+        	If IsArray(vResults) then
+        		If vResults(0,0) <> "" Then
+        			Engine.Item("GENERAL").Item("UserLevel").Value = Replace(vResults(0,0), "U","")
+        			Engine.Item("GENERAL").Item("UserGroup").Value = vResults(0,0)
+        		Else
+        			'Assign Default Level to 1
+        			Engine.Item("GENERAL").Item("UserLevel").Value = 1
+        			Engine.Item("GENERAL").Item("UserGroup").Value = "U1"
+        		End If
+        	End IF
+        End Sub
+
+        Dim iObjectInstanceCount
+        
+        Sub FindObjectInstanceCount(strScreenObjectName)
+        	iObjectInstanceCount = 1
+        
+        	' strScreenObjectName is the object that is associate with this screen (if a child), or "" if the root screen.
+        	If strScreenObjectName <> ""  Then
+        		Dim instanceCount
+        		
+        		' How many instance of this object exist?
+        		instanceCount = engine.count(strScreenObjectName)
+        		
+        		Dim i
+        		for i = 1 to instanceCount
+        			if engine.item(strScreenObjectName, i).item("OI").value = vAdditionalData(cAdditionalData_OIKey) then
+        				iObjectInstanceCount = i
+        			end if
+        		next
+        	End If
+        End Sub
+
+        Sub DefaultTextTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultCommentTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultIntegerTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CLng(strValue)
+        End Sub
+
+        
+        Sub DefaultCheckboxTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanListTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanRadioTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	If InStr(1, LCase(strValue), "code:", 1) = 1 Then
+        		' The default value has been specified as a code (code:<thecode>).
+        		Dim code
+        		Dim effectiveDate
+        		Dim version
+        		
+        		code = Mid(strValue, Len("code:")+1)
+        		effectiveDate = Now()
+        		version = 1
+        		
+        		Dim listItemId
+        		listItemId = Extras.GetField(strListCode, strListCode + "_Id", code, effectiveDate, version)
+        		
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(listItemId)
+        	Else
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        	End If
+        End Sub
+
+        
+        Sub DefaultRateListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	' TODO.
+        End Sub
+
+        
+        Sub DefaultDateTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	
+        	Dim location
+        	Dim Interval
+        	Dim Duration
+        	Dim DateValue
+        	
+        	'Upper case the input
+        	DateValue = UCase(strValue)
+        	'Check to see if we want data AND  Time
+        	location = InStr(1,DateValue,"DATETIME")
+        	if location > 0 then
+        		DateValue=  CDate(FormatDateTime(Now,0)) 'use the standard vb datetime
+        	End If
+        	'Check to see if TODAY is specified as a modifier
+        	location  = InStr(1,DateValue,"TODAY")
+        	If location > 0 Then
+        		'Determine if we are adding values
+        		location  = InStr(1,DateValue,"+")
+        		If location > 0 Then 
+        			Interval = Mid(DateValue,location + 1,1)
+        			
+        			If Interval = "Y" Then
+        				Interval = "YYYY"
+        			End If
+        			
+        			If Interval <> "" Then 
+        				Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        				DateValue = DateAdd(Interval,Duration,CDate(FormatDateTime(Now,2)))	
+        				
+        			Else
+        				'No Interval specified 
+        				'Need an error here!!!!
+        			End If	
+        		Else 
+        			'Check to see if we are subtracting values
+        			location  =InStr(1,DateValue,"-")
+        			If location > 0  Then 
+        				Interval = Mid(DateValue,location + 1,1)
+        				
+        				If Interval <> "" Then 
+        					Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        					DateValue = DateAdd(Interval, Duration * -1,CDate(FormatDateTime(Now,2)))	
+        				Else
+        					'No Interval specified 
+        					'Need an error here!!!!
+        				End If
+        			Else
+        				'No Function specified, so assume we are just using today's date as a shortdate
+        				DateValue = CDate(FormatDateTime(Now,2))
+        			End If
+        			
+        		End If
+        		
+        	End If	
+        	
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDate(DateValue)
+        End Sub
+
+        
+        Sub DefaultCurrencyTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+        
+        Sub DefaultPercentageTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+Sub WebRequired(bIsOnStart)
+	If bIsOnStart = True Then
+		Engine.NewObject("GENERAL")
+		Engine.NewObject("ADDRESS")
+		Engine.NewObject("CWIRSK")
+		Engine.NewObject("CW_RISK")
+		Engine.NewObject("CW_RISK_EXT")
+		Engine.NewObject("NOTES")
+		Engine.NewObject("NB_DEDUCT")
+		Engine.NewObject("DEDUCT")
+		Engine.NewObject("CPLRISK")
+		Engine.NewObject("PREM_BRKDOWN")
+		Engine.NewObject("REINS")
+		Engine.NewObject("RIEXP")
+		Engine.NewObject("REFERRALS")
+	End If
+End Sub
+
+Sub onScreenLogic(bIsOnStart)
+        
+        If bIsOnStart = True Or bIsOnStart = False Then
+        	Call SetUserDetails()
+        End If
+        ' The ScreenMain rule is added to every screen automatically.
+        
+        
+        Call FindObjectInstanceCount("")
+End Sub
+
+Sub onValidate_GENERAL__IS_VAT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultListTo("GENERAL", "IS_VAT", "1", "UDL_CMA_VAT")
+        End If
+End Sub
+
+Sub onValidate_CWIRSK__IS_CONTRACT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CWIRSK", "IS_CONTRACT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CWIRSK__IS_ERECTION(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CWIRSK", "IS_ERECTION", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CWIRSK__IS_PUBLIC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CWIRSK", "IS_PUBLIC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CWIRSK__IS_ADVANCE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CWIRSK", "IS_ADVANCE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CWIRSK__PERIOD(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultIntegerTo("CWIRSK", "PERIOD", "12", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CWIRSK__BUILD_IND(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CWIRSK", "BUILD_IND", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CWIRSK__DAMS_IND(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CWIRSK", "DAMS_IND", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CWIRSK__FACT_IND(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CWIRSK", "FACT_IND", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CWIRSK__MINING_IND(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CWIRSK", "MINING_IND", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CWIRSK__PIPE_IND(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CWIRSK", "PIPE_IND", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CWIRSK__SHOP_IND(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CWIRSK", "SHOP_IND", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CWIRSK__CONCR_IND(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CWIRSK", "CONCR_IND", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CWIRSK__DOMEST_IND(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CWIRSK", "DOMEST_IND", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CWIRSK__MASSH_IND(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CWIRSK", "MASSH_IND", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CWIRSK__OFFBLK_IND(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CWIRSK", "OFFBLK_IND", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CWIRSK__ROADS_IND(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CWIRSK", "ROADS_IND", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CWIRSK__STEEL_IND(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CWIRSK", "STEEL_IND", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__IS_MTA_REASON(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "IS_MTA_REASON", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__RISK_MIN(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCurrencyTo("GENERAL", "RISK_MIN", "500", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__CCA_MINPREM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCurrencyTo("GENERAL", "CCA_MINPREM", "2500", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__NEXUSQS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultIntegerTo("GENERAL", "NEXUSQS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CW_RISK__MAXPERIOD(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultIntegerTo("CW_RISK", "MAXPERIOD", "12", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CW_RISK__IS_OWN(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CW_RISK", "IS_OWN", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CW_RISK__IS_PCI(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CW_RISK", "IS_PCI", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CW_RISK__TOTAL_EST_TURN(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCurrencyTo("CW_RISK", "TOTAL_EST_TURN", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CW_RISK__TOTPREMIUM_LIM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCurrencyTo("CW_RISK", "TOTPREMIUM_LIM", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CW_RISK_EXT__IS_ACPC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CW_RISK_EXT", "IS_ACPC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CW_RISK_EXT__IS_ADR(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CW_RISK_EXT", "IS_ADR", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CW_RISK_EXT__IS_ADREC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CW_RISK_EXT", "IS_ADREC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CW_RISK_EXT__IS_CONT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CW_RISK_EXT", "IS_CONT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CW_RISK_EXT__IS_DCOND(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CW_RISK_EXT", "IS_DCOND", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CW_RISK_EXT__IS_DEXC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CW_RISK_EXT", "IS_DEXC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CW_RISK_EXT__IS_ESC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CW_RISK_EXT", "IS_ESC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CW_RISK_EXT__IS_EXEXP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CW_RISK_EXT", "IS_EXEXP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CW_RISK_EXT__IS_MITEXP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CW_RISK_EXT", "IS_MITEXP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CW_RISK_EXT__IS_PLESC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CW_RISK_EXT", "IS_PLESC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CW_RISK_EXT__IS_POW(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CW_RISK_EXT", "IS_POW", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CW_RISK_EXT__IS_PROF(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CW_RISK_EXT", "IS_PROF", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CW_RISK_EXT__IS_SPROP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CW_RISK_EXT", "IS_SPROP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CW_RISK_EXT__IS_TSL(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CW_RISK_EXT", "IS_TSL", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CW_RISK_EXT__IS_TLL(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CW_RISK_EXT", "IS_TLL", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CW_RISK_EXT__IS_OLL(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CW_RISK_EXT", "IS_OLL", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CW_RISK_EXT__IS_OTL(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CW_RISK_EXT", "IS_OTL", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_NB_DEDUCT__IS_MAJOR(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("NB_DEDUCT", "IS_MAJOR", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_NB_DEDUCT__IS_MINOR(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("NB_DEDUCT", "IS_MINOR", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_NB_DEDUCT__IS_THEFT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("NB_DEDUCT", "IS_THEFT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_NB_DEDUCT__IS_TRANSIT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("NB_DEDUCT", "IS_TRANSIT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_NB_DEDUCT__IS_SURRP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("NB_DEDUCT", "IS_SURRP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_NB_DEDUCT__IS_FIREP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("NB_DEDUCT", "IS_FIREP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_NB_DEDUCT__IS_ALLP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("NB_DEDUCT", "IS_ALLP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_DEDUCT__IS_MAJOR(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("DEDUCT", "IS_MAJOR", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_DEDUCT__IS_MINOR(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("DEDUCT", "IS_MINOR", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_DEDUCT__IS_THEFT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("DEDUCT", "IS_THEFT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_DEDUCT__IS_TRANSIT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("DEDUCT", "IS_TRANSIT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_DEDUCT__IS_SURRP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("DEDUCT", "IS_SURRP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_DEDUCT__IS_FIREP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("DEDUCT", "IS_FIREP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_DEDUCT__IS_ALLP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("DEDUCT", "IS_ALLP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CPLRISK__IS_DUS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CPLRISK", "IS_DUS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CPLRISK__IS_PPD(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CPLRISK", "IS_PPD", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CPLRISK__IS_PPJ(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CPLRISK", "IS_PPJ", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CPLRISK__IS_BDMG(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CPLRISK", "IS_BDMG", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CPLRISK__IS_SOF(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CPLRISK", "IS_SOF", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CPLRISK__IS_LDC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CPLRISK", "IS_LDC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CPLRISK__IS_SF(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CPLRISK", "IS_SF", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CPLRISK__IS_WAD(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CPLRISK", "IS_WAD", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_REINS__CV_EML(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("REINS", "CV_EML", "100", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_REINS__ESC_EML(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("REINS", "ESC_EML", "100", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_REINS__PLE_EML(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("REINS", "PLE_EML", "100", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_REINS__ACPC_EML(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("REINS", "ACPC_EML", "100", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_REINS__SPD_EML(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("REINS", "SPD_EML", "100", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_REINS__ARC_EML(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("REINS", "ARC_EML", "100", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_REINS__PF_EML(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("REINS", "PF_EML", "100", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_REINS__OE_EML(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("REINS", "OE_EML", "100", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RIEXP__ALOP_EML(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("RIEXP", "ALOP_EML", "100", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_REFERRALS__RefCount(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultIntegerTo("REFERRALS", "RefCount", "0", "{listcode}")
+        End If
+End Sub
+
+Sub DoDefaults(bIsOnStart)
+    Call WebRequired(bIsOnStart)
+    Call onScreenLogic(bIsOnStart)
+    Call onValidate_GENERAL__IS_VAT(bIsOnStart)
+    Call onValidate_CWIRSK__IS_CONTRACT(bIsOnStart)
+    Call onValidate_CWIRSK__IS_ERECTION(bIsOnStart)
+    Call onValidate_CWIRSK__IS_PUBLIC(bIsOnStart)
+    Call onValidate_CWIRSK__IS_ADVANCE(bIsOnStart)
+    Call onValidate_CWIRSK__PERIOD(bIsOnStart)
+    Call onValidate_CWIRSK__BUILD_IND(bIsOnStart)
+    Call onValidate_CWIRSK__DAMS_IND(bIsOnStart)
+    Call onValidate_CWIRSK__FACT_IND(bIsOnStart)
+    Call onValidate_CWIRSK__MINING_IND(bIsOnStart)
+    Call onValidate_CWIRSK__PIPE_IND(bIsOnStart)
+    Call onValidate_CWIRSK__SHOP_IND(bIsOnStart)
+    Call onValidate_CWIRSK__CONCR_IND(bIsOnStart)
+    Call onValidate_CWIRSK__DOMEST_IND(bIsOnStart)
+    Call onValidate_CWIRSK__MASSH_IND(bIsOnStart)
+    Call onValidate_CWIRSK__OFFBLK_IND(bIsOnStart)
+    Call onValidate_CWIRSK__ROADS_IND(bIsOnStart)
+    Call onValidate_CWIRSK__STEEL_IND(bIsOnStart)
+    Call onValidate_GENERAL__IS_MTA_REASON(bIsOnStart)
+    Call onValidate_GENERAL__RISK_MIN(bIsOnStart)
+    Call onValidate_GENERAL__CCA_MINPREM(bIsOnStart)
+    Call onValidate_GENERAL__NEXUSQS(bIsOnStart)
+    Call onValidate_CW_RISK__MAXPERIOD(bIsOnStart)
+    Call onValidate_CW_RISK__IS_OWN(bIsOnStart)
+    Call onValidate_CW_RISK__IS_PCI(bIsOnStart)
+    Call onValidate_CW_RISK__TOTAL_EST_TURN(bIsOnStart)
+    Call onValidate_CW_RISK__TOTPREMIUM_LIM(bIsOnStart)
+    Call onValidate_CW_RISK_EXT__IS_ACPC(bIsOnStart)
+    Call onValidate_CW_RISK_EXT__IS_ADR(bIsOnStart)
+    Call onValidate_CW_RISK_EXT__IS_ADREC(bIsOnStart)
+    Call onValidate_CW_RISK_EXT__IS_CONT(bIsOnStart)
+    Call onValidate_CW_RISK_EXT__IS_DCOND(bIsOnStart)
+    Call onValidate_CW_RISK_EXT__IS_DEXC(bIsOnStart)
+    Call onValidate_CW_RISK_EXT__IS_ESC(bIsOnStart)
+    Call onValidate_CW_RISK_EXT__IS_EXEXP(bIsOnStart)
+    Call onValidate_CW_RISK_EXT__IS_MITEXP(bIsOnStart)
+    Call onValidate_CW_RISK_EXT__IS_PLESC(bIsOnStart)
+    Call onValidate_CW_RISK_EXT__IS_POW(bIsOnStart)
+    Call onValidate_CW_RISK_EXT__IS_PROF(bIsOnStart)
+    Call onValidate_CW_RISK_EXT__IS_SPROP(bIsOnStart)
+    Call onValidate_CW_RISK_EXT__IS_TSL(bIsOnStart)
+    Call onValidate_CW_RISK_EXT__IS_TLL(bIsOnStart)
+    Call onValidate_CW_RISK_EXT__IS_OLL(bIsOnStart)
+    Call onValidate_CW_RISK_EXT__IS_OTL(bIsOnStart)
+    Call onValidate_NB_DEDUCT__IS_MAJOR(bIsOnStart)
+    Call onValidate_NB_DEDUCT__IS_MINOR(bIsOnStart)
+    Call onValidate_NB_DEDUCT__IS_THEFT(bIsOnStart)
+    Call onValidate_NB_DEDUCT__IS_TRANSIT(bIsOnStart)
+    Call onValidate_NB_DEDUCT__IS_SURRP(bIsOnStart)
+    Call onValidate_NB_DEDUCT__IS_FIREP(bIsOnStart)
+    Call onValidate_NB_DEDUCT__IS_ALLP(bIsOnStart)
+    Call onValidate_DEDUCT__IS_MAJOR(bIsOnStart)
+    Call onValidate_DEDUCT__IS_MINOR(bIsOnStart)
+    Call onValidate_DEDUCT__IS_THEFT(bIsOnStart)
+    Call onValidate_DEDUCT__IS_TRANSIT(bIsOnStart)
+    Call onValidate_DEDUCT__IS_SURRP(bIsOnStart)
+    Call onValidate_DEDUCT__IS_FIREP(bIsOnStart)
+    Call onValidate_DEDUCT__IS_ALLP(bIsOnStart)
+    Call onValidate_CPLRISK__IS_DUS(bIsOnStart)
+    Call onValidate_CPLRISK__IS_PPD(bIsOnStart)
+    Call onValidate_CPLRISK__IS_PPJ(bIsOnStart)
+    Call onValidate_CPLRISK__IS_BDMG(bIsOnStart)
+    Call onValidate_CPLRISK__IS_SOF(bIsOnStart)
+    Call onValidate_CPLRISK__IS_LDC(bIsOnStart)
+    Call onValidate_CPLRISK__IS_SF(bIsOnStart)
+    Call onValidate_CPLRISK__IS_WAD(bIsOnStart)
+    Call onValidate_REINS__CV_EML(bIsOnStart)
+    Call onValidate_REINS__ESC_EML(bIsOnStart)
+    Call onValidate_REINS__PLE_EML(bIsOnStart)
+    Call onValidate_REINS__ACPC_EML(bIsOnStart)
+    Call onValidate_REINS__SPD_EML(bIsOnStart)
+    Call onValidate_REINS__ARC_EML(bIsOnStart)
+    Call onValidate_REINS__PF_EML(bIsOnStart)
+    Call onValidate_REINS__OE_EML(bIsOnStart)
+    Call onValidate_RIEXP__ALOP_EML(bIsOnStart)
+    Call onValidate_REFERRALS__RefCount(bIsOnStart)
+End Sub
+
+Sub Start()
+    Call DoDefaults(True)
+End Sub
+
+Sub Main()
+    Call DoDefaults(False)
+End Sub
+

@@ -1,0 +1,469 @@
+Sub Start()
+	Dim limitIndem, baseRate, vatFreeSumInsured, Premium, vatFreePremium, totalExtSI, totalExtensions
+	Dim prodCode, netPrem, turnOver, branchName, iTOOFlag
+    Dim employersPrem, productsPrem, publicPrem, legalPrem, wrongfulPrem, cyberPrem
+	Dim employerSI, productSI, publicSI, cyberSI, legalSI, wrongfulSI
+	Dim employerRate, productRate, publicRate, legalRate, wrongfulRate
+	
+	prodCode  = SafecStr(Engine.Item("GENERAL").Item("PRODCODE").value)
+	limitIndem = SafecDbl(Engine.Item("RISK_DETAILS").Item("LIMIT_OF_INDEMNITY").value)
+	turnOver = SafecDbl(Engine.Item("RISK_DETAILS").Item("FEES_TURNOVERS").value)
+	baseRate = SafecDbl (Engine.Item("RISK_DETAILS").Item("BASE_RATE").value)
+	
+	'Added to resolve rounding Issue
+	'To check is premium is entered, then calculate rate. Otherwise calculate the premium
+	netPrem = SafecDbl (Engine.Item("RISK_DETAILS").Item("PREMIUM").value)
+	
+	
+	legalSI = SafecDbl(Engine.Item("GENERAL_DETAILS").Item("LEGAL_DEFENCE_LIMIT").value)
+    legalRate = SafecDbl(Engine.Item("GENERAL_DETAILS").Item("LEGAL_DEFENCE_RATE").value)
+	legalPrem = SafecDbl(Engine.Item("GENERAL_DETAILS").Item("LEGAL_DEFENCE_PREMIUM").value)
+	'legalPrem = legalSI * (legalRate * 0.01)
+	
+	wrongfulSI = SafecDbl(Engine.Item("GENERAL_DETAILS").Item("WRONGFUL_ARREST_LIMIT").value)
+	wrongfulRate = SafecDbl(Engine.Item("GENERAL_DETAILS").Item("WRONGFUL_ARREST_RATE").value)
+	wrongfulPrem = SafecDbl(Engine.Item("GENERAL_DETAILS").Item("WRONGFUL_ARREST_PREMIUM").value)
+	'wrongfulPrem = wrongfulSI * (wrongfulRate * 0.01)
+	
+	publicSI = SafecDbl(Engine.Item("GENERAL_DETAILS").Item("PUBLIC_LIABILITY_LIMIT").value)
+	publicRate = SafecDbl(Engine.Item("GENERAL_DETAILS").Item("PUBLIC_LIABILITY_RATE").value)
+	publicPrem = SafecDbl(Engine.Item("GENERAL_DETAILS").Item("PUBLIC_LIABILITY_PREMIUM").value)
+	'publicPrem = publicSI * (publicRate * 0.01)
+	
+	productSI = SafecDbl(Engine.Item("GENERAL_DETAILS").Item("PRODUCTS_LIABILITY_LIMIT").value)
+	productRate = SafecDbl(Engine.Item("GENERAL_DETAILS").Item("PRODUCTS_LIABILITY_RATE").value)
+	productsPrem = SafecDbl(Engine.Item("GENERAL_DETAILS").Item("PRODUCTS_LIABILITY_PREMIUM").value)
+	'productsPrem = productSI * (productRate * 0.01)
+	
+	employerSI = SafecDbl(Engine.Item("GENERAL_DETAILS").Item("EMPLOYERS_LIABILITY_LIMIT").value)
+	employerRate = SafecDbl(Engine.Item("GENERAL_DETAILS").Item("EMPLOYERS_LIABILITY_RATE").value)
+	employersPrem = SafecDbl(Engine.Item("GENERAL_DETAILS").Item("EMPLOYERS_LIABILITY_PREMIUM").value)
+	'employersPrem = employerSI * (employerRate * 0.01)
+	
+	'cyberSI = SafecDbl(Engine.Item("CYBER_DETAILS").Item("CYBER_LIABILITY_LIMIT").value)
+	'cyberPrem =  SafecDbl(Engine.Item("CYBER_DETAILS").Item("CYBER_LIABILITY_PREMIUM").value)
+	
+	branchName = SafecStr(Engine.Item("GENERAL").Item("BRANCH").value)
+	iTOOFlag = ConvertToBool(Engine.Item("RISK_DETAILS").Item("ITOOAPPROV").value)
+
+    totalExtensions = (employersPrem + productsPrem + publicPrem + legalPrem + wrongfulPrem)' + cyberPrem)
+	totalExtSI = limitIndem + publicSI + productSI + employerSI + legalSI + wrongfulSI'+ cyberSI
+  
+
+		If prodCode = "CLA" Then		
+			If branchName = "ITOO" and iTOOFlag = True Then
+				
+				'Added to resolve rounding Issue
+				'To check is premium is entered, then calculate rate. Otherwise calculate the premium
+				If (netPrem > 0) Then
+					baseRate = (netPrem/turnOver)*100
+				End If
+				
+				If (netPrem = "" or netPrem = 0 or netPrem < 0) Then
+					netPrem = (turnOver * (baseRate * 0.01))
+				End If
+				
+				'netPrem = (turnOver * (baseRate * 0.01))
+				vatFreeSumInsured = SafecDbl(limitIndem /1.15)
+				vatFreePremium = SafecDbl(netPrem /1.15)
+				GenerateOutput vatFreeSumInsured, baseRate, vatFreePremium, "COMPROFIND"
+				
+				If productSI > 0 Then
+					Dim vatFreeProductPrem, vatFreeProductSI
+					
+					If productsPrem > 0 Then
+						productRate = (productsPrem/productSI)*100
+					End If
+					
+					If (productsPrem = "" or productsPrem = 0 or productsPrem < 0) Then
+						productsPrem = productSI * (productRate * 0.01)
+					End If
+					
+					vatFreeProductPrem = SafecDbl(productsPrem / 1.15)
+					vatFreeProductSI = SafecDbl(productSI /1.15)
+					
+					GenerateOutput vatFreeProductSI, productRate, vatFreeProductPrem, "LIABPROD"
+				End If
+				
+				If publicSI > 0 Then
+					Dim vatFreePublicPrem, vatFreePublicSI
+					
+					If publicPrem > 0 Then
+						publicRate = (publicPrem/publicSI)*100
+					End If
+					
+					If (publicPrem = "" or publicPrem = 0 or publicPrem < 0) Then
+						publicPrem = publicSI * (publicRate * 0.01)
+					End If
+					
+					vatFreePublicPrem = SafecDbl(publicPrem / 1.15)
+					vatFreePublicSI = SafecDbl(publicSI /1.15)
+					GenerateOutput vatFreePublicSI, publicRate, vatFreePublicPrem, "PUBLIAB"
+				End If
+				
+				If employerSI > 0 Then
+					Dim vatFreeEmpPrem, vatFreeEmpSI
+					
+					If employersPrem > 0 Then
+						employerRate = (employersPrem/employerSI)*100
+					End If
+					
+					If (employersPrem = "" or employersPrem = 0 or employersPrem < 0) Then
+						employersPrem = employerSI * (employerRate * 0.01)
+					End If
+					
+					vatFreeEmpPrem = SafecDbl(employersPrem / 1.15)
+					vatFreeEmpSI = SafecDbl(employerSI /1.15)
+					GenerateOutput vatFreeEmpSI, employerRate, vatFreeEmpPrem, "LIABEMP"
+				End If
+				
+				If legalSI > 0 Then
+					Dim vatLegalFreePrem, vatLegalFreeSI
+					
+					If legalPrem > 0 Then
+						legalRate = (legalPrem/legalSI)*100
+					End If
+					
+					If (legalPrem = "" or legalPrem = 0 or legalPrem < 0) Then
+						legalPrem = legalSI * (legalRate * 0.01)
+					End If
+					
+					vatLegalFreePrem = SafecDbl(legalPrem / 1.15)
+					vatLegalFreeSI = SafecDbl(legalSI /1.15)
+					GenerateOutput vatLegalFreeSI, legalRate, vatLegalFreePrem, "COMPROXSDC"
+				End If
+				
+				If wrongfulSI > 0 Then
+					Dim vatWrongFreePrem, vatWrongFreeSI
+					
+					If wrongfulPrem > 0 Then
+						wrongfulRate = (wrongfulPrem/wrongfulSI)*100
+					End If
+					
+					If (wrongfulPrem = "" or wrongfulPrem = 0 or wrongfulPrem < 0) Then
+						wrongfulPrem = wrongfulSI * (wrongfulRate * 0.01)
+					End If
+					
+					vatWrongFreePrem = SafecDbl(wrongfulPrem / 1.15)
+					vatWrongFreeSI = SafecDbl(wrongfulSI /1.15)
+					GenerateOutput vatWrongFreeSI, wrongfulRate, vatWrongFreePrem, "COMPROXWA"
+				End If
+				
+				' If cyberPrem > 0 Then
+					' Dim vatFreeCyberPrem, vatFreeCyberSI, cyberRate
+					' vatFreeCyberPrem = SafecDbl(cyberPrem / 1.15)
+					' vatFreeCyberSI = SafecDbl(cyberSI /1.15)
+					' cyberRate = (vatFreeCyberPrem / vatFreeCyberSI) * 100
+					' GenerateOutput vatFreeCyberSI, cyberRate, vatFreeCyberPrem, "CYBERLIAB"
+				' End If
+				
+			Else
+				If (netPrem > 0) Then
+					baseRate = (netPrem/turnOver)*100
+				End If
+				
+				If (netPrem = "" or netPrem = 0 or netPrem < 0) Then
+					netPrem = (turnOver * (baseRate * 0.01))
+				End If
+				
+				'netPrem = (turnOver * (baseRate * 0.01))
+				If totalExtensions > 0 Then
+					Premium = netPrem + totalExtensions
+				Else
+					Premium = netPrem
+				End If 
+
+				vatFreePremium = SafecDbl (Premium / 1.15)
+				vatFreeSumInsured = SafecDbl (totalExtSI / 1.15)
+				GenerateOutput vatFreeSumInsured, baseRate, vatFreePremium, "COMPROFTE"
+					
+			End If
+		End If
+		
+		
+		If prodCode = "CLM" Then		
+			If branchName = "ITOO" and iTOOFlag = True Then
+				Dim monthlyRatePI
+				Dim mVatFreeSumInsured, mVatFreePremium
+				
+				If (netPrem > 0) Then
+					baseRate = (netPrem/turnOver)*100
+					monthlyRatePI = baseRate/12
+					netPrem = netPrem/12
+				End If
+				
+				If (netPrem = "" or netPrem = 0 or netPrem < 0) Then
+					monthlyRatePI = baseRate/12
+					netPrem = (turnOver * (monthlyRatePI * 0.01))
+				End If
+				
+				'monthlyRatePI = SafecDbl(baseRate / 12)
+				'netPrem = (turnOver * (monthlyRatePI * 0.01))
+				
+				mVatFreeSumInsured = SafecDbl(limitIndem /1.15)
+				mVatFreePremium = SafecDbl(netPrem /1.15)
+				GenerateOutput mVatFreeSumInsured, monthlyRatePI, mVatFreePremium, "COMPROFIND"
+				
+				If productSI > 0 Then
+					Dim monthlyRateProd, monthly_ProductPrem
+					Dim mVatFreeProductPrem
+					Dim mVatFreeProductSI
+					
+					If productsPrem > 0 Then
+						productRate = (productsPrem/productSI)*100
+						monthlyRateProd = productRate/12
+						monthly_ProductPrem = productsPrem/12
+					End If
+					
+					If (productsPrem = "" or productsPrem = 0 or productsPrem < 0) Then
+						monthlyRateProd = productRate/12
+						monthly_ProductPrem = productSI * (monthlyRateProd * 0.01)
+					End If
+					
+					'monthlyRateProd = SafecDbl(productRate /12)
+					'monthly_ProductPrem = SafecDbl(productSI * (monthlyRateProd * 0.01))
+					
+					mVatFreeProductPrem = SafecDbl(monthly_ProductPrem / 1.15)
+					mVatFreeProductSI = SafecDbl(productSI /1.15)
+					GenerateOutput mVatFreeProductSI, monthlyRateProd, mVatFreeProductPrem, "LIABPROD"
+				End If
+				
+				If publicSI > 0 Then
+					Dim monthlyRatePublic, monthly_PublicPrem
+					Dim mVatFreePublicPrem, mVatFreePublicSI
+					
+					If publicPrem > 0 Then
+						publicRate = (publicPrem/publicSI)*100
+						monthlyRatePublic = publicRate/12
+						monthly_PublicPrem = publicPrem/12
+					End If
+					
+					If (publicPrem = "" or publicPrem = 0 or publicPrem < 0) Then
+						monthlyRatePublic = publicRate/12
+						monthly_PublicPrem = publicSI * (monthlyRatePublic * 0.01)
+					End If
+					
+					'monthlyRatePublic = SafecDbl(publicRate /12)
+					'monthly_PublicPrem = SafecDbl(publicSI * (monthlyRatePublic * 0.01))
+				
+					mVatFreePublicPrem = SafecDbl(monthly_PublicPrem / 1.15)
+					mVatFreePublicSI = SafecDbl(publicSI /1.15)
+					GenerateOutput mVatFreePublicSI, monthlyRatePublic, mVatFreePublicPrem, "PUBLIAB"
+				End If
+				
+				If employerSI > 0 Then
+					Dim mVatFreeEmpPrem, mVatFreeEmpSI
+					Dim monthlyRateEmp, monthly_EmployPrem
+					
+					If employersPrem > 0 Then
+						employerRate = (employersPrem/employerSI)*100
+						monthlyRateEmp = employerRate/12
+						monthly_EmployPrem = employersPrem/12
+					End If
+					
+					If (employersPrem = "" or employersPrem = 0 or employersPrem < 0) Then
+						monthlyRateEmp = employerRate/12
+						monthly_EmployPrem = employerSI * (monthlyRateEmp * 0.01)
+					End If
+					
+					'monthlyRateEmp = SafecDbl(employerRate / 12)
+					'monthly_EmployPrem =  SafecDbl(employerSI * (monthlyRateEmp * 0.01))
+					
+					mVatFreeEmpPrem = SafecDbl(monthly_EmployPrem / 1.15)
+					mVatFreeEmpSI = SafecDbl(employerSI /1.15)
+					GenerateOutput mVatFreeEmpSI, monthlyRateEmp, mVatFreeEmpPrem, "LIABEMP"
+				End If
+				
+				Dim mVatFreePrem, mVatFreeSI
+				Dim monthlyRate, monthlyPrem
+				
+				If legalSI > 0 Then	
+					If legalPrem > 0 Then
+						legalRate = (legalPrem/legalSI)*100
+						monthlyRate = legalRate/12
+						monthlyPrem = legalPrem/12
+					End If
+					
+					If (legalPrem = "" or legalPrem = 0 or legalPrem < 0) Then
+						monthlyRate = legalRate/12
+						monthlyPrem = legalSI * (monthlyRate * 0.01)
+					End If
+					
+					'monthlyRate = SafecDbl(legalRate / 12)
+					'monthlyPrem =  SafecDbl(legalSI * (monthlyRate * 0.01))
+					
+					mVatFreePrem = SafecDbl(monthlyPrem / 1.15)
+					mVatFreeSI = SafecDbl(legalSI /1.15)
+					GenerateOutput mVatFreeSI, monthlyRate, mVatFreePrem, "COMPROXSDC"
+				End If
+				
+				If wrongfulSI > 0 Then
+					If wrongfulPrem > 0 Then
+						wrongfulRate = (wrongfulPrem/wrongfulSI)*100
+						monthlyRate = wrongfulRate/12
+						monthlyPrem = wrongfulPrem/12
+					End If
+					
+					If (wrongfulPrem = "" or wrongfulPrem = 0 or wrongfulPrem < 0) Then
+						monthlyRate = wrongfulRate/12
+						monthlyPrem = wrongfulSI * (monthlyRate * 0.01)
+					End If
+					
+					'monthlyRate = SafecDbl(wrongfulRate / 12)
+					'monthlyPrem =  SafecDbl(wrongfulSI * (monthlyRate * 0.01))
+					
+					mVatFreePrem = SafecDbl(monthlyPrem / 1.15)
+					mVatFreeSI = SafecDbl(wrongfulSI /1.15)
+					GenerateOutput mVatFreeSI, monthlyRate, mVatFreePrem, "COMPROXWA"
+				End If
+				
+				' If cyberPrem > 0 Then
+					' Dim vatFreeCyberPrem, vatFreeCyberSI, cyberRate
+					' vatFreeCyberPrem = SafecDbl(cyberPrem / 1.15)
+					' vatFreeCyberSI = SafecDbl(cyberSI /1.15)
+					' cyberRate = (vatFreeCyberPrem / vatFreeCyberSI) * 100
+					' GenerateOutput vatFreeCyberSI, cyberRate, vatFreeCyberPrem, "CYBERLIAB"
+				' End If
+				
+				
+			Else
+				Dim mRate_PI, newRate, monthlyNetPrem, monthlyPremium
+				Dim vatExPrem, vatExSumInsured
+				
+				If (netPrem > 0) Then
+					baseRate = (netPrem/turnOver)*100
+					mRate_PI = baseRate/12
+					monthlyNetPrem = netPrem/12
+				End If
+				
+				If (netPrem = "" or netPrem = 0 or netPrem < 0) Then
+					mRate_PI = baseRate/12
+					monthlyNetPrem = (turnOver * (mRate_PI * 0.01))
+				End If
+				
+				' mRate_PI = SafecDbl(baseRate /12)
+				' monthlyNetPrem = (turnOver * (mRate_PI * 0.01)) 
+				
+				If totalExtensions > 0 Then 
+					monthlyPremium = monthlyNetPrem + (totalExtensions /12)
+				Else
+					monthlyPremium = monthlyNetPrem
+				End If 
+				
+				If totalExtSI > 0 Then
+					NewRate = (monthlyPremium/totalExtSI) * 100
+				End If
+				
+				vatExPrem = SafecDbl (monthlyPremium / 1.15)
+				vatExSumInsured = SafecDbl (totalExtSI / 1.15)
+				GenerateOutput vatExSumInsured, NewRate, vatExPrem, "COMPROFTE"
+			End If
+		End If
+End Sub
+
+Function GenerateOutput(cSI, cRate, cPrem, cRatingSection)
+    
+	Dim iCount
+    Engine.NewObject("PROIND_Output")
+    iCount = Engine.Count("PROIND_Output")
+    
+	Engine.Item("PROIND_Output", iCount).Item("Sum_insured").Value = cSI
+    Engine.Item("PROIND_Output", iCount).Item("Rate").Value = cRate
+    Engine.Item("PROIND_Output", iCount).Item("Premium").Value = cPrem
+    Engine.Item("PROIND_Output", iCount).Item("risk_rating_section").Value = cRatingSection
+
+End Function
+
+Function GetProrataPrem(annPrem)
+	GetProrataPrem = 0
+	Dim dtStartDate, dtEndDate, prorataFactor, thisPrem
+	Dim vResults
+	Dim m_lReturn
+	Dim offset
+	
+	offset = 1
+	m_lReturn = Extras.GetBODetails(vResults)
+	
+	If IsArray(vResults) Then
+		dtStartDate = SafecDate(vResults(1,0))
+		dtEndDate = SafecDate(vResults(2,0))
+	End If
+	
+	prorataFactor = CalculateProrataFactor(dtStartDate, dtEndDate, offset)
+	
+	thisPrem = annPrem * prorataFactor
+	
+	GetProrataPrem = thisPrem	
+	
+End Function
+
+'****************************************************************************************
+' returns propotion of dblValue based on number of days between dtStartDate and dtEndDate
+'****************************************************************************************
+
+Function CalculateProrataFactor(dtStartDate, dtEndDate, lOffsetValue)
+	dim lMaxDays, lPeriodDays
+	lMaxDays = 365
+	CalculateProrataFactor = 1
+	
+	if IsLeapYear(Year(dtStartDate)) then
+		if DateDiff("d",dtStartDate,"29 Feb " & Year(dtStartDate)) >= 0  then
+			lMaxDays = 366
+		end if
+	elseif IsLeapYear(Year(dtEndDate)) then
+		if DateDiff("d","29 Feb " & Year(dtEndDate),dtEndDate) >= 0 then
+			lMaxDays = 366
+		end if                                    
+	end if
+	
+	lPeriodDays =  Abs(DateDiff("d",dtStartDate,dtEndDate))
+	
+	lPeriodDays = lPeriodDays + lOffsetValue
+	
+	CalculateProrataFactor = (lPeriodDays/lMaxDays)
+
+End function
+
+Function IsLeapYear(lYear)
+		IsLeapYear = False
+		
+		If lYear > 0 Then
+			IsLeapYear = ((lYear Mod 4 = 0 And lYear Mod 100 <> 0) Or (lYear Mod 4 = 0 And lYear Mod 100 = 0 And lYear Mod 400 = 0))
+		End If               
+End Function
+
+Function SafecDbl(value)
+		SafecDbl = 0
+		On Error Resume Next
+		SafecDbl = CDbl(value)
+		On Error GoTo 0
+End Function
+
+Function ConvertToBool(value)
+    ConvertToBool = 0
+    On Error Resume Next
+    ConvertToBool = CBool(value)
+    On Error GoTo 0
+
+End Function
+
+Function SafeInt(value)
+	SafeInt = 0
+	On Error Resume Next
+	SafeInt = CInt(value)
+	On Error GoTo 0
+End Function
+
+Function SafecStr(value)
+    SafecStr = ""
+    On Error Resume Next
+    SafecStr = CStr(value)
+    On Error GoTo 0
+End Function
+
+Function SafecDate(value)
+    SafecDate = 0
+    On Error Resume Next
+    SafecDate = CDate(value)
+    On Error GoTo 0
+End Function

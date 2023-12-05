@@ -1,0 +1,508 @@
+        Dim iObjectInstanceCount
+        
+        Sub FindObjectInstanceCount(strScreenObjectName)
+        	iObjectInstanceCount = 1
+        
+        	' strScreenObjectName is the object that is associate with this screen (if a child), or "" if the root screen.
+        	If strScreenObjectName <> ""  Then
+        		Dim instanceCount
+        		
+        		' How many instance of this object exist?
+        		instanceCount = engine.count(strScreenObjectName)
+        		
+        		Dim i
+        		for i = 1 to instanceCount
+        			if engine.item(strScreenObjectName, i).item("OI").value = vAdditionalData(cAdditionalData_OIKey) then
+        				iObjectInstanceCount = i
+        			end if
+        		next
+        	End If
+        End Sub
+
+        Sub DefaultTextTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultCommentTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultIntegerTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CLng(strValue)
+        End Sub
+
+        
+        Sub DefaultCheckboxTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanListTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanRadioTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	If InStr(1, LCase(strValue), "code:", 1) = 1 Then
+        		' The default value has been specified as a code (code:<thecode>).
+        		Dim code
+        		Dim effectiveDate
+        		Dim version
+        		
+        		code = Mid(strValue, Len("code:")+1)
+        		effectiveDate = Now()
+        		version = 1
+        		
+        		Dim listItemId
+        		listItemId = Extras.GetField(strListCode, strListCode + "_Id", code, effectiveDate, version)
+        		
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(listItemId)
+        	Else
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        	End If
+        End Sub
+
+        
+        Sub DefaultRateListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	' TODO.
+        End Sub
+
+        
+        Sub DefaultDateTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	
+        	Dim location
+        	Dim Interval
+        	Dim Duration
+        	Dim DateValue
+        	
+        	'Upper case the input
+        	DateValue = UCase(strValue)
+        	'Check to see if we want data AND  Time
+        	location = InStr(1,DateValue,"DATETIME")
+        	if location > 0 then
+        		DateValue=  CDate(FormatDateTime(Now,0)) 'use the standard vb datetime
+        	End If
+        	'Check to see if TODAY is specified as a modifier
+        	location  = InStr(1,DateValue,"TODAY")
+        	If location > 0 Then
+        		'Determine if we are adding values
+        		location  = InStr(1,DateValue,"+")
+        		If location > 0 Then 
+        			Interval = Mid(DateValue,location + 1,1)
+        			
+        			If Interval = "Y" Then
+        				Interval = "YYYY"
+        			End If
+        			
+        			If Interval <> "" Then 
+        				Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        				DateValue = DateAdd(Interval,Duration,CDate(FormatDateTime(Now,2)))	
+        				
+        			Else
+        				'No Interval specified 
+        				'Need an error here!!!!
+        			End If	
+        		Else 
+        			'Check to see if we are subtracting values
+        			location  =InStr(1,DateValue,"-")
+        			If location > 0  Then 
+        				Interval = Mid(DateValue,location + 1,1)
+        				
+        				If Interval <> "" Then 
+        					Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        					DateValue = DateAdd(Interval, Duration * -1,CDate(FormatDateTime(Now,2)))	
+        				Else
+        					'No Interval specified 
+        					'Need an error here!!!!
+        				End If
+        			Else
+        				'No Function specified, so assume we are just using today's date as a shortdate
+        				DateValue = CDate(FormatDateTime(Now,2))
+        			End If
+        			
+        		End If
+        		
+        	End If	
+        	
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDate(DateValue)
+        End Sub
+
+        
+        Sub DefaultCurrencyTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+        
+        Sub DefaultPercentageTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+Sub WebRequired(bIsOnStart)
+	If bIsOnStart = True Then
+		Engine.NewObject("DOMCLAIM")
+		Engine.NewObject("BULDINGCLM")
+		Engine.NewObject("CONTENTCLM")
+		Engine.NewObject("ALLRISKCLM")
+		Engine.NewObject("PLIPCLM")
+		Engine.NewObject("MBREAKCLM")
+	End If
+End Sub
+
+Sub onScreenLogic(bIsOnStart)
+        If bIsOnStart = True Then
+        
+        		 'Instantiate Risk object(s)
+        		Extras.RiskDataEngine.NewObject("GENERAL")
+        		Extras.RiskDataEngine.NewObject("BUILDINGS")
+        		Extras.RiskDataEngine.NewObject("CONTENTS")
+        		Extras.RiskDataEngine.NewObject("PLIP")
+        		Extras.RiskDataEngine.NewObject("MECHELECTRIC")
+        		
+        		
+        				
+        		'Instantiate Claims object(s)
+        		Engine.NewObject("DOMCLAIM")
+        		Engine.NewObject("BULDINGCLM")
+        		Engine.NewObject("CONTENTCLM")
+        		Engine.NewObject("PLIPCLM")
+        		Engine.NewObject("MBREAKCLM")
+        
+        		'---------------------------------------------------
+        		'---START: Non-child screen properties population---	
+        		'---------------------------------------------------
+        
+        		Dim is_allRisk, is_building, is_Contents, isMachinery, is_Plip
+        				
+        		'Collect cover data from Policy risk
+        		is_allRisk = Extras.RiskDataEngine.Item("GENERAL").Item("IS_ALLRISKS").Value 	
+        		is_building = Extras.RiskDataEngine.Item("GENERAL").Item("IS_BUILDINGS").Value
+        		is_Contents = Extras.RiskDataEngine.Item("GENERAL").Item("IS_CONTENTS").Value 
+        		isMachinery = Extras.RiskDataEngine.Item("GENERAL").Item("IS_MECH_ELECT").Value	
+        		is_Plip = Extras.RiskDataEngine.Item("GENERAL").Item("IS_PLIP").Value
+        		
+        		'Send cover data to the claim screen
+        		Engine.Item("DOMCLAIM").Item("IS_AR_TEMP").Value = is_allRisk
+        		Engine.Item("DOMCLAIM").Item("IS_BLD_TEMP").Value = is_building
+        		Engine.Item("DOMCLAIM").Item("IS_CNT_TEMP").Value = is_Contents
+        		Engine.Item("DOMCLAIM").Item("IS_MBRK_TEMP").Value = isMachinery
+        		Engine.Item("DOMCLAIM").Item("IS_PLIP_TEMP").Value = is_Plip
+        		
+        		
+        		'Collect General Data from Policy risk
+        		Dim wallCon, wallDesc, roofCon, dwelType, dwelTypeDesc, DayOfOcc, DOB
+        		Dim isLight, isCommune, isHolidayHome, roofDesc
+        		
+        		wallCon = Extras.RiskDataEngine.Item("GENERAL").Item("WALLCON").Value
+        		wallDesc = Extras.RiskDataEngine.Item("GENERAL").Item("WALLDESC").Value
+        		roofCon = Extras.RiskDataEngine.Item("GENERAL").Item("ROOFCON").Value
+        		roofDesc = Extras.RiskDataEngine.Item("GENERAL").Item("ROOFDESC").Value
+        		dwelType = Extras.RiskDataEngine.Item("GENERAL").Item("DWELTYPE").Value
+        		dwelTypeDesc = Extras.RiskDataEngine.Item("GENERAL").Item("DWELDESC").Value
+        		DayOfOcc = Extras.RiskDataEngine.Item("GENERAL").Item("DAYOCCUP").Value
+        		DOB = Extras.RiskDataEngine.Item("GENERAL").Item("DOB").Value
+        		isLight = Extras.RiskDataEngine.Item("GENERAL").Item("IS_LIGHTCOND").Value
+        		isCommune = Extras.RiskDataEngine.Item("GENERAL").Item("IS_COMMUNE").Value
+        		isHolidayHome = Extras.RiskDataEngine.Item("GENERAL").Item("IS_HOLIDAYH").Value
+        		
+        		'Send General data to the claim screen 
+        		Engine.Item("DOMCLAIM").Item("WALLCON").Value = wallCon
+        		Engine.Item("DOMCLAIM").Item("WALLDESC").Value = wallDesc
+        		Engine.Item("DOMCLAIM").Item("ROOFCON").Value = roofCon
+        		Engine.Item("DOMCLAIM").Item("ROOFDESC").Value = roofDesc
+        		Engine.Item("DOMCLAIM").Item("DWELTYPE").Value = dwelType
+        		Engine.Item("DOMCLAIM").Item("DWELDESC").Value = dwelTypeDesc
+        		Engine.Item("DOMCLAIM").Item("DAYOCCUP").Value = DayOfOcc
+        		Engine.Item("DOMCLAIM").Item("DOB").Value = DOB
+        		Engine.Item("DOMCLAIM").Item("IS_LIGHTCOND").Value = isLight
+        		Engine.Item("DOMCLAIM").Item("IS_COMMUNE").Value = isCommune
+        		Engine.Item("DOMCLAIM").Item("IS_HOLIDAYH").Value = isHolidayHome
+        		
+        		
+        		'Building covers
+        		'---------------------------------------------------
+        		'---START: Non-child screen properties population---	
+        		'---------------------------------------------------
+        
+        		Dim sumInsured, isSurvey, stdExcess, voluntExcess
+        		Dim isMatchingBld, isSubsidence, isMechanical
+        		Dim LightXS
+        		Dim LightXSAMT
+        		Dim excess
+        		
+        		LightXSAMT = 1000.00
+        		LightXS = 10.00
+        		
+        		'Collect data from Policy risk
+        		sumInsured = Extras.RiskDataEngine.Item("BUILDINGS").Item("SUMINSURED").Value 	
+        		stdExcess = Extras.RiskDataEngine.Item("BUILDINGS").Item("STDEXCESS").Value
+        		voluntExcess = Extras.RiskDataEngine.Item("BUILDINGS").Item("VOLUNEXCESS").Value 
+        		isSurvey = Extras.RiskDataEngine.Item("BUILDINGS").Item("IS_SURVEYDONE").Value		
+        		isMatchingBld = Extras.RiskDataEngine.Item("BUILDINGS").Item("IS_MATCHINGBUILD").Value
+        		isSubsidence = Extras.RiskDataEngine.Item("BUILDINGS").Item("IS_SUBSIDENCE").Value
+        		isMechanical = Extras.RiskDataEngine.Item("BUILDINGS").Item("IS_MECHANICAL").Value
+        		excess = Extras.RiskDataEngine.Item("BUILDINGS").Item("GEYSEREXC").Value
+        		
+        		'Send data to the claim screen
+        		Engine.Item("BULDINGCLM").Item("SUMINSURED").Value = sumInsured
+        		Engine.Item("BULDINGCLM").Item("STDEXCESS").Value = stdExcess
+        		Engine.Item("BULDINGCLM").Item("VOLUNEXCESS").Value = voluntExcess
+        		Engine.Item("BULDINGCLM").Item("IS_SURVEYDONE").Value = isSurvey
+        		Engine.Item("BULDINGCLM").Item("IS_MATCHINGBUILD").Value = isMatchingBld
+        		Engine.Item("BULDINGCLM").Item("IS_SUBSIDENCE").Value = isSubsidence
+        		Engine.Item("BULDINGCLM").Item("IS_MECHANICAL").Value = isMechanical
+        		Engine.Item("BULDINGCLM").Item("LIGHT_SURGE_XS").Value = LightXS
+        		Engine.Item("BULDINGCLM").Item("LIGHT_SURGE_XSAMT").Value = LightXSAMT
+        		Engine.Item("BULDINGCLM").Item("GEYSEREXC").Value = excess
+        		
+        		
+        		'----------------Contents Section-----------------------------------
+        		'---START: Non-child screen properties population---	
+        		'---------------------------------------------------
+        
+        		Dim cntSumInsured, isCntSurvey, CntstdExcess, CntvolunExcess
+        		Dim homeDesc, addSumInsured
+        		Dim isAccDamage, isCntSubsidence, isAlarmType, isInventory, isSecGate, isAccessCont, isSecComplex
+        		Dim isElectFence, isBurglarBar
+        		
+        		'Collect data from Policy risk
+        		cntSumInsured = Extras.RiskDataEngine.Item("CONTENTS").Item("SUMINSURED").Value 	
+        		CntstdExcess = Extras.RiskDataEngine.Item("CONTENTS").Item("STDEXCESS").Value
+        		CntvolunExcess = Extras.RiskDataEngine.Item("CONTENTS").Item("VOLUNEXCESS").Value
+        		isCntSurvey = Extras.RiskDataEngine.Item("CONTENTS").Item("IS_SURVEYDONE").Value
+        		homeDesc = Extras.RiskDataEngine.Item("CONTENTS").Item("HOMEDESCRIPTION").Value
+        		addSumInsured = Extras.RiskDataEngine.Item("CONTENTS").Item("ADD_SUMINSURED").Value
+        		isAccDamage = Extras.RiskDataEngine.Item("CONTENTS").Item("IS_ACCDAMAGE").Value
+        		isCntSubsidence = Extras.RiskDataEngine.Item("CONTENTS").Item("IS_SUBSIDENCE").Value
+        		isAlarmType = Extras.RiskDataEngine.Item("CONTENTS").Item("ALARMTYPE").Value
+        		isInventory = Extras.RiskDataEngine.Item("CONTENTS").Item("IS_INVENTORY").Value
+        		isSecGate = Extras.RiskDataEngine.Item("CONTENTS").Item("IS_SECGATE").Value
+        		isAccessCont = Extras.RiskDataEngine.Item("CONTENTS").Item("IS_ACCESSCONT").Value
+        		isSecComplex = Extras.RiskDataEngine.Item("CONTENTS").Item("IS_SECCOMPLEX").Value
+        		isElectFence = Extras.RiskDataEngine.Item("CONTENTS").Item("IS_ELECTFENCE").Value
+        		isBurglarBar = Extras.RiskDataEngine.Item("CONTENTS").Item("IS_BURGLARBAR").Value
+        		
+        		
+        		'Send data to the claim screen
+        		Engine.Item("CONTENTCLM").Item("SUMINSURED").Value = cntSumInsured
+        		Engine.Item("CONTENTCLM").Item("IS_SURVEYDONE").Value = isCntSurvey
+        		Engine.Item("CONTENTCLM").Item("STDEXCESS").Value = CntstdExcess
+        		Engine.Item("CONTENTCLM").Item("VOLUNEXCESS").Value = CntvolunExcess
+        		Engine.Item("CONTENTCLM").Item("COVERTYPE").Value = Extras.RiskDataEngine.Item("CONTENTS").Item("COVERTYPE").Value
+        		
+        		'Home Industry
+        		Engine.Item("CONTENTCLM").Item("HOMEINDUSTRY").Value = Extras.RiskDataEngine.Item("CONTENTS").Item("HOMEINDUSTRY").Value
+        		Engine.Item("CONTENTCLM").Item("HOMEDESCRIPTION").Value = homeDesc
+        		Engine.Item("CONTENTCLM").Item("ADD_SUMINSURED").Value = addSumInsured
+        		Engine.Item("CONTENTCLM").Item("IS_ACCDAMAGE").Value = isAccDamage
+        		Engine.Item("CONTENTCLM").Item("IS_SUBSIDENCE").Value = isCntSubsidence
+        		Engine.Item("CONTENTCLM").Item("ALARMTYPE").Value = isAlarmType
+        		Engine.Item("CONTENTCLM").Item("IS_INVENTORY").Value = isInventory
+        		Engine.Item("CONTENTCLM").Item("IS_SECGATE").Value = isSecGate
+        		Engine.Item("CONTENTCLM").Item("IS_ACCESSCONT").Value = isAccessCont
+        		Engine.Item("CONTENTCLM").Item("IS_SECCOMPLEX").Value = isSecComplex
+        		Engine.Item("CONTENTCLM").Item("IS_ELECTFENCE").Value = isElectFence
+        		Engine.Item("CONTENTCLM").Item("IS_BURGLARBAR").Value = isBurglarBar
+        		Engine.Item("CONTENTCLM").Item("LIGHT_SURGE_XS").Value = LightXS
+        		Engine.Item("CONTENTCLM").Item("LIGHT_SURGE_XSAMT").Value = LightXSAMT
+        		
+        		
+        		
+        		'--------------PLIP section-------------------------------------
+        		'---START: Non-child screen properties population---	
+        		'---------------------------------------------------
+        
+        		Dim PlipsumInsured
+        		Dim anyProp,anySuspension
+        		anyProp = 10000.00
+        		anySuspension = 5000.00
+        		
+        		'Collect data from Policy risk
+        		PlipsumInsured = Extras.RiskDataEngine.Item("PLIP").Item("SUMINSURED").Value 	
+        		
+        		
+        		'Send data to the claim screen
+        		Engine.Item("PLIPCLM").Item("SUMINSURED").Value = PlipsumInsured
+        		Engine.Item("PLIPCLM").Item("ANYPROP").Value = anyProp
+        		Engine.Item("PLIPCLM").Item("SUSTERM").Value = anySuspension
+        		
+        		'---------------------Machinery breakdown------------------------------
+        		'---START: Non-child screen properties population---	
+        		'---------------------------------------------------
+        
+        		Dim appValues, audioEquipmentValues, MbrksumInsured, excessRate, excessAmount
+        		
+        		'Collect data from Policy risk
+        		appValues = Extras.RiskDataEngine.Item("MECHELECTRIC").Item("SI_APPLVALUES").Value 	
+        		audioEquipmentValues = Extras.RiskDataEngine.Item("MECHELECTRIC").Item("SI_AUDIOVALUES").Value
+        		MbrksumInsured = Extras.RiskDataEngine.Item("MECHELECTRIC").Item("SUMINSURED").Value 
+        		excessRate = Extras.RiskDataEngine.Item("MECHELECTRIC").Item("EXCESSRATE").Value		
+        		excessAmount = Extras.RiskDataEngine.Item("MECHELECTRIC").Item("EXCESSAMT").Value
+        				
+        		'Send data to the claim screen
+        		Engine.Item("MBREAKCLM").Item("SI_APPLVALUES").Value = appValues
+        		Engine.Item("MBREAKCLM").Item("SI_AUDIOVALUES").Value = audioEquipmentValues
+        		Engine.Item("MBREAKCLM").Item("SUMINSURED").Value = MbrksumInsured
+        		Engine.Item("MBREAKCLM").Item("EXCESSRATE").Value = excessRate
+        		Engine.Item("MBREAKCLM").Item("EXCESSAMT").Value = excessAmount
+        		
+        		
+        		Dim x,cnt,nIndex
+        		Engine.NewObject("ALLRISKCLM")
+        		Extras.RiskDataEngine.NewObject("ALLRISK")
+        		Engine.Item("ALLRISKCLM").Item("TOTSUMINSURED").Value = Extras.RiskDataEngine.Item("ALLRISK").Item("TOTSUMINSURED").Value 
+        			
+        		    '-----------------All Risks------------------------------
+        		    '---START: Child screen properties population---
+        		    '-----------------------------------------------
+        			cnt = Extras.RiskDataEngine.Count("ALLRISKCHLD")
+        			x = 1
+        			For nIndex = x to cnt
+                    Dim countID, catCode, catDescription, ARsumInsured, xsAmount, excesspercentage
+                    Engine.Item("ALLRISKCLM").NewObject("ALLRISKCHLD") 
+        			
+        			'Collect data from Policy risk
+                    countID = Extras.RiskDataEngine.Item("ALLRISKCHLD",nIndex).Item("COUNTER_ID").Value
+                    catCode = Extras.RiskDataEngine.Item("ALLRISKCHLD",nIndex).Item("CATCODE").Value
+        			catDescription = Extras.RiskDataEngine.Item("ALLRISKCHLD",nIndex).Item("CATDESCRIPTION").Value
+        			ARsumInsured = Extras.RiskDataEngine.Item("ALLRISKCHLD",nIndex).Item("SUMINSURED").Value
+        			If catCode = 3 or catCode = 10 or catCode = 5 Then
+        				xsAmount = 0
+        				excesspercentage = Extras.RiskDataEngine.Item("ALLRISKCHLD",nIndex).Item("EXCESS_PERC").Value
+        			Else
+        				xsAmount = Extras.RiskDataEngine.Item("ALLRISKCHLD",nIndex).Item("EXCESS_AMOUNT").Value
+        				excesspercentage = 0
+        			End If
+                    'xsAmount = Extras.RiskDataEngine.Item("ALLRISKCHLD",nIndex).Item("EXCESS_AMOUNT").Value
+                    'excesspercentage = Extras.RiskDataEngine.Item("ALLRISKCHLD",nIndex).Item("EXCESS_PERC").Value
+                    
+                    'Send data to claim child object
+        			If catCode = Null Then catCode = 0 End If
+        			If sumInsured = Null Then sumInsured = 0.0 End If
+        			
+        			Engine.Item("ALLRISKCLM").Item("ALLRISKCHLD",x).Item("COUNTER_ID").Value = countID
+                    Engine.Item("ALLRISKCLM").Item("ALLRISKCHLD",x).Item("CATCODE").Value = catCode
+                    Engine.Item("ALLRISKCLM").Item("ALLRISKCHLD",x).Item("CATDESCRIPTION").Value = catDescription
+                    Engine.Item("ALLRISKCLM").Item("ALLRISKCHLD",x).Item("SUMINSURED").Value = ARsumInsured
+        			Engine.Item("ALLRISKCLM").Item("ALLRISKCHLD",x).Item("EXCESS_AMOUNT").Value = xsAmount
+        			Engine.Item("ALLRISKCLM").Item("ALLRISKCHLD",x).Item("EXCESS_PERC").Value = excesspercentage
+             	x = x + 1
+        		Next
+        		
+        		
+        		
+        		
+        		Call DoInstanceCount
+         End If
+        End Sub
+
+        Sub DoInstanceCount
+        ' The ScreenMain rule is added to every screen automatically.
+        
+        
+        Call FindObjectInstanceCount("")
+End Sub
+
+Sub onValidate_DOMCLAIM__IS_BUILDINGS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("DOMCLAIM", "IS_BUILDINGS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_DOMCLAIM__IS_CONTENTS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("DOMCLAIM", "IS_CONTENTS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_DOMCLAIM__IS_ALLRISKS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("DOMCLAIM", "IS_ALLRISKS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_DOMCLAIM__IS_PLIP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("DOMCLAIM", "IS_PLIP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_DOMCLAIM__IS_MECH_ELECT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("DOMCLAIM", "IS_MECH_ELECT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_DOMCLAIM__THIRDPARTY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("DOMCLAIM", "THIRDPARTY", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_DOMCLAIM__SALVAGE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("DOMCLAIM", "SALVAGE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_DOMCLAIM__RECOVERY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("DOMCLAIM", "RECOVERY", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_DOMCLAIM__IS_THRDTLS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("DOMCLAIM", "IS_THRDTLS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_DOMCLAIM__IS_NAMAPP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("DOMCLAIM", "IS_NAMAPP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MBREAKCLM__EXCESSRATE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("MBREAKCLM", "EXCESSRATE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MBREAKCLM__EXCESSAMT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCurrencyTo("MBREAKCLM", "EXCESSAMT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub DoDefaults(bIsOnStart)
+    Call WebRequired(bIsOnStart)
+    Call onScreenLogic(bIsOnStart)
+    Call onValidate_DOMCLAIM__IS_BUILDINGS(bIsOnStart)
+    Call onValidate_DOMCLAIM__IS_CONTENTS(bIsOnStart)
+    Call onValidate_DOMCLAIM__IS_ALLRISKS(bIsOnStart)
+    Call onValidate_DOMCLAIM__IS_PLIP(bIsOnStart)
+    Call onValidate_DOMCLAIM__IS_MECH_ELECT(bIsOnStart)
+    Call onValidate_DOMCLAIM__THIRDPARTY(bIsOnStart)
+    Call onValidate_DOMCLAIM__SALVAGE(bIsOnStart)
+    Call onValidate_DOMCLAIM__RECOVERY(bIsOnStart)
+    Call onValidate_DOMCLAIM__IS_THRDTLS(bIsOnStart)
+    Call onValidate_DOMCLAIM__IS_NAMAPP(bIsOnStart)
+    Call onValidate_MBREAKCLM__EXCESSRATE(bIsOnStart)
+    Call onValidate_MBREAKCLM__EXCESSAMT(bIsOnStart)
+End Sub
+
+Sub Start()
+    Call DoDefaults(True)
+End Sub
+
+Sub Main()
+    Call DoDefaults(False)
+End Sub
+

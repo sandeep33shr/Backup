@@ -1,0 +1,1110 @@
+        Dim iObjectInstanceCount
+        
+        Sub FindObjectInstanceCount(strScreenObjectName)
+        	iObjectInstanceCount = 1
+        
+        	' strScreenObjectName is the object that is associate with this screen (if a child), or "" if the root screen.
+        	If strScreenObjectName <> ""  Then
+        		Dim instanceCount
+        		
+        		' How many instance of this object exist?
+        		instanceCount = engine.count(strScreenObjectName)
+        		
+        		Dim i
+        		for i = 1 to instanceCount
+        			if engine.item(strScreenObjectName, i).item("OI").value = vAdditionalData(cAdditionalData_OIKey) then
+        				iObjectInstanceCount = i
+        			end if
+        		next
+        	End If
+        End Sub
+
+        Sub DefaultTextTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultCommentTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultIntegerTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CLng(strValue)
+        End Sub
+
+        
+        Sub DefaultCheckboxTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanListTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanRadioTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	If InStr(1, LCase(strValue), "code:", 1) = 1 Then
+        		' The default value has been specified as a code (code:<thecode>).
+        		Dim code
+        		Dim effectiveDate
+        		Dim version
+        		
+        		code = Mid(strValue, Len("code:")+1)
+        		effectiveDate = Now()
+        		version = 1
+        		
+        		Dim listItemId
+        		listItemId = Extras.GetField(strListCode, strListCode + "_Id", code, effectiveDate, version)
+        		
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(listItemId)
+        	Else
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        	End If
+        End Sub
+
+        
+        Sub DefaultRateListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	' TODO.
+        End Sub
+
+        
+        Sub DefaultDateTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	
+        	Dim location
+        	Dim Interval
+        	Dim Duration
+        	Dim DateValue
+        	
+        	'Upper case the input
+        	DateValue = UCase(strValue)
+        	'Check to see if we want data AND  Time
+        	location = InStr(1,DateValue,"DATETIME")
+        	if location > 0 then
+        		DateValue=  CDate(FormatDateTime(Now,0)) 'use the standard vb datetime
+        	End If
+        	'Check to see if TODAY is specified as a modifier
+        	location  = InStr(1,DateValue,"TODAY")
+        	If location > 0 Then
+        		'Determine if we are adding values
+        		location  = InStr(1,DateValue,"+")
+        		If location > 0 Then 
+        			Interval = Mid(DateValue,location + 1,1)
+        			
+        			If Interval = "Y" Then
+        				Interval = "YYYY"
+        			End If
+        			
+        			If Interval <> "" Then 
+        				Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        				DateValue = DateAdd(Interval,Duration,CDate(FormatDateTime(Now,2)))	
+        				
+        			Else
+        				'No Interval specified 
+        				'Need an error here!!!!
+        			End If	
+        		Else 
+        			'Check to see if we are subtracting values
+        			location  =InStr(1,DateValue,"-")
+        			If location > 0  Then 
+        				Interval = Mid(DateValue,location + 1,1)
+        				
+        				If Interval <> "" Then 
+        					Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        					DateValue = DateAdd(Interval, Duration * -1,CDate(FormatDateTime(Now,2)))	
+        				Else
+        					'No Interval specified 
+        					'Need an error here!!!!
+        				End If
+        			Else
+        				'No Function specified, so assume we are just using today's date as a shortdate
+        				DateValue = CDate(FormatDateTime(Now,2))
+        			End If
+        			
+        		End If
+        		
+        	End If	
+        	
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDate(DateValue)
+        End Sub
+
+        
+        Sub DefaultCurrencyTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+        
+        Sub DefaultPercentageTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+Sub WebRequired(bIsOnStart)
+	If bIsOnStart = True Then
+		Engine.NewObject("GENERAL")
+		Engine.NewObject("ADDRESS")
+		Engine.NewObject("ALLRISK")
+		Engine.NewObject("ALLRISK_EXT")
+		Engine.NewObject("SECTIONA")
+		Engine.NewObject("SECTIONA_EXT")
+		Engine.NewObject("SECTIONA_DED")
+		Engine.NewObject("SECTIONB")
+		Engine.NewObject("SECTIONB_EXT")
+		Engine.NewObject("SECTIONB_DED")
+		Engine.NewObject("SECTIONC")
+		Engine.NewObject("SECTIONC_EXT")
+		Engine.NewObject("SECTIONC_DED")
+		Engine.NewObject("ALLRISK_RI")
+		Engine.NewObject("REFERRALS")
+	End If
+End Sub
+
+Sub onScreenLogic(bIsOnStart)
+        ' The ScreenMain rule is added to every screen automatically.
+        
+        
+        Call FindObjectInstanceCount("")
+End Sub
+
+Sub onValidate_GENERAL__IS_VAT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultListTo("GENERAL", "IS_VAT", "1", "UDL_CMA_VAT")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__IS_GENERAL(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "IS_GENERAL", "1", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__IS_SEC_A(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "IS_SEC_A", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__IS_SEC_B(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "IS_SEC_B", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__IS_SEC_C(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "IS_SEC_C", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__IS_MTA_REASON(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "IS_MTA_REASON", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__NEXUSQS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultIntegerTo("GENERAL", "NEXUSQS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_ALLRISK__NOC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultListTo("ALLRISK", "NOC", "3", "UDL_AAR_NOC")
+        End If
+End Sub
+
+Sub onValidate_ALLRISK__IS_FULL(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("ALLRISK", "IS_FULL", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_ALLRISK__IS_MLL(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("ALLRISK", "IS_MLL", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_ALLRISK__IS_SP_BDV(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("ALLRISK", "IS_SP_BDV", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_ALLRISK__IS_BIP_BDV(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("ALLRISK", "IS_BIP_BDV", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_ALLRISK_EXT__IS_CPC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("ALLRISK_EXT", "IS_CPC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_ALLRISK_EXT__IS_NA(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("ALLRISK_EXT", "IS_NA", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_ALLRISK_EXT__IS_DIS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("ALLRISK_EXT", "IS_DIS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_ALLRISK_EXT__IS_DIC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("ALLRISK_EXT", "IS_DIC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_ALLRISK_EXT__IS_CA(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("ALLRISK_EXT", "IS_CA", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_ALLRISK_EXT__IS_ISUR(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("ALLRISK_EXT", "IS_ISUR", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_ALLRISK_EXT__IS_CIGA(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("ALLRISK_EXT", "IS_CIGA", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA__IS_PMO(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA", "IS_PMO", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA__IS_AOLOM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA", "IS_AOLOM", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA__IS_SIL(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA", "IS_SIL", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA__IS_DAD(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA", "IS_DAD", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA__IS_FAPAD(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA", "IS_FAPAD", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA__IS_SC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA", "IS_SC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA__IS_CH(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA", "IS_CH", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA__IS_SP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA", "IS_SP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA__IS_ADL(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA", "IS_ADL", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA__IS_MD(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA", "IS_MD", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA__IS_TOT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA", "IS_TOT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA__IS_POD(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA", "IS_POD", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA__IS_ACD(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA", "IS_ACD", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA__IS_TAD(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA", "IS_TAD", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA__IS_SAL(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA", "IS_SAL", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_EXT__IS_PAL(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_EXT", "IS_PAL", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_EXT__IS_PF(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_EXT", "IS_PF", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_EXT__IS_PSF(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_EXT", "IS_PSF", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_EXT__IS_SD(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_EXT", "IS_SD", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_EXT__IS_FPSU(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_EXT", "IS_FPSU", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_EXT__IS_FERC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_EXT", "IS_FERC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_EXT__IS_TMRAL(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_EXT", "IS_TMRAL", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_EXT__IS_FEPE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_EXT", "IS_FEPE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_EXT__IS_CC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_EXT", "IS_CC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_EXT__IS_CCN(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_EXT", "IS_CCN", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_EXT__IS_SOP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_EXT", "IS_SOP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_EXT__IS_IN(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_EXT", "IS_IN", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_EXT__IS_LOR(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_EXT", "IS_LOR", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_EXT__IS_PITC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_EXT", "IS_PITC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_EXT__IS_MVDIV(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_EXT", "IS_MVDIV", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_EXT__IS_ROD(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_EXT", "IS_ROD", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_EXT__IS_ILHC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_EXT", "IS_ILHC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_EXT__IS_TA(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_EXT", "IS_TA", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_EXT__IS_APF(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_EXT", "IS_APF", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_EXT__IS_FBC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_EXT", "IS_FBC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_EXT__IS_MBS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_EXT", "IS_MBS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_EXT__IS_RST(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_EXT", "IS_RST", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_EXT__IS_DBT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_EXT", "IS_DBT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_EXT__IS_ROK(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_EXT", "IS_ROK", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_EXT__IS_DADFC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_EXT", "IS_DADFC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_EXT__IS_WGL(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_EXT", "IS_WGL", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_EXT__IS_EC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_EXT", "IS_EC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_EXT__IS_ACACS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_EXT", "IS_ACACS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_EXT__IS_GL(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_EXT", "IS_GL", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_EXT__IS_PGS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_EXT", "IS_PGS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_EXT__IS_TEMP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_EXT", "IS_TEMP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_EXT__IS_SOMGW(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_EXT", "IS_SOMGW", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_DED__IS_FAAP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_DED", "IS_FAAP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_DED__IS_EIP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_DED", "IS_EIP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_DED__IS_PAMO(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_DED", "IS_PAMO", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_DED__IS_AOLM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_DED", "IS_AOLM", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_DED__IS_SIL(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_DED", "IS_SIL", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_DED__IS_DOC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_DED", "IS_DOC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_DED__IS_PIT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_DED", "IS_PIT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_DED__IS_AD(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_DED", "IS_AD", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_DED__IS_T(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_DED", "IS_T", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_DED__IS_G(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_DED", "IS_G", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONA_DED__IS_AL(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONA_DED", "IS_AL", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONB__IS_MB(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONB", "IS_MB", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONB__IS_EE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONB", "IS_EE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONB_EXT__IS_OM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONB_EXT", "IS_OM", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONB_EXT__IS_FB(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONB_EXT", "IS_FB", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONB_EXT__IS_CC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONB_EXT", "IS_CC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONB_EXT__IS_EC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONB_EXT", "IS_EC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONB_EXT__IS_SP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONB_EXT", "IS_SP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONB_EXT__IS_PF(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONB_EXT", "IS_PF", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONB_EXT__IS_UE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONB_EXT", "IS_UE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONB_EXT__IS_ILH(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONB_EXT", "IS_ILH", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONB_EXT__IS_LOC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONB_EXT", "IS_LOC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONB_EXT__IS_RD(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONB_EXT", "IS_RD", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONB_EXT__IS_INC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONB_EXT", "IS_INC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONB_EXT__IS_TRP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONB_EXT", "IS_TRP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONB_EXT__IS_SPD(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONB_EXT", "IS_SPD", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONB_EXT__IS_PSF(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONB_EXT", "IS_PSF", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONB_EXT__IS_DRP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONB_EXT", "IS_DRP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONB_EXT__IS_SMG(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONB_EXT", "IS_SMG", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC__IS_GP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC", "IS_GP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC__IS_GRENT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC", "IS_GRENT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC__IS_GREV(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC", "IS_GREV", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC__IS_SC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC", "IS_SC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC__IS_ICOW(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC", "IS_ICOW", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC__IS_PD(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC", "IS_PD", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC__IS_ENG(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC", "IS_ENG", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC_EXT__IS_AICOW(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC_EXT", "IS_AICOW", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC_EXT__IS_ICOW(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC_EXT", "IS_ICOW", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC_EXT__IS_AR(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC_EXT", "IS_AR", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC_EXT__IS_RRE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC_EXT", "IS_RRE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC_EXT__IS_FAP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC_EXT", "IS_FAP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC_EXT__IS_STS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC_EXT", "IS_STS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC_EXT__IS_CCS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC_EXT", "IS_CCS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC_EXT__IS_DCSP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC_EXT", "IS_DCSP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC_EXT__IS_DCUN(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC_EXT", "IS_DCUN", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC_EXT__IS_DSP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC_EXT", "IS_DSP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC_EXT__IS_DUN(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC_EXT", "IS_DUN", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC_EXT__IS_POA(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC_EXT", "IS_POA", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC_EXT__IS_RBTD(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC_EXT", "IS_RBTD", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC_EXT__IS_AIRP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC_EXT", "IS_AIRP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC_EXT__IS_DPW(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC_EXT", "IS_DPW", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC_EXT__IS_CAP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC_EXT", "IS_CAP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC_EXT__IS_CF(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC_EXT", "IS_CF", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC_EXT__IS_SILO(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC_EXT", "IS_SILO", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC_EXT__IS_PU(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC_EXT", "IS_PU", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC_EXT__IS_MDC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC_EXT", "IS_MDC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC_EXT__IS_AAC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC_EXT", "IS_AAC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC_EXT__IS_FEL(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC_EXT", "IS_FEL", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC_EXT__IS_DVS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC_EXT", "IS_DVS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC_EXT__IS_HIP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC_EXT", "IS_HIP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC_EXT__IS_PRE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC_EXT", "IS_PRE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC_EXT__IS_TA(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC_EXT", "IS_TA", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC_EXT__IS_ROY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC_EXT", "IS_ROY", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC_EXT__IS_TPITS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC_EXT", "IS_TPITS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SECTIONC_EXT__IS_DUS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SECTIONC_EXT", "IS_DUS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_REFERRALS__RefCount(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultIntegerTo("REFERRALS", "RefCount", "0", "{listcode}")
+        End If
+End Sub
+
+Sub DoDefaults(bIsOnStart)
+    Call WebRequired(bIsOnStart)
+    Call onScreenLogic(bIsOnStart)
+    Call onValidate_GENERAL__IS_VAT(bIsOnStart)
+    Call onValidate_GENERAL__IS_GENERAL(bIsOnStart)
+    Call onValidate_GENERAL__IS_SEC_A(bIsOnStart)
+    Call onValidate_GENERAL__IS_SEC_B(bIsOnStart)
+    Call onValidate_GENERAL__IS_SEC_C(bIsOnStart)
+    Call onValidate_GENERAL__IS_MTA_REASON(bIsOnStart)
+    Call onValidate_GENERAL__NEXUSQS(bIsOnStart)
+    Call onValidate_ALLRISK__NOC(bIsOnStart)
+    Call onValidate_ALLRISK__IS_FULL(bIsOnStart)
+    Call onValidate_ALLRISK__IS_MLL(bIsOnStart)
+    Call onValidate_ALLRISK__IS_SP_BDV(bIsOnStart)
+    Call onValidate_ALLRISK__IS_BIP_BDV(bIsOnStart)
+    Call onValidate_ALLRISK_EXT__IS_CPC(bIsOnStart)
+    Call onValidate_ALLRISK_EXT__IS_NA(bIsOnStart)
+    Call onValidate_ALLRISK_EXT__IS_DIS(bIsOnStart)
+    Call onValidate_ALLRISK_EXT__IS_DIC(bIsOnStart)
+    Call onValidate_ALLRISK_EXT__IS_CA(bIsOnStart)
+    Call onValidate_ALLRISK_EXT__IS_ISUR(bIsOnStart)
+    Call onValidate_ALLRISK_EXT__IS_CIGA(bIsOnStart)
+    Call onValidate_SECTIONA__IS_PMO(bIsOnStart)
+    Call onValidate_SECTIONA__IS_AOLOM(bIsOnStart)
+    Call onValidate_SECTIONA__IS_SIL(bIsOnStart)
+    Call onValidate_SECTIONA__IS_DAD(bIsOnStart)
+    Call onValidate_SECTIONA__IS_FAPAD(bIsOnStart)
+    Call onValidate_SECTIONA__IS_SC(bIsOnStart)
+    Call onValidate_SECTIONA__IS_CH(bIsOnStart)
+    Call onValidate_SECTIONA__IS_SP(bIsOnStart)
+    Call onValidate_SECTIONA__IS_ADL(bIsOnStart)
+    Call onValidate_SECTIONA__IS_MD(bIsOnStart)
+    Call onValidate_SECTIONA__IS_TOT(bIsOnStart)
+    Call onValidate_SECTIONA__IS_POD(bIsOnStart)
+    Call onValidate_SECTIONA__IS_ACD(bIsOnStart)
+    Call onValidate_SECTIONA__IS_TAD(bIsOnStart)
+    Call onValidate_SECTIONA__IS_SAL(bIsOnStart)
+    Call onValidate_SECTIONA_EXT__IS_PAL(bIsOnStart)
+    Call onValidate_SECTIONA_EXT__IS_PF(bIsOnStart)
+    Call onValidate_SECTIONA_EXT__IS_PSF(bIsOnStart)
+    Call onValidate_SECTIONA_EXT__IS_SD(bIsOnStart)
+    Call onValidate_SECTIONA_EXT__IS_FPSU(bIsOnStart)
+    Call onValidate_SECTIONA_EXT__IS_FERC(bIsOnStart)
+    Call onValidate_SECTIONA_EXT__IS_TMRAL(bIsOnStart)
+    Call onValidate_SECTIONA_EXT__IS_FEPE(bIsOnStart)
+    Call onValidate_SECTIONA_EXT__IS_CC(bIsOnStart)
+    Call onValidate_SECTIONA_EXT__IS_CCN(bIsOnStart)
+    Call onValidate_SECTIONA_EXT__IS_SOP(bIsOnStart)
+    Call onValidate_SECTIONA_EXT__IS_IN(bIsOnStart)
+    Call onValidate_SECTIONA_EXT__IS_LOR(bIsOnStart)
+    Call onValidate_SECTIONA_EXT__IS_PITC(bIsOnStart)
+    Call onValidate_SECTIONA_EXT__IS_MVDIV(bIsOnStart)
+    Call onValidate_SECTIONA_EXT__IS_ROD(bIsOnStart)
+    Call onValidate_SECTIONA_EXT__IS_ILHC(bIsOnStart)
+    Call onValidate_SECTIONA_EXT__IS_TA(bIsOnStart)
+    Call onValidate_SECTIONA_EXT__IS_APF(bIsOnStart)
+    Call onValidate_SECTIONA_EXT__IS_FBC(bIsOnStart)
+    Call onValidate_SECTIONA_EXT__IS_MBS(bIsOnStart)
+    Call onValidate_SECTIONA_EXT__IS_RST(bIsOnStart)
+    Call onValidate_SECTIONA_EXT__IS_DBT(bIsOnStart)
+    Call onValidate_SECTIONA_EXT__IS_ROK(bIsOnStart)
+    Call onValidate_SECTIONA_EXT__IS_DADFC(bIsOnStart)
+    Call onValidate_SECTIONA_EXT__IS_WGL(bIsOnStart)
+    Call onValidate_SECTIONA_EXT__IS_EC(bIsOnStart)
+    Call onValidate_SECTIONA_EXT__IS_ACACS(bIsOnStart)
+    Call onValidate_SECTIONA_EXT__IS_GL(bIsOnStart)
+    Call onValidate_SECTIONA_EXT__IS_PGS(bIsOnStart)
+    Call onValidate_SECTIONA_EXT__IS_TEMP(bIsOnStart)
+    Call onValidate_SECTIONA_EXT__IS_SOMGW(bIsOnStart)
+    Call onValidate_SECTIONA_DED__IS_FAAP(bIsOnStart)
+    Call onValidate_SECTIONA_DED__IS_EIP(bIsOnStart)
+    Call onValidate_SECTIONA_DED__IS_PAMO(bIsOnStart)
+    Call onValidate_SECTIONA_DED__IS_AOLM(bIsOnStart)
+    Call onValidate_SECTIONA_DED__IS_SIL(bIsOnStart)
+    Call onValidate_SECTIONA_DED__IS_DOC(bIsOnStart)
+    Call onValidate_SECTIONA_DED__IS_PIT(bIsOnStart)
+    Call onValidate_SECTIONA_DED__IS_AD(bIsOnStart)
+    Call onValidate_SECTIONA_DED__IS_T(bIsOnStart)
+    Call onValidate_SECTIONA_DED__IS_G(bIsOnStart)
+    Call onValidate_SECTIONA_DED__IS_AL(bIsOnStart)
+    Call onValidate_SECTIONB__IS_MB(bIsOnStart)
+    Call onValidate_SECTIONB__IS_EE(bIsOnStart)
+    Call onValidate_SECTIONB_EXT__IS_OM(bIsOnStart)
+    Call onValidate_SECTIONB_EXT__IS_FB(bIsOnStart)
+    Call onValidate_SECTIONB_EXT__IS_CC(bIsOnStart)
+    Call onValidate_SECTIONB_EXT__IS_EC(bIsOnStart)
+    Call onValidate_SECTIONB_EXT__IS_SP(bIsOnStart)
+    Call onValidate_SECTIONB_EXT__IS_PF(bIsOnStart)
+    Call onValidate_SECTIONB_EXT__IS_UE(bIsOnStart)
+    Call onValidate_SECTIONB_EXT__IS_ILH(bIsOnStart)
+    Call onValidate_SECTIONB_EXT__IS_LOC(bIsOnStart)
+    Call onValidate_SECTIONB_EXT__IS_RD(bIsOnStart)
+    Call onValidate_SECTIONB_EXT__IS_INC(bIsOnStart)
+    Call onValidate_SECTIONB_EXT__IS_TRP(bIsOnStart)
+    Call onValidate_SECTIONB_EXT__IS_SPD(bIsOnStart)
+    Call onValidate_SECTIONB_EXT__IS_PSF(bIsOnStart)
+    Call onValidate_SECTIONB_EXT__IS_DRP(bIsOnStart)
+    Call onValidate_SECTIONB_EXT__IS_SMG(bIsOnStart)
+    Call onValidate_SECTIONC__IS_GP(bIsOnStart)
+    Call onValidate_SECTIONC__IS_GRENT(bIsOnStart)
+    Call onValidate_SECTIONC__IS_GREV(bIsOnStart)
+    Call onValidate_SECTIONC__IS_SC(bIsOnStart)
+    Call onValidate_SECTIONC__IS_ICOW(bIsOnStart)
+    Call onValidate_SECTIONC__IS_PD(bIsOnStart)
+    Call onValidate_SECTIONC__IS_ENG(bIsOnStart)
+    Call onValidate_SECTIONC_EXT__IS_AICOW(bIsOnStart)
+    Call onValidate_SECTIONC_EXT__IS_ICOW(bIsOnStart)
+    Call onValidate_SECTIONC_EXT__IS_AR(bIsOnStart)
+    Call onValidate_SECTIONC_EXT__IS_RRE(bIsOnStart)
+    Call onValidate_SECTIONC_EXT__IS_FAP(bIsOnStart)
+    Call onValidate_SECTIONC_EXT__IS_STS(bIsOnStart)
+    Call onValidate_SECTIONC_EXT__IS_CCS(bIsOnStart)
+    Call onValidate_SECTIONC_EXT__IS_DCSP(bIsOnStart)
+    Call onValidate_SECTIONC_EXT__IS_DCUN(bIsOnStart)
+    Call onValidate_SECTIONC_EXT__IS_DSP(bIsOnStart)
+    Call onValidate_SECTIONC_EXT__IS_DUN(bIsOnStart)
+    Call onValidate_SECTIONC_EXT__IS_POA(bIsOnStart)
+    Call onValidate_SECTIONC_EXT__IS_RBTD(bIsOnStart)
+    Call onValidate_SECTIONC_EXT__IS_AIRP(bIsOnStart)
+    Call onValidate_SECTIONC_EXT__IS_DPW(bIsOnStart)
+    Call onValidate_SECTIONC_EXT__IS_CAP(bIsOnStart)
+    Call onValidate_SECTIONC_EXT__IS_CF(bIsOnStart)
+    Call onValidate_SECTIONC_EXT__IS_SILO(bIsOnStart)
+    Call onValidate_SECTIONC_EXT__IS_PU(bIsOnStart)
+    Call onValidate_SECTIONC_EXT__IS_MDC(bIsOnStart)
+    Call onValidate_SECTIONC_EXT__IS_AAC(bIsOnStart)
+    Call onValidate_SECTIONC_EXT__IS_FEL(bIsOnStart)
+    Call onValidate_SECTIONC_EXT__IS_DVS(bIsOnStart)
+    Call onValidate_SECTIONC_EXT__IS_HIP(bIsOnStart)
+    Call onValidate_SECTIONC_EXT__IS_PRE(bIsOnStart)
+    Call onValidate_SECTIONC_EXT__IS_TA(bIsOnStart)
+    Call onValidate_SECTIONC_EXT__IS_ROY(bIsOnStart)
+    Call onValidate_SECTIONC_EXT__IS_TPITS(bIsOnStart)
+    Call onValidate_SECTIONC_EXT__IS_DUS(bIsOnStart)
+    Call onValidate_REFERRALS__RefCount(bIsOnStart)
+End Sub
+
+Sub Start()
+    Call DoDefaults(True)
+End Sub
+
+Sub Main()
+    Call DoDefaults(False)
+End Sub
+

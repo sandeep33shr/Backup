@@ -1,0 +1,156 @@
+Sub Start()
+
+	Dim SI, Rate, Premium
+	Dim vatFreePrem, vatFreeSI
+	Dim ProdCode
+	Dim x, nIndex, Cnt
+	Dim childSI, childPrem
+	
+	ProdCode = Engine.Item("GENERAL").Item("PRODCODE").value
+	Cnt = Engine.Count("MBCDETS")
+	
+	SI = 0
+	Premium = 0
+	x = 1
+	
+	For nIndex = x to Cnt
+		childSI = SafecDbl(Engine.Item("RISK_DETAILS").Item("MBCDETS", nIndex).Item("ITEM_SUMINSURED").value)
+		childPrem = SafecDbl(Engine.Item("RISK_DETAILS").Item("MBCDETS", nIndex).Item("ITEM_PREMIUM").value)
+		SI = SI + childSI
+		Premium = Premium + childPrem
+	Next
+	
+	'--------------------Machinery Extensions--------------------'
+	Dim ClaimsChk, ClaimsSI, ClaimsRate, ClaimsPrem
+	Dim ProfChk, ProfSI, ProfRate, ProfPrem
+	Dim addSI, addPrem
+	Dim extChildSI, extChildPrem
+	Dim y, mIndex, extCnt
+	
+	ClaimsChk = SafecBool(Engine.Item("RISK_EXTENSIONS").Item("IS_CLAIMS_COST"))
+	ProfChk = SafecBool(Engine.Item("RISK_EXTENSIONS").Item("IS_PROF_FEES"))
+	
+	If (ClaimsChk) Then
+		ClaimsSI = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("SUMINSURED"))
+		ClaimsRate = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("RATE"))
+		ClaimsPrem = SafecDbl(ClaimsSI * (ClaimsRate * 0.01))
+	End If
+	
+	If (ProfChk) Then
+		ProfSI = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("PRO_FEES_SUMINSURED"))
+		ProfRate = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("PRO_FEES_RATE"))
+		ProfPrem = SafecDbl(ProfSI * (ProfRate * 0.01))
+	End If
+	
+	extCnt = Engine.Count("OTHER_EXTENSIONS")
+	
+	addSI = 0
+	addPrem = 0
+	y = 1
+	
+	For mIndex = y to extCnt
+		extChildSI = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("OTHER_EXTENSIONS", mIndex).Item("SUMINSURED").value)
+		extChildPrem = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("OTHER_EXTENSIONS", mIndex).Item("PREMIUM").value)
+		addSI = addSI + extChildSI
+		addPrem = addPrem + extChildPrem
+	Next
+	'--------------------End Machinery Extensions--------------------'
+	
+	
+	''--------------------Consequential Loss Extensions--------------------'
+	'Dim ClaimsCLChk, ClaimsCLSI, ClaimsCLRate, ClaimsCLPrem
+	'Dim ProfCLChk, ProfCLSI, ProfCLRate, ProfCLPrem
+	'Dim addCLSI, addCLPrem
+	'Dim extCLChildSI, extCLChildPrem
+	'Dim z, oIndex, extCLCnt
+	'
+	'ClaimsCLChk = SafecBool(Engine.Item("CL_EXTENSIONS").Item("IS_CLAIMS_COST"))
+	'ProfCLChk = SafecBool(Engine.Item("CL_EXTENSIONS").Item("IS_PROF_FEES"))
+	'
+	'If (ClaimsCLChk) Then
+	'	ClaimsCLSI = SafecDbl(Engine.Item("CL_EXTENSIONS").Item("SUMINSURED"))
+	'	ClaimsCLRate = SafecDbl(Engine.Item("CL_EXTENSIONS").Item("RATE"))
+	'	ClaimsCLPrem = SafecDbl(ClaimsCLSI * (ClaimsCLRate * 0.01))
+	'End If
+	'
+	'If (ProfCLChk) Then
+	'	ProfCLSI = SafecDbl(Engine.Item("CL_EXTENSIONS").Item("PRO_FEES_SUMINSURED"))
+	'	ProfCLRate = SafecDbl(Engine.Item("CL_EXTENSIONS").Item("PRO_FEES_RATE"))
+	'	ProfCLPrem = SafecDbl(ProfCLSI * (ProfCLRate * 0.01))
+	'End If
+	'
+	'extCLCnt = Engine.Count("CL_OTHER_EXTENSIONS")
+	'
+	'addCLSI = 0
+	'addCLPrem = 0
+	'z = 1
+	'
+	'For oIndex = z to extCLCnt
+	'	extCLChildSI = SafecDbl(Engine.Item("CL_EXTENSIONS").Item("CL_OTHER_EXTENSIONS", oIndex).Item("SUMINSURED").value)
+	'	extCLChildPrem = SafecDbl(Engine.Item("CL_EXTENSIONS").Item("CL_OTHER_EXTENSIONS", oIndex).Item("PREMIUM").value)
+	'	addCLSI = addCLSI + extCLChildSI
+	'	addCLPrem = addCLPrem + extCLChildPrem
+	'Next
+	''--------------------End Consequential Loss Extensions--------------------'
+	
+	SI = SI + ClaimsSI + ProfSI + addSI '+ ClaimsCLSI + ProfCLSI + addCLSI
+	Premium = Premium + ClaimsPrem + ProfPrem + addPrem '+ ClaimsCLPrem + ProfCLPrem + addCLPrem
+	
+	If SI > 0 Then
+		Rate = SafecDbl((Premium/SI)*100)
+	Else
+		Rate = 0
+	End If
+	
+	If ProdCode = "CCA" Then
+		vatFreePrem = SafecDbl(Premium/1.15)
+		vatFreeSI = SafecDbl(SI/1.15)
+		
+		GenerateOutput vatFreeSI, Rate, vatFreePrem, "CCAMB"
+	End If
+	
+	If ProdCode = "CCM" Then
+		Dim vatFreePremMonthly, vatFreeSIMonthly, MonthlyRate, MonthlyPrem
+		MonthlyRate = SafecDbl(Rate/12)
+		MonthlyPrem = SafecDbl(SI * (MonthlyRate * 0.01))
+		
+		vatFreeSIMonthly = SafecDbl(SI/1.15)
+		vatFreePremMonthly = SafecDbl(MonthlyPrem/1.15)
+		
+		GenerateOutput vatFreeSIMonthly, MonthlyRate, vatFreePremMonthly, "CCAMB"
+	End If
+	
+End Sub 
+
+
+Function GenerateOutput(cSI, cRate, cPrem, cRatingSection)
+	
+	Dim iCount
+	
+	Engine.NewObject("MACBRKRSK_Output")
+	iCount = Engine.Count("MACBRKRSK_Output")
+	
+	Engine.Item("MACBRKRSK_Output", iCount).Item("Sum_insured").Value = cSI
+	Engine.Item("MACBRKRSK_Output", iCount).Item("Rate").Value = cRate
+	Engine.Item("MACBRKRSK_Output", iCount).Item("Premium").Value = cPrem
+	Engine.Item("MACBRKRSK_Output", iCount).Item("risk_rating_section").Value = cRatingSection
+
+End Function
+
+Function SafecDbl(value)
+	
+	SafecDbl=0
+	On Error Resume Next
+	SafecDbl=CDbl(value)
+	On Error GoTo 0
+
+End Function
+
+Function SafecBool(value)
+    
+	SafecBool = 0
+    On Error Resume Next
+    SafecBool = CBool(value)
+    On Error GoTo 0
+
+End Function

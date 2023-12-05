@@ -1,0 +1,89 @@
+Sub Start()
+	Dim dSumInsured
+	Dim dPremium
+	Dim dRate
+	Dim sRatingSection:sRatingSection = "PKA"
+	Dim dVatPercRate
+	
+	'Only One address can be added. We need to add the Home address
+	If Engine.Item("GENERAL").Item("IsBDX").Value <> 0 or Engine.Item("GENERAL").Item("IsBDX").Value = "" Then
+		Call AddHomeAddress()
+	End If
+
+	'Get Sum Insured and Premium
+	With Engine.Item("STBANK")
+		dSumInsured = SafecDbl(.Item("SUM_INSURED").Value)
+		dPremium = SafecDbl(.Item("PREMIUM").Value)
+	End With
+	
+	'Premium includes VAT so we need to strip out
+	dVatPercRate =  SafecDbl(Extras.GetField("tax_band_rate", "rate", "VAT", Extras.CoverStartDate))/100
+	dPremium = dPremium / (1 + dVatPercRate)
+	dRate = dPremium / dSumInsured * 100
+	
+	Call GenerateOutput(dSumInsured,dRate,dPremium,sRatingSection,0,0)
+End Sub
+
+Sub AddHomeAddress()
+	Dim lAddressListType
+	Dim lAddressType
+	Dim sAddress1
+	Dim sAddress2
+	Dim sAddress3
+	Dim sAddress4
+	Dim lcountry_id
+	Dim vParameters
+	Dim vResult
+	Dim lAddressCnt
+	Dim sPostalCode
+	
+	With Engine.Item("ADDRESS")
+	
+		lAddressType = .Item("ADDRESSLIST").Value
+		sAddress1 = .Item("LINE1").Value
+		sAddress2 = .Item("SUBURB").Value
+		sAddress3 = .Item("TOWN").Value
+		sAddress4 = .Item("REGION").Value
+		sPostalCode = .Item("POSTCODE").Value
+		lcountry_id = .Item("COUNTRY").Value
+		
+		'Get address Type
+		Select Case lAddressType 
+			Case 1 'Site Address
+				lAddressListType = 8
+			Case 2 'Business Address
+				lAddressListType = 3	
+			Case 3 'Home Address
+				lAddressListType = 5	
+		End Select
+		
+	End With
+    
+	vParameters = Array("sAddress1", sAddress1, "sAddress2", sAddress2, "sAddress3", sAddress3, "sAddress4", sAddress4,"sPostalCode",sPostalCode, "lcountry_id",lcountry_id, "lAddressListType",lAddressListType, "dtCoverStartDate",  Extras.CoverStartDate)   	
+    Call Extras.CallNamedStoredProcedure(6722, "AddRiskAddress", vResult, vParameters) 
+	If IsArray(vResult) Then
+        lAddressCnt = vResult(0, 0)
+    End If
+End Sub
+
+
+Function GenerateOutput(cSumInsured, cRate, cPremium, sRatingSection, bIsDisableNewProrata,bIsDisableOriginalProrata)
+	Dim iCount
+	Engine.NewObject("STBKHL_Output")
+	iCount = Engine.Count("STBKHL_Output")
+	Engine.Item("STBKHL_Output", iCount).Item("SUM_INSURED").Value = cSumInsured
+	Engine.Item("STBKHL_Output", iCount).Item("RATE").Value = cRate
+	Engine.Item("STBKHL_Output", iCount).Item("PREMIUM").Value = Round(cPremium,4)
+	Engine.Item("STBKHL_Output", iCount).Item("RISK_RATING_SECTION").Value = sRatingSection
+	Engine.Item("STBKHL_Output", iCount).Item("Disable_New_ProRata").Value = bIsDisableNewProrata
+	Engine.Item("STBKHL_Output", iCount).Item("Disable_Original_ProRata").Value = bIsDisableOriginalProrata
+	'Engine.Item("STBKHL_Output", iCount).Item("country_id").Value = 3 '3 is for Namibia
+
+End Function
+
+Function SafecDbl(vIn)
+    SafecDbl = 0
+    On Error Resume Next
+    SafecDbl = CDbl(vIn)
+    On Error GoTo 0
+End Function

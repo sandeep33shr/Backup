@@ -1,0 +1,96 @@
+Sub Start()
+
+	Dim SI, Rate, Premium
+	Dim monthlyPrem, newRate, totalPremium, totalSI
+	Dim TotalExtSI, TotalExtPrem
+	Dim VatFreePremium, VatFreeSI
+	Dim branchName, iTOOFlag, prodCode
+	
+	prodCode  = SafecStr(Engine.Item("GENERAL").Item("PRODCODE").value)
+	branchName = SafecStr(Engine.Item("GENERAL").Item("BRANCH").value)
+	iTOOFlag = SafeBool(Engine.Item("RISK_DETAILS").Item("ITOOAPPROV").value)
+	
+	SI = SafecDbl(Engine.Item("RISK_DETAILS").Item("LIMIT_OF_INDEMNITY").value)
+	Rate = SafecDbl(Engine.Item("RISK_DETAILS").Item("BASE_RATE").value)
+	Premium = SI * (Rate * 0.01)
+
+	'If the Annual Product was selected
+	If prodCode = "CLA" Then
+		'Strip VAT
+		VatFreePremium = SafecDbl(Premium/1.15)
+		VatFreeSI = SafecDbl(SI/1.15)
+	
+		'Select a rating section based on whether the branch is ITOO
+		If branchName = "ITOO" and iTOOFlag = True Then
+			GenerateOutput VatFreeSI, Rate, VatFreePremium, "ENVGITGL"
+		Else
+			GenerateOutput VatFreeSI, Rate, VatFreePremium, "GENLIABEXC"
+		End If
+	End If
+	
+	'If the Monthly Product was selected
+	If prodCode = "CLM" Then
+	
+		'Calculate the monthly rate
+		newRate = Rate/12
+		
+		'Calculate the Monthly Premium from the Monthly rate
+		monthlyPrem = SI * (newRate *0.01)
+		
+		'Strip VAT
+		VatFreePremium = SafecDbl(monthlyPrem/1.15)
+		VatFreeSI = SafecDbl(SI/1.15)
+		
+		'Select a rating section based on whether the branch is ITOO
+		If branchName = "ITOO" and iTOOFlag = True Then			
+			GenerateOutput VatFreeSI, newRate, VatFreePremium, "ENVGITGL"
+		Else
+			GenerateOutput VatFreeSI, newRate, VatFreePremium, "GENLIABEXC"
+		End If
+	End If
+	
+End Sub
+
+Function GenerateOutput(SI,Rate,Premium,ratingsection)
+
+	Dim count
+	Engine.NewObject("ENVGIT_Output")
+	count = Engine.Count("ENVGIT_Output")
+	Engine.Item("ENVGIT_Output",count).Item("Sum_insured").value=SI
+	Engine.Item("ENVGIT_Output",count).Item("Rate").value=Rate
+	Engine.Item("ENVGIT_Output",count).Item("Premium").value=Premium
+	Engine.Item("ENVGIT_Output",count).Item("risk_rating_section").value= ratingsection
+
+End Function
+
+'double
+Function SafecDbl(value)
+	SafecDbl = 0
+	On Error Resume Next
+	SafecDbl = CDbl(value)
+	On Error GoTo 0
+End Function
+
+'string
+Function SafecStr(value)
+    SafecStr = ""
+    On Error Resume Next
+    SafecStr = CStr(value)
+    On Error GoTo 0
+End Function
+
+'Int
+Function SafeInt(value)
+	SafeInt = 0
+	On Error Resume Next
+	SafeInt = CInt(value)
+	On Error GoTo 0
+End Function
+
+'Bool
+Function SafeBool(value)
+	SafeBool = 0
+	On Error Resume Next
+	SafeBool = CBool(value)
+	On Error GoTo 0
+End Function

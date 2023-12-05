@@ -1,0 +1,136 @@
+Sub Start()
+'--------------Variables-----------------------'
+    Dim SI, Rate, Premium, ExternalStaffDiscount, VatFreePremium, VatFreeSI, TotalPremium, TotalSI
+	Dim ReinstatementOfData, Compatibility, LoadAmount, DiscountAmount 
+	Dim VariableExpenses, VariablePercent, TotVariablePercent, Hardware, LoadDiscount, LoadDicountPercent
+    Dim ProdCode, CategoryCode
+    Dim AllRiskCOunt
+    Dim RiskObject, RiskChildObject
+    Dim x, nIndex 
+
+'----------End Variables-------------------'
+    x = 1
+    RiskObject = "COMPEQ_DET"
+    RiskChildObject = "COMPEQ"
+    AllRiskCOunt = Engine.Count(RiskObject)
+
+'------------Get Data from Screen--------------' 
+  For nIndex = x To AllRiskCOunt
+    ProdCode  = SafecStr(Engine.Item("GENERAL").Item("PRODCODE").value)
+	CategoryCode = SafecStr(Engine.Item(RiskChildObject).Item(RiskObject, x).Item("CATEGORY_CODE").value)
+    LoadDiscount = SafecStr(Engine.Item(RiskChildObject).Item(RiskObject, x).Item("IND_CODE").value)
+    LoadDicountPercent = SafecDbl(Engine.Item(RiskChildObject).Item(RiskObject, x).Item("INDICATOR_PERC").value)
+    ReinstatementOfData = SafecDbl(Engine.Item(RiskChildObject).Item(RiskObject, x).Item("REINDATA").value)
+    Compatibility = SafecDbl(Engine.Item(RiskChildObject).Item(RiskObject, x).Item("COMPATIB").value)
+	SI = SafecDbl(Engine.Item(RiskChildObject).Item(RiskObject, x).Item("SUMINSURED").Value)
+
+'------------Check Category code and assign rate--------------' 
+ If CategoryCode = "LAP" Then     
+Rate = 0.121052632
+Else
+Rate = 0.035307018 
+End If
+
+'------------Calculate Premium--------------' 
+If SI > 0 Then
+Premium = SI * Rate * 0.01
+Premium = Premium * 100
+VariableExpenses = 38.2
+VariablePercent = VariableExpenses / 100
+TotVariablePercent = 1 - VariablePercent
+Hardware = Premium / TotVariablePercent
+Premium = Hardware
+
+'------------Calculate Reinstatement Of Data and Compatibily--------------' 
+If ReinstatementOfData = 1 Then
+Premium = Premium + 11.5
+End If
+If Compatibility = 1 Then
+Premium = Premium + 57.5
+End If
+
+'------------Calculate Discount and Loading--------------' 
+If LoadDiscount = "L" Then
+LoadAmount = Premium * LoadDicountPercent/100
+Premium = Premium + LoadAmount
+End If
+If LoadDiscount = "D" Then
+DiscountAmount = Premium * LoadDicountPercent/100
+Premium = Premium - DiscountAmount
+End If
+
+'------------Check Product Code--------------' 
+If ProdCode = "NSA" OR ProdCode = "NSM" Then
+ExternalStaffDiscount = Premium * 0.1
+Premium = Premium - ExternalStaffDiscount
+End If
+
+'------------Calculate Monthly--------------' 
+If ProdCode = "NPM" or ProdCode = "NSM" Then
+Premium = (Premium/12)
+End If
+TotalPremium =TotalPremium + Premium
+TotalSI = TotalSI + SI
+End If
+
+'------------Assign Premium to Screen--------------'
+Engine.Item(RiskChildObject).Item(RiskObject, x).Item("PREMIUM").Value = Premium 
+
+	x = x + 1
+Next
+
+'------------Calculate Total Premium, SumInsured and Rate--------------' 
+Rate = TotalPremium / TotalSI *100
+VatFreePremium = (TotalPremium/1.15)
+VatFreeSI = (TotalSI/1.15)
+
+GenerateOutput VatFreeSI, Rate, VatFreePremium, "NPAPCE"    
+    
+End Sub
+
+Function GenerateOutput(cSI, cRate, cPrem, cRatingSection)
+
+                Dim iCount
+                
+                Engine.NewObject("PCOMPEQRSK_Output")
+                iCount = Engine.Count("PCOMPEQRSK_Output")
+                
+                Engine.Item("PCOMPEQRSK_Output", iCount).Item("Sum_insured").Value = cSI
+                Engine.Item("PCOMPEQRSK_Output", iCount).Item("Rate").Value = cRate
+                Engine.Item("PCOMPEQRSK_Output", iCount).Item("Premium").Value = cPrem
+                Engine.Item("PCOMPEQRSK_Output", iCount).Item("risk_rating_section").Value = cRatingSection
+
+End Function
+
+Function SafecDbl(value)
+
+                SafecDbl=0
+                On Error Resume Next
+                SafecDbl=CDbl(value)
+                On Error GoTo 0
+
+End Function
+Function SafecStr(value)
+    SafecStr = ""
+    On Error Resume Next
+    SafecStr = CStr(value)
+    On Error GoTo 0
+End Function
+    Function SafeInt(value)
+        SafeInt = 0
+        On Error Resume Next
+        SafeInt = CInt(value)
+        On Error GoTo 0
+    End Function
+    Function SafecBool(value)
+        SafecBool = 0
+        On Error Resume Next
+        SafecBool = CBool(value)
+        On Error GoTo 0
+    End Function
+    Function SafecLng(value)
+        SafecLng = 0
+        On Error Resume Next
+        SafecLng = CLng(value)
+        On Error GoTo 0
+    End Function

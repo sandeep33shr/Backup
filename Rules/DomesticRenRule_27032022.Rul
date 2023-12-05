@@ -1,0 +1,48 @@
+Sub Start()
+	Dim dEscalationPerc
+	Dim dSumInsured
+	Dim iMonths
+	Dim dEscalatedSI
+	Dim dtExpiryDate
+	Dim dtCoverStartDate
+	Dim dtAnniversaryDate
+	Dim dtRenewalDate
+	Dim vResults
+
+    
+  	'Get dates
+	Call Extras.CallNamedStoredProcedure(6722, CStr("GetPreviousVersionDates"), vResults)
+	If IsArray(vResults) = True Then
+		dtExpiryDate = vResults(0, 0)
+		dtCoverStartDate = vResults(1, 0)		
+		dtAnniversaryDate  = vResults(2, 0)
+		dtRenewalDate  = vResults(3, 0)
+	End If
+  
+  
+	 If (Extras.IsTrueMonthlyPolicy = False) Then	
+		'Calculate number of months for annual policies
+		iMonths = DateDiff("m",dtCoverStartDate,dtExpiryDate) + 1	
+	ElseIf Extras.CoverStartDate = dtAnniversaryDate Then
+		iMonths = 12
+	End If
+
+	'Buidings Section
+	dSumInsured = Engine.Item("BUILDINGS").Item("SUMINSURED").Value
+	dEscalationPerc = Extras.GetField("UDL_SI_ESCALATION", "Escalation_Perc", "BUILD",Extras.CoverStartDate)
+	dEscalatedSI = dSumInsured * (1 + (iMonths * dEscalationPerc/100))
+
+	'Assign the new sum insured for BUILDINGS
+	Engine.Item("BUILDINGS").Item("SUMINSURED").Value = dEscalatedSI
+
+	'Contents Section
+	dSumInsured = Engine.Item("CONTENTS").Item("SUMINSURED").Value 
+	dEscalationPerc = Extras.GetField("UDL_SI_ESCALATION", "Escalation_Perc", "CONTS",Extras.CoverStartDate)
+	dEscalatedSI = dSumInsured * (1 + (iMonths * dEscalationPerc/100))
+
+	'Assign the new sum insured for Conetents
+	Engine.Item("CONTENTS").Item("SUMINSURED").Value = dEscalatedSI
+
+
+
+End Sub 

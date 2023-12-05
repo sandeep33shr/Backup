@@ -1,0 +1,464 @@
+        Dim iObjectInstanceCount
+        
+        Sub FindObjectInstanceCount(strScreenObjectName)
+        	iObjectInstanceCount = 1
+        
+        	' strScreenObjectName is the object that is associate with this screen (if a child), or "" if the root screen.
+        	If strScreenObjectName <> ""  Then
+        		Dim instanceCount
+        		
+        		' How many instance of this object exist?
+        		instanceCount = engine.count(strScreenObjectName)
+        		
+        		Dim i
+        		for i = 1 to instanceCount
+        			if engine.item(strScreenObjectName, i).item("OI").value = vAdditionalData(cAdditionalData_OIKey) then
+        				iObjectInstanceCount = i
+        			end if
+        		next
+        	End If
+        End Sub
+
+        Sub DefaultTextTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultCommentTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultIntegerTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CLng(strValue)
+        End Sub
+
+        
+        Sub DefaultCheckboxTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanListTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanRadioTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	If InStr(1, LCase(strValue), "code:", 1) = 1 Then
+        		' The default value has been specified as a code (code:<thecode>).
+        		Dim code
+        		Dim effectiveDate
+        		Dim version
+        		
+        		code = Mid(strValue, Len("code:")+1)
+        		effectiveDate = Now()
+        		version = 1
+        		
+        		Dim listItemId
+        		listItemId = Extras.GetField(strListCode, strListCode + "_Id", code, effectiveDate, version)
+        		
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(listItemId)
+        	Else
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        	End If
+        End Sub
+
+        
+        Sub DefaultRateListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	' TODO.
+        End Sub
+
+        
+        Sub DefaultDateTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	
+        	Dim location
+        	Dim Interval
+        	Dim Duration
+        	Dim DateValue
+        	
+        	'Upper case the input
+        	DateValue = UCase(strValue)
+        	'Check to see if we want data AND  Time
+        	location = InStr(1,DateValue,"DATETIME")
+        	if location > 0 then
+        		DateValue=  CDate(FormatDateTime(Now,0)) 'use the standard vb datetime
+        	End If
+        	'Check to see if TODAY is specified as a modifier
+        	location  = InStr(1,DateValue,"TODAY")
+        	If location > 0 Then
+        		'Determine if we are adding values
+        		location  = InStr(1,DateValue,"+")
+        		If location > 0 Then 
+        			Interval = Mid(DateValue,location + 1,1)
+        			
+        			If Interval = "Y" Then
+        				Interval = "YYYY"
+        			End If
+        			
+        			If Interval <> "" Then 
+        				Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        				DateValue = DateAdd(Interval,Duration,CDate(FormatDateTime(Now,2)))	
+        				
+        			Else
+        				'No Interval specified 
+        				'Need an error here!!!!
+        			End If	
+        		Else 
+        			'Check to see if we are subtracting values
+        			location  =InStr(1,DateValue,"-")
+        			If location > 0  Then 
+        				Interval = Mid(DateValue,location + 1,1)
+        				
+        				If Interval <> "" Then 
+        					Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        					DateValue = DateAdd(Interval, Duration * -1,CDate(FormatDateTime(Now,2)))	
+        				Else
+        					'No Interval specified 
+        					'Need an error here!!!!
+        				End If
+        			Else
+        				'No Function specified, so assume we are just using today's date as a shortdate
+        				DateValue = CDate(FormatDateTime(Now,2))
+        			End If
+        			
+        		End If
+        		
+        	End If	
+        	
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDate(DateValue)
+        End Sub
+
+        
+        Sub DefaultCurrencyTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+        
+        Sub DefaultPercentageTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+Sub WebRequired(bIsOnStart)
+	If bIsOnStart = True Then
+		Engine.NewObject("EVENTLIABCLAIM")
+		Engine.NewObject("EVNTLIACLM")
+	End If
+End Sub
+
+Sub onScreenLogic(bIsOnStart)
+        If bIsOnStart = True Then
+        
+        		 'Instantiate Risk object(s)
+        		Extras.RiskDataEngine.NewObject("COVER_DETAILS")
+        		Extras.RiskDataEngine.NewObject("RISK_DETAILS")
+        		Extras.RiskDataEngine.NewObject("RISK_EXTENSIONS")
+        
+        		'Instantiate Claims object(s)
+        		Engine.NewObject("EVENTLIABCLAIM")
+        
+        		Dim is_ITOO, tot_Premium
+        		Dim is_legal, legal_basic, legal_limit, legal_basic_deduct, legal_deduct
+        		Dim is_arrest, arrest_basic, arrest_limit, arrest_basic_deduct, arrest_deduct
+        		Dim is_Sub, Sub_basic, Sub_limit, Sub_basic_deduct, Sub_deduct
+        		Dim is_xol, xol_basic, xol_limit, xol_basic_deduct, xol_deduct
+        		Dim is_Care, Care_basic, Care_limit, Care_basic_deduct, Care_deduct
+        		Dim is_claim, claim_basic, claim_limit, claim_basic_deduct, claim_deduct
+        		Dim is_collapse, collapse_basic, collapse_limit, collapse_basic_deduct, collapse_deduct
+        		Dim is_damage, damage_basic, damage_limit, damage_basic_deduct, damage_deduct
+        		Dim is_emergency, emergency_basic, emergency_limit, emergency_basic_deduct, emergency_deduct
+        		Dim is_member, member_basic, member_limit, member_basic_deduct, member_deduct
+        		
+        		Dim eventP, mul_Event, event_Type, event_Description
+        		Dim indoor, purpose, installation, open_day, stands, conference, expected_vis, dis_days
+        		
+        		eventP = Extras.RiskDataEngine.Item("COVER_DETAILS").Item("THE_EVENT").Value
+        		mul_Event = Extras.RiskDataEngine.Item("COVER_DETAILS").Item("MULTIPLE_EVENTS").Value
+        		event_Type = Extras.RiskDataEngine.Item("COVER_DETAILS").Item("TYPE_OF_EVENT").Value
+        		event_Description = Extras.RiskDataEngine.Item("COVER_DETAILS").Item("EVENT_DESCRIPTION").Value
+        		
+        		indoor = Extras.RiskDataEngine.Item("COVER_DETAILS").Item("INDOOR_OUTDOOR").Value
+        		purpose = Extras.RiskDataEngine.Item("COVER_DETAILS").Item("PURPOSE_BUILT_VENUE").Value
+        		installation = Extras.RiskDataEngine.Item("COVER_DETAILS").Item("INSTALLATION_DAYS").Value
+        		open_day = Extras.RiskDataEngine.Item("COVER_DETAILS").Item("OPEN_DAYS").Value
+        		dis_days = Extras.RiskDataEngine.Item("COVER_DETAILS").Item("DISMANTLING_DAYS").Value
+        		stands = Extras.RiskDataEngine.Item("COVER_DETAILS").Item("STANDS").Value
+        		conference = Extras.RiskDataEngine.Item("COVER_DETAILS").Item("CONFERENCE").Value
+        		expected_vis = Extras.RiskDataEngine.Item("COVER_DETAILS").Item("EXPECTED_VISITORS").Value
+        		
+        		Engine.Item("EVENTLIABCLAIM").Item("THE_EVENT").Value = eventP
+        		Engine.Item("EVENTLIABCLAIM").Item("MULTIPLE_EVENTS").Value = mul_Event
+        		Engine.Item("EVENTLIABCLAIM").Item("TYPE_OF_EVENT").Value = event_Type
+        		Engine.Item("EVENTLIABCLAIM").Item("EVENT_DESCRIPTION").Value = event_Description
+        		
+        		Engine.Item("EVENTLIABCLAIM").Item("INDOOR_OUTDOOR").Value = indoor
+        		Engine.Item("EVENTLIABCLAIM").Item("PURPOSE_BUILT_VENUE").Value = purpose
+        		Engine.Item("EVENTLIABCLAIM").Item("INSTALLATION_DAYS").Value = installation
+        		Engine.Item("EVENTLIABCLAIM").Item("OPEN_DAYS").Value = open_day
+        		Engine.Item("EVENTLIABCLAIM").Item("DISMANTLING_DAYS").Value = dis_days
+        		Engine.Item("EVENTLIABCLAIM").Item("STANDS").Value = stands
+        		Engine.Item("EVENTLIABCLAIM").Item("CONFERENCE").Value = conference
+        		Engine.Item("EVENTLIABCLAIM").Item("EXPECTED_VISITORS").Value = expected_vis
+        		
+        		'Collect data from Policy risk
+        		Dim is_public, public_basic, public_limit, public_basic_deduct, public_deduct
+        		Dim is_product, product_basic, product_limit, product_basic_deduct, product_deduct
+        		Dim is_empoyers, empoyers_basic, empoyers_limit, empoyers_basic_deduct, empoyers_deduct
+        		
+        		is_public = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("IS_PUBLIC_LIABILITY").Value
+        		public_basic = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("PUBLIC_LIABILITY_BOL").Value
+        		public_limit = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("PUBLIC_LIABILITY_LIMIT").Value
+        		public_basic_deduct = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("PUBLIC_LIABILITY_BOD").Value
+        		public_deduct = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("PUBLIC_LIABILITY_DEDU").Value
+        		
+        		is_product = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("IS_PRODUCTS_LIABILITY").Value
+        		product_basic = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("PRODUCTS_LIABILITY_BOL").Value
+        		product_limit = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("PRODUCTS_LIABILITY_LIMIT").Value
+        		product_basic_deduct = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("PRODUCTS_LIABILITY_BOD").Value
+        		product_deduct = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("PRODUCTS_LIABILITY_DEDU").Value
+        		
+        		is_empoyers = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("IS_EMPLOYERS_LIABILITY").Value
+        		empoyers_basic = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("EMPLOYERS_LIABILITY_BOL").Value
+        		empoyers_limit = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("EMPLOYERS_LIABILITY_LIMIT").Value
+        		empoyers_basic_deduct = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("EMPLOYERS_LIABILITY_BOD").Value
+        		empoyers_deduct = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("EMPLOYERS_LIABILITY_DEDU").Value
+        		
+        		Engine.Item("EVENTLIABCLAIM").Item("IS_CLAIMS").Value = is_public
+        		Engine.Item("EVENTLIABCLAIM").Item("CLAIMS_BOL").Value = public_basic
+        		Engine.Item("EVENTLIABCLAIM").Item("CLAIMS_LIMIT").Value = public_limit
+        		Engine.Item("EVENTLIABCLAIM").Item("CLAIMS_BOD").Value = public_basic_deduct
+        		Engine.Item("EVENTLIABCLAIM").Item("CLAIMS_DEDU").Value = public_deduct
+        		
+        		Engine.Item("EVENTLIABCLAIM").Item("IS_PRODUCTS_LIABILITY").Value = is_product
+        		Engine.Item("EVENTLIABCLAIM").Item("PRODUCTS_LIABILITY_BOL").Value = product_basic
+        		Engine.Item("EVENTLIABCLAIM").Item("PRODUCTS_LIABILITY_LIMIT").Value = product_limit
+        		Engine.Item("EVENTLIABCLAIM").Item("PRODUCTS_LIABILITY_BOD").Value = product_basic_deduct
+        		Engine.Item("EVENTLIABCLAIM").Item("PRODUCTS_LIABILITY_DEDU").Value = product_deduct
+        		
+        		Engine.Item("EVENTLIABCLAIM").Item("IS_EMPLOYERS_LIABILITY").Value = is_empoyers
+        		Engine.Item("EVENTLIABCLAIM").Item("EMPLOYERS_LIABILITY_BOL").Value = empoyers_basic
+        		Engine.Item("EVENTLIABCLAIM").Item("EMPLOYERS_LIABILITY_LIMIT").Value = empoyers_limit
+        		Engine.Item("EVENTLIABCLAIM").Item("EMPLOYERS_LIABILITY_BOD").Value = empoyers_basic_deduct
+        		Engine.Item("EVENTLIABCLAIM").Item("EMPLOYERS_LIABILITY_DEDU").Value = empoyers_deduct
+        		
+        		tot_Premium = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("TOTAL_PREMIUM").Value
+        		Engine.Item("EVENTLIABCLAIM").Item("TOTAL_PREMIUM").Value = tot_Premium
+        		
+        		is_ITOO = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("ITOOAPPROV").Value
+        
+        		is_claim = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("IS_CLAIMS").Value
+        		claim_basic = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("CLAIMS_BOL").Value
+        		claim_limit = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("CLAIMS_LIMIT").Value
+        		claim_basic_deduct = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("CLAIMS_BOD").Value
+        		claim_deduct = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("CLAIMS_DEDU").Value
+        		
+        		is_collapse = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("IS_COLLAPSE").Value
+        		collapse_basic = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("COLLAPSE_BOL").Value
+        		collapse_limit = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("COLLAPSE_LIMIT").Value
+        		collapse_basic_deduct = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("COLLAPSE_BOD").Value
+        		collapse_deduct = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("COLLAPSE_DEDU").Value
+        		
+        		is_damage = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("IS_DAMAGE").Value
+        		damage_basic = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("DAMAGE_BOL").Value
+        		damage_limit = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("DAMAGE_LIMIT").Value
+        		damage_basic_deduct = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("DAMAGE_BOD").Value
+        		damage_deduct = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("DAMAGE_DEDU").Value
+        		
+        		is_emergency = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("IS_EMERGENCY").Value
+        		emergency_basic = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("EMERGENCY_BOL").Value
+        		emergency_limit = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("EMERGENCY_LIMIT").Value
+        		emergency_basic_deduct = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("EMERGENCY_BOD").Value
+        		emergency_deduct = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("EMERGENCY_DEDU").Value
+        		
+        		is_member = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("IS_MEMBER").Value
+        		member_basic = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("MEMBER_BOL").Value
+        		member_limit = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("MEMBER_LIMIT").Value
+        		member_basic_deduct = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("MEMBER_BOD").Value
+        		member_deduct = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("MEMBER_DEDU").Value
+        		
+        		
+        		is_legal = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("IS_LEGAL").Value
+        		legal_basic = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("LEGAL_BOL").Value
+        		legal_limit = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("LEGAL_LIMIT").Value
+        		legal_basic_deduct = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("LEGAL_BOD").Value
+        		legal_deduct = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("LEGAL_DEDU").Value
+        		
+        		is_arrest = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("IS_ARREST").Value
+        		arrest_basic = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("ARREST_BOL").Value
+        		arrest_limit = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("ARREST_LIMIT").Value
+        		arrest_basic_deduct = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("ARREST_BOD").Value
+        		arrest_deduct = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("ARREST_DEDU").Value
+        		
+        		is_Sub = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("SUBCONTRCTOR").Value
+        		Sub_basic = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("SUB_CON_BASIS_OF_LIMIT").Value
+        		Sub_limit = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("SUB_CON_LIMIT").Value
+        		Sub_basic_deduct = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("SUB_CONT_BASIS_OF_DEDUCT").Value
+        		Sub_deduct = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("SUB_CON_DEDUCTIBLE").Value
+        		
+        		is_xol = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("XOL_MOTOR").Value
+        		xol_basic = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("XOL_MOTOR_BASIS_OF_LIMIT").Value
+        		xol_limit = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("XOL_MOTOR_LIMIT").Value
+        		xol_basic_deduct = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("XOL_MOTOR_BASIS_OF_DEDUCT").Value
+        		xol_deduct = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("XOL_MOTOR_DEDUCTIBLE").Value
+        		
+        		is_Care = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("CARE_CUSTODY_CONTROL").Value
+        		Care_basic = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("CARE_CUS_BASIS_OF_LIMIT").Value
+        		Care_limit = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("CARE_CUS_LIMIT").Value
+        		Care_basic_deduct = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("CARE_CUS_BASIS_OF_DEDUCT").Value
+        		Care_deduct = Extras.RiskDataEngine.Item("RISK_EXTENSIONS").Item("CARE_CUS_DEDUCTIBLE").Value
+        		
+        		'Send data to the claim screen
+        		Engine.Item("EVENTLIABCLAIM").Item("ITOOAPPROV").Value = is_ITOO
+        		
+        		Engine.Item("EVENTLIABCLAIM").Item("IS_CLAIMS").Value = is_claim
+        		Engine.Item("EVENTLIABCLAIM").Item("CLAIMS_BOL").Value = claim_basic
+        		Engine.Item("EVENTLIABCLAIM").Item("CLAIMS_LIMIT").Value = claim_limit
+        		Engine.Item("EVENTLIABCLAIM").Item("CLAIMS_BOD").Value = claim_basic_deduct
+        		Engine.Item("EVENTLIABCLAIM").Item("CLAIMS_DEDU").Value = claim_deduct
+        		
+        		Engine.Item("EVENTLIABCLAIM").Item("IS_COLLAPSE").Value = is_collapse
+        		Engine.Item("EVENTLIABCLAIM").Item("COLLAPSE_BOL").Value = collapse_basic
+        		Engine.Item("EVENTLIABCLAIM").Item("COLLAPSE_LIMIT").Value = collapse_limit
+        		Engine.Item("EVENTLIABCLAIM").Item("COLLAPSE_BOD").Value = collapse_basic_deduct
+        		Engine.Item("EVENTLIABCLAIM").Item("COLLAPSE_DEDU").Value = collapse_deduct
+        		
+        		Engine.Item("EVENTLIABCLAIM").Item("IS_DAMAGE").Value = is_damage
+        		Engine.Item("EVENTLIABCLAIM").Item("DAMAGE_BOL").Value = damage_basic
+        		Engine.Item("EVENTLIABCLAIM").Item("DAMAGE_LIMIT").Value = damage_limit
+        		Engine.Item("EVENTLIABCLAIM").Item("DAMAGE_BOD").Value = damage_basic_deduct
+        		Engine.Item("EVENTLIABCLAIM").Item("DAMAGE_DEDU").Value = damage_deduct
+        		
+        		Engine.Item("EVENTLIABCLAIM").Item("IS_EMERGENCY").Value = is_emergency
+        		Engine.Item("EVENTLIABCLAIM").Item("EMERGENCY_BOL").Value = emergency_basic
+        		Engine.Item("EVENTLIABCLAIM").Item("EMERGENCY_LIMIT").Value = emergency_limit
+        		Engine.Item("EVENTLIABCLAIM").Item("EMERGENCY_BOD").Value = emergency_basic_deduct
+        		Engine.Item("EVENTLIABCLAIM").Item("EMERGENCY_DEDU").Value = emergency_deduct
+        		
+        		Engine.Item("EVENTLIABCLAIM").Item("IS_MEMBER").Value = is_member
+        		Engine.Item("EVENTLIABCLAIM").Item("MEMBER_BOL").Value = member_basic
+        		Engine.Item("EVENTLIABCLAIM").Item("MEMBER_LIMIT").Value = member_limit
+        		Engine.Item("EVENTLIABCLAIM").Item("MEMBER_BOD").Value = member_basic_deduct
+        		Engine.Item("EVENTLIABCLAIM").Item("MEMBER_DEDU").Value = member_deduct
+        		
+        		Engine.Item("EVENTLIABCLAIM").Item("IS_LEGAL").Value = is_legal
+        		Engine.Item("EVENTLIABCLAIM").Item("LEGAL_BOL").Value = legal_basic
+        		Engine.Item("EVENTLIABCLAIM").Item("LEGAL_LIMIT").Value = legal_limit
+        		Engine.Item("EVENTLIABCLAIM").Item("LEGAL_BOD").Value = legal_basic_deduct
+        		Engine.Item("EVENTLIABCLAIM").Item("LEGAL_DEDU").Value = legal_deduct
+        		
+        		Engine.Item("EVENTLIABCLAIM").Item("IS_ARREST").Value = is_arrest
+        		Engine.Item("EVENTLIABCLAIM").Item("ARREST_BOL").Value = arrest_basic
+        		Engine.Item("EVENTLIABCLAIM").Item("ARREST_LIMIT").Value = arrest_limit
+        		Engine.Item("EVENTLIABCLAIM").Item("ARREST_BOD").Value = arrest_basic_deduct
+        		Engine.Item("EVENTLIABCLAIM").Item("ARREST_DEDU").Value = arrest_deduct
+        		
+        		Engine.Item("EVENTLIABCLAIM").Item("SUBCONTRCTOR").Value = is_Sub
+        		Engine.Item("EVENTLIABCLAIM").Item("SUB_CON_BASIS_OF_LIMIT").Value = Sub_basic
+        		Engine.Item("EVENTLIABCLAIM").Item("SUB_CON_LIMIT").Value = Sub_limit
+        		Engine.Item("EVENTLIABCLAIM").Item("SUB_CONT_BASIS_OF_DEDUCT").Value = Sub_basic_deduct
+        		Engine.Item("EVENTLIABCLAIM").Item("SUB_CON_DEDUCTIBLE").Value = Sub_deduct
+        		
+        		Engine.Item("EVENTLIABCLAIM").Item("XOL_MOTOR").Value = is_xol
+        		Engine.Item("EVENTLIABCLAIM").Item("XOL_MOTOR_BASIS_OF_LIMIT").Value = xol_basic
+        		Engine.Item("EVENTLIABCLAIM").Item("XOL_MOTOR_LIMIT").Value = xol_limit
+        		Engine.Item("EVENTLIABCLAIM").Item("XOL_MOTOR_BASIS_OF_DEDUCT").Value = xol_basic_deduct
+        		Engine.Item("EVENTLIABCLAIM").Item("XOL_MOTOR_DEDUCTIBLE").Value = xol_deduct
+        		
+        		Engine.Item("EVENTLIABCLAIM").Item("CARE_CUSTODY_CONTROL").Value = is_Care
+        		Engine.Item("EVENTLIABCLAIM").Item("CARE_CUS_BASIS_OF_LIMIT").Value = Care_basic
+        		Engine.Item("EVENTLIABCLAIM").Item("CARE_CUS_LIMIT").Value = Care_limit
+        		Engine.Item("EVENTLIABCLAIM").Item("CARE_CUS_BASIS_OF_DEDUCT").Value = Care_basic_deduct
+        		Engine.Item("EVENTLIABCLAIM").Item("CARE_CUS_DEDUCTIBLE").Value = Care_deduct
+        		
+        	Call DoInstanceCount
+        End If
+        End Sub
+
+        Sub DoInstanceCount
+        ' The ScreenMain rule is added to every screen automatically.
+        
+        
+        Call FindObjectInstanceCount("")
+End Sub
+
+Sub onValidate_EVENTLIABCLAIM__THIRDPARTY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("EVENTLIABCLAIM", "THIRDPARTY", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_EVENTLIABCLAIM__SALVAGE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("EVENTLIABCLAIM", "SALVAGE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_EVENTLIABCLAIM__RECOVERY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("EVENTLIABCLAIM", "RECOVERY", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_EVENTLIABCLAIM__IS_THRDTLS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("EVENTLIABCLAIM", "IS_THRDTLS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_EVENTLIABCLAIM__IS_ASSESSDETAIL(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("EVENTLIABCLAIM", "IS_ASSESSDETAIL", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_EVENTLIABCLAIM__IS_NAMAPP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("EVENTLIABCLAIM", "IS_NAMAPP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_EVNTLIACLM__ASSESSOR(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("EVNTLIACLM", "ASSESSOR", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_EVNTLIACLM__LAWYRS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("EVNTLIACLM", "LAWYRS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_EVNTLIACLM__WITNESS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("EVNTLIACLM", "WITNESS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub DoDefaults(bIsOnStart)
+    Call WebRequired(bIsOnStart)
+    Call onScreenLogic(bIsOnStart)
+    Call onValidate_EVENTLIABCLAIM__THIRDPARTY(bIsOnStart)
+    Call onValidate_EVENTLIABCLAIM__SALVAGE(bIsOnStart)
+    Call onValidate_EVENTLIABCLAIM__RECOVERY(bIsOnStart)
+    Call onValidate_EVENTLIABCLAIM__IS_THRDTLS(bIsOnStart)
+    Call onValidate_EVENTLIABCLAIM__IS_ASSESSDETAIL(bIsOnStart)
+    Call onValidate_EVENTLIABCLAIM__IS_NAMAPP(bIsOnStart)
+    Call onValidate_EVNTLIACLM__ASSESSOR(bIsOnStart)
+    Call onValidate_EVNTLIACLM__LAWYRS(bIsOnStart)
+    Call onValidate_EVNTLIACLM__WITNESS(bIsOnStart)
+End Sub
+
+Sub Start()
+    Call DoDefaults(True)
+End Sub
+
+Sub Main()
+    Call DoDefaults(False)
+End Sub
+

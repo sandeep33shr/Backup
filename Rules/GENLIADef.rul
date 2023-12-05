@@ -1,0 +1,376 @@
+        Dim iObjectInstanceCount
+        
+        Sub FindObjectInstanceCount(strScreenObjectName)
+        	iObjectInstanceCount = 1
+        
+        	' strScreenObjectName is the object that is associate with this screen (if a child), or "" if the root screen.
+        	If strScreenObjectName <> ""  Then
+        		Dim instanceCount
+        		
+        		' How many instance of this object exist?
+        		instanceCount = engine.count(strScreenObjectName)
+        		
+        		Dim i
+        		for i = 1 to instanceCount
+        			if engine.item(strScreenObjectName, i).item("OI").value = vAdditionalData(cAdditionalData_OIKey) then
+        				iObjectInstanceCount = i
+        			end if
+        		next
+        	End If
+        End Sub
+
+        Sub DefaultTextTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultCommentTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultIntegerTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CLng(strValue)
+        End Sub
+
+        
+        Sub DefaultCheckboxTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanListTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanRadioTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	If InStr(1, LCase(strValue), "code:", 1) = 1 Then
+        		' The default value has been specified as a code (code:<thecode>).
+        		Dim code
+        		Dim effectiveDate
+        		Dim version
+        		
+        		code = Mid(strValue, Len("code:")+1)
+        		effectiveDate = Now()
+        		version = 1
+        		
+        		Dim listItemId
+        		listItemId = Extras.GetField(strListCode, strListCode + "_Id", code, effectiveDate, version)
+        		
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(listItemId)
+        	Else
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        	End If
+        End Sub
+
+        
+        Sub DefaultRateListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	' TODO.
+        End Sub
+
+        
+        Sub DefaultDateTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	
+        	Dim location
+        	Dim Interval
+        	Dim Duration
+        	Dim DateValue
+        	
+        	'Upper case the input
+        	DateValue = UCase(strValue)
+        	'Check to see if we want data AND  Time
+        	location = InStr(1,DateValue,"DATETIME")
+        	if location > 0 then
+        		DateValue=  CDate(FormatDateTime(Now,0)) 'use the standard vb datetime
+        	End If
+        	'Check to see if TODAY is specified as a modifier
+        	location  = InStr(1,DateValue,"TODAY")
+        	If location > 0 Then
+        		'Determine if we are adding values
+        		location  = InStr(1,DateValue,"+")
+        		If location > 0 Then 
+        			Interval = Mid(DateValue,location + 1,1)
+        			
+        			If Interval = "Y" Then
+        				Interval = "YYYY"
+        			End If
+        			
+        			If Interval <> "" Then 
+        				Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        				DateValue = DateAdd(Interval,Duration,CDate(FormatDateTime(Now,2)))	
+        				
+        			Else
+        				'No Interval specified 
+        				'Need an error here!!!!
+        			End If	
+        		Else 
+        			'Check to see if we are subtracting values
+        			location  =InStr(1,DateValue,"-")
+        			If location > 0  Then 
+        				Interval = Mid(DateValue,location + 1,1)
+        				
+        				If Interval <> "" Then 
+        					Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        					DateValue = DateAdd(Interval, Duration * -1,CDate(FormatDateTime(Now,2)))	
+        				Else
+        					'No Interval specified 
+        					'Need an error here!!!!
+        				End If
+        			Else
+        				'No Function specified, so assume we are just using today's date as a shortdate
+        				DateValue = CDate(FormatDateTime(Now,2))
+        			End If
+        			
+        		End If
+        		
+        	End If	
+        	
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDate(DateValue)
+        End Sub
+
+        
+        Sub DefaultCurrencyTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+        
+        Sub DefaultPercentageTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+Sub WebRequired(bIsOnStart)
+	If bIsOnStart = True Then
+		Engine.NewObject("GENERAL")
+		Engine.NewObject("ADDRESS")
+		Engine.NewObject("INDUSTRY")
+		Engine.NewObject("RETROCESSION")
+		Engine.NewObject("RISK_DETAILS")
+		Engine.NewObject("RISK_EXTENSIONS")
+		Engine.NewObject("REFERRAL_CLAUSES")
+		Engine.NewObject("NOTES")
+		Engine.NewObject("NOTESEXT")
+	End If
+End Sub
+
+Sub onScreenLogic(bIsOnStart)
+        ' The ScreenMain rule is added to every screen automatically.
+        
+        
+        Call FindObjectInstanceCount("")
+End Sub
+
+Sub onValidate_GENERAL__IS_MTA_REASON(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "IS_MTA_REASON", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_DETAILS__ITOOAPPROV(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("RISK_DETAILS", "ITOOAPPROV", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_DETAILS__BUSINESS_COVERAGE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultRateListTo("RISK_DETAILS", "BUSINESS_COVERAGE", "7582", "POLICYCVRG")
+        End If
+End Sub
+
+Sub onValidate_RISK_DETAILS__IS_EXTENSIONS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("RISK_DETAILS", "IS_EXTENSIONS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_DETAILS__ADD_RETRO_DATE_INFO(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("RISK_DETAILS", "ADD_RETRO_DATE_INFO", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_DETAILS__IS_PUBLIC_LIABILITY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("RISK_DETAILS", "IS_PUBLIC_LIABILITY", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_DETAILS__PUBLIC_LIABILITY_BASISOFLIMIT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultListTo("RISK_DETAILS", "PUBLIC_LIABILITY_BASISOFLIMIT", "1", "UDL_BOL")
+        End If
+End Sub
+
+Sub onValidate_RISK_DETAILS__PUBLIC_LIABILITY_RATE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("RISK_DETAILS", "PUBLIC_LIABILITY_RATE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_DETAILS__PUBLIC_LIABILITY_PREMIUM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCurrencyTo("RISK_DETAILS", "PUBLIC_LIABILITY_PREMIUM", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_DETAILS__PUBLIC_LIABILITY_BASISOFDEDU(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultListTo("RISK_DETAILS", "PUBLIC_LIABILITY_BASISOFDEDU", "1", "UDL_BOD")
+        End If
+End Sub
+
+Sub onValidate_RISK_DETAILS__IS_PRODUCT_LIABILITY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("RISK_DETAILS", "IS_PRODUCT_LIABILITY", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_DETAILS__PRODUCT_LIABILITY_BASISOFLIMIT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultListTo("RISK_DETAILS", "PRODUCT_LIABILITY_BASISOFLIMIT", "1", "UDL_BOL")
+        End If
+End Sub
+
+Sub onValidate_RISK_DETAILS__PRODUCT_LIABILITY_RATE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("RISK_DETAILS", "PRODUCT_LIABILITY_RATE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_DETAILS__PRODUCT_LIABILITY_PREMIUM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCurrencyTo("RISK_DETAILS", "PRODUCT_LIABILITY_PREMIUM", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_DETAILS__PRODUCT_LIABILITY_BASISOFDEDU(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultListTo("RISK_DETAILS", "PRODUCT_LIABILITY_BASISOFDEDU", "1", "UDL_BOD")
+        End If
+End Sub
+
+Sub onValidate_RISK_DETAILS__IS_EMPLOYERS_LIABILITY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("RISK_DETAILS", "IS_EMPLOYERS_LIABILITY", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_DETAILS__EMPLOYERS_LIABILITY_BASISOFLIMIT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultListTo("RISK_DETAILS", "EMPLOYERS_LIABILITY_BASISOFLIMIT", "1", "UDL_BOL")
+        End If
+End Sub
+
+Sub onValidate_RISK_DETAILS__EMPLOYERS_LIABILITY_RATE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("RISK_DETAILS", "EMPLOYERS_LIABILITY_RATE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_DETAILS__EMPLOYERS_LIABILITY_PREMIUM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCurrencyTo("RISK_DETAILS", "EMPLOYERS_LIABILITY_PREMIUM", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_DETAILS__EMPLOYERS_LIABILITY_BASISOFDEDU(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultListTo("RISK_DETAILS", "EMPLOYERS_LIABILITY_BASISOFDEDU", "1", "UDL_BOD")
+        End If
+End Sub
+
+Sub onValidate_RISK_EXTENSIONS__OPTIONAL_EXTENSIONS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("RISK_EXTENSIONS", "OPTIONAL_EXTENSIONS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_EXTENSIONS__INCLUDED_EXTENSIONS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("RISK_EXTENSIONS", "INCLUDED_EXTENSIONS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_EXTENSIONS__TURNOVER(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("RISK_EXTENSIONS", "TURNOVER", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_EXTENSIONS__PRINCIPALS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("RISK_EXTENSIONS", "PRINCIPALS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_EXTENSIONS__EMERGMED(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("RISK_EXTENSIONS", "EMERGMED", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_EXTENSIONS__DEFENCE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("RISK_EXTENSIONS", "DEFENCE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_EXTENSIONS__CLAIMSPREP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("RISK_EXTENSIONS", "CLAIMSPREP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_EXTENSIONS__VENDOR(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("RISK_EXTENSIONS", "VENDOR", "0", "{listcode}")
+        End If
+End Sub
+
+Sub DoDefaults(bIsOnStart)
+    Call WebRequired(bIsOnStart)
+    Call onScreenLogic(bIsOnStart)
+    Call onValidate_GENERAL__IS_MTA_REASON(bIsOnStart)
+    Call onValidate_RISK_DETAILS__ITOOAPPROV(bIsOnStart)
+    Call onValidate_RISK_DETAILS__BUSINESS_COVERAGE(bIsOnStart)
+    Call onValidate_RISK_DETAILS__IS_EXTENSIONS(bIsOnStart)
+    Call onValidate_RISK_DETAILS__ADD_RETRO_DATE_INFO(bIsOnStart)
+    Call onValidate_RISK_DETAILS__IS_PUBLIC_LIABILITY(bIsOnStart)
+    Call onValidate_RISK_DETAILS__PUBLIC_LIABILITY_BASISOFLIMIT(bIsOnStart)
+    Call onValidate_RISK_DETAILS__PUBLIC_LIABILITY_RATE(bIsOnStart)
+    Call onValidate_RISK_DETAILS__PUBLIC_LIABILITY_PREMIUM(bIsOnStart)
+    Call onValidate_RISK_DETAILS__PUBLIC_LIABILITY_BASISOFDEDU(bIsOnStart)
+    Call onValidate_RISK_DETAILS__IS_PRODUCT_LIABILITY(bIsOnStart)
+    Call onValidate_RISK_DETAILS__PRODUCT_LIABILITY_BASISOFLIMIT(bIsOnStart)
+    Call onValidate_RISK_DETAILS__PRODUCT_LIABILITY_RATE(bIsOnStart)
+    Call onValidate_RISK_DETAILS__PRODUCT_LIABILITY_PREMIUM(bIsOnStart)
+    Call onValidate_RISK_DETAILS__PRODUCT_LIABILITY_BASISOFDEDU(bIsOnStart)
+    Call onValidate_RISK_DETAILS__IS_EMPLOYERS_LIABILITY(bIsOnStart)
+    Call onValidate_RISK_DETAILS__EMPLOYERS_LIABILITY_BASISOFLIMIT(bIsOnStart)
+    Call onValidate_RISK_DETAILS__EMPLOYERS_LIABILITY_RATE(bIsOnStart)
+    Call onValidate_RISK_DETAILS__EMPLOYERS_LIABILITY_PREMIUM(bIsOnStart)
+    Call onValidate_RISK_DETAILS__EMPLOYERS_LIABILITY_BASISOFDEDU(bIsOnStart)
+    Call onValidate_RISK_EXTENSIONS__OPTIONAL_EXTENSIONS(bIsOnStart)
+    Call onValidate_RISK_EXTENSIONS__INCLUDED_EXTENSIONS(bIsOnStart)
+    Call onValidate_RISK_EXTENSIONS__TURNOVER(bIsOnStart)
+    Call onValidate_RISK_EXTENSIONS__PRINCIPALS(bIsOnStart)
+    Call onValidate_RISK_EXTENSIONS__EMERGMED(bIsOnStart)
+    Call onValidate_RISK_EXTENSIONS__DEFENCE(bIsOnStart)
+    Call onValidate_RISK_EXTENSIONS__CLAIMSPREP(bIsOnStart)
+    Call onValidate_RISK_EXTENSIONS__VENDOR(bIsOnStart)
+End Sub
+
+Sub Start()
+    Call DoDefaults(True)
+End Sub
+
+Sub Main()
+    Call DoDefaults(False)
+End Sub
+

@@ -1,0 +1,85 @@
+Sub Start()
+	Dim Premium, SI, Rate
+	Dim childSI, childPrem
+	Dim x, nIndex, Cnt
+	Dim ProdCode
+	
+	ProdCode = Engine.Item("GENERAL").Item("PRODCODE").value
+	
+	Cnt = Engine.Count("ELECTEQ")
+	
+	SI = 0
+	Premium = 0
+	x = 1
+	
+	For nIndex = x to Cnt
+		childSI = SafecDbl(Engine.Item("ELECTEQUIP").Item("ELECTEQ", nIndex).Item("SUMINSURED").value)
+		childPrem = SafecDbl(Engine.Item("ELECTEQUIP").Item("ELECTEQ", nIndex).Item("PREMIUM").value)
+		SI = SI + childSI
+		Premium = Premium + childPrem
+	Next
+	
+	If SI > 0 Then
+		Rate = SafecDbl((Premium/SI) * 100)
+	Else
+		Rate = 0
+	End If
+	
+	If ProdCode = "CCA" Then
+		Dim vatFreePrem, vatFreeSI
+		vatFreePrem = SafecDbl(Premium / 1.15)
+		vatFreeSI = SafecDbl(SI / 1.15) 
+		
+		GenerateOutput vatFreeSI, Rate, vatFreePrem, "CCAEE"
+	End If
+	
+	If ProdCode = "CCM" Then
+		Dim vatFreePremMonthly, vatFreeSIMonthly, MonthlyRate, MonthlyPrem
+		MonthlyRate = SafecDbl(Rate/12)
+		MonthlyPrem = SafecDbl(SI * (MonthlyRate * 0.01))
+		
+		vatFreeSIMonthly = SafecDbl(SI/1.15)
+		vatFreePremMonthly = SafecDbl(MonthlyPrem/1.15)
+		
+		GenerateOutput vatFreeSIMonthly, MonthlyRate, vatFreePremMonthly, "CCAEE"
+	End If
+End Sub 
+
+Function GenerateOutput(cSI, cRATE, cPREM, cRatingSection)
+    Dim counter
+    Engine.NewObject("ELECEQRISK_Output")
+    counter = Engine.Count("ELECEQRISK_Output")
+    Engine.Item("ELECEQRISK_Output", counter).Item("Sum_insured").value = cSI
+    Engine.Item("ELECEQRISK_Output", counter).Item("Rate").value = cRATE
+    Engine.Item("ELECEQRISK_Output", counter).Item("Premium").value = cPREM
+    Engine.Item("ELECEQRISK_Output", counter).Item("risk_rating_section").value = cRatingSection
+End Function
+
+Function SafecDbl(value)
+    SafecDbl = 0
+    On Error Resume Next
+    SafecDbl = CDbl(value)
+    On Error GoTo 0
+End Function
+
+
+Function SafeInt(value)
+    SafeInt = 0
+    On Error Resume Next
+    SafeInt = CInt(value)
+    On Error GoTo 0
+End Function
+
+Function SafecStr(value)
+    SafecStr = ""
+    On Error Resume Next
+    SafecStr = CStr(value)
+    On Error GoTo 0
+End Function
+
+Function SafecDate(value)
+    SafecDate = 0
+    On Error Resume Next
+    SafecDate = CDate(value)
+    On Error GoTo 0
+End Function

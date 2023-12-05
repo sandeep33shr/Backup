@@ -1,0 +1,55 @@
+Sub Start()
+	
+	'Check if the cover has been added
+	If	Engine.Item("GENERAL").Item("IS_BAR").Value = 1 Then
+		Engine.Item("BAR").Item("EFFECTIVEDATE").Value = Extras.CoverStartDate
+	End If
+	
+	If	Engine.Item("GENERAL").Item("IS_GLASS").Value = 1 Then
+		Engine.Item("GLASS").Item("EFFECTIVEDATE").Value = Extras.CoverStartDate
+	End If
+	
+	If	Engine.Item("GENERAL").Item("IS_THEFT").Value = 1 Then
+		Engine.Item("THEFT").Item("EFFECTIVEDATE").Value = Extras.CoverStartDate
+	End If
+	
+	If	Engine.Item("GENERAL").Item("IS_MONEY").Value = 1 Then
+		Engine.Item("MONEY").Item("EFFECTIVEDATE").Value = Extras.CoverStartDate
+	End If
+	
+	If	Engine.Item("GENERAL").Item("IS_GIT").Value = 1 Then
+		Engine.Item("GIT").Item("EFFECTIVEDATE").Value = Extras.CoverStartDate
+	End If
+	
+	If	Engine.Item("GENERAL").Item("IS_PA").Value = 1 Then
+		Engine.Item("EMPDE").Item("EFFECTIVEDATE").Value = Extras.CoverStartDate
+	End If
+	
+	If	Engine.Item("GENERAL").Item("IS_SB").Value = 1 Then
+		Engine.Item("STATED").Item("EFFECTIVEDATE").Value = Extras.CoverStartDate
+	End If
+	
+	If	Engine.Item("GENERAL").Item("IS_FIDELITY").Value = 1 Then
+		Engine.Item("FIDGUAR").Item("EFFECTIVEDATE").Value = Extras.CoverStartDate
+	End If
+	
+	If	Engine.Item("GENERAL").Item("IS_ELECEQUIP").Value = 1 Then
+		Engine.Item("ELECTEQUIP").Item("EFFECTIVEDATE").Value = Extras.CoverStartDate
+	End If
+	
+	If	Engine.Item("GENERAL").Item("IS_MACHINERY").Value = 1 Then
+		If	Engine.Item("MBREAK").Item("IS_MACH").Value = 1 Then
+			Engine.Item("MBREAK").Item("EFFECTIVEDATE").Value = Extras.CoverStartDate
+		End If
+		
+		If	Engine.Item("MBREAK").Item("IS_CL_BI").Value = 1 Then
+			Engine.Item("CLOSS").Item("EFFECTIVEDATE").Value = Extras.CoverStartDate
+		End If
+		
+		If	Engine.Item("MBREAK").Item("IS_DOS").Value = 1 Then
+			Engine.Item("DSTOCK").Item("EFFECTIVEDATE").Value = Extras.CoverStartDate
+		End If
+	End If
+
+
+End Sub

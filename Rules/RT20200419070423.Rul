@@ -1,0 +1,172 @@
+    Sub Start()
+        '--------------Varibles-----------------------'
+        Dim RiskObject, RiskChildObject
+        Dim DeathSumInsured, DeathRate, DeathPremBeforeInc_Vat, DeathPremInc_Vat, DeathFinalRate, DeathTotalFinalSumInsured, DeathFinalPremium, DeathTotalFinalPremium
+        Dim MedicalSumInsured, MedicalRate, MedicalPremBeforeInc_Vat, MedicalPremInc_Vat, MedicalFinalRate, MedicalTotalFinalSumInsured, MedicalFinalPremium, MedicalTotalFinalPremium
+        Dim TempDisableSumInsured, TempDisableRate, TempDisableBeforeInc_VatPrem, TempDisableInc_VatPrem, TempDisableFinalRate, TempDisableFinalSumInsured, TempDisableFinalPrem, TempDisableTotalFinalPrem
+        Dim TenPercentDisc
+        Dim ProductCode
+        Dim AllRiskCOunt
+        Dim Inc_Vat,Inc_VatCal
+        Dim x,nIndex 
+        '----------End Variables-------------------'
+        '------------Assign variables--------------' 
+        Inc_Vat = 38.20
+        x = 1
+        RiskObject = "PSINSURED"
+        RiskChildObject = "PSACC"
+		
+        ProductCode = Engine.Item(RiskChildObject).Item("PROD_CODE").value
+        AllRiskCOunt = Engine.Count(RiskObject)
+        DeathTotalFinalSumInsured = 0.0
+        DeathTotalFinalPremium = 0.0
+        MedicalTotalFinalSumInsured = 0.0
+        MedicalTotalFinalPremium = 0.0
+        TempDisableFinalSumInsured = 0.0
+        TempDisableTotalFinalPrem = 0.0
+		    MedicalFinalPremium = 0.0
+		DeathFinalPremium = 0.0
+		TempDisableFinalPrem = 0.0
+        For nIndex = x To AllRiskCOunt
+		 Inc_VatCal = Inc_Vat / 100
+		 Inc_VatCal = 1 - Inc_VatCal
+            DeathRate = 0.00025
+            MedicalRate = 0.0015
+            TempDisableRate = 0.034
+     
+            '---------------Death Cover-----------------'
+            DeathSumInsured = SafecDbl(Engine.Item(RiskChildObject).Item(RiskObject, x).Item("DEATHSUMIN").Value)
+            If DeathSumInsured > 0 Then
+                DeathPremBeforeInc_Vat = DeathSumInsured * DeathRate * 12
+                DeathPremInc_Vat = DeathPremBeforeInc_Vat / Inc_VatCal
+                If ProductCode = "NPA" Then
+                    DeathFinalPremium = DeathPremInc_Vat 
+                End If
+                If ProductCode = "NPM" Then
+                    DeathFinalPremium = DeathPremInc_Vat / 12
+                End If
+                If ProductCode = "NSA" Or ProductCode = "NSM" Then
+                    TenPercentDisc = DeathPremInc_Vat / 100 * 10
+                    DeathFinalPremium = DeathPremInc_Vat - TenPercentDisc
+                End If
+                If ProductCode = "NSM" Then
+                    DeathFinalPremium = DeathFinalPremium / 12
+                End If
+                DeathTotalFinalSumInsured = DeathTotalFinalSumInsured + DeathSumInsured
+                DeathTotalFinalPremium = DeathTotalFinalPremium + DeathFinalPremium
+				
+            End If
+            '-----------------End Cover-----------------------'
+            '---------------Medical Cover--------------------'
+            MedicalSumInsured = SafecDbl(Engine.Item(RiskChildObject).Item(RiskObject, x).Item("MED_EXP_VAL").Value)
+            If MedicalSumInsured > 0 Then
+                MedicalPremBeforeInc_Vat = MedicalSumInsured * MedicalRate * 12
+                MedicalPremInc_Vat = MedicalPremBeforeInc_Vat / Inc_VatCal
+                If ProductCode = "NPA" Then
+                    MedicalFinalPremium = MedicalPremInc_Vat
+                End If
+                If ProductCode = "NPM" Then
+                    MedicalFinalPremium = MedicalPremInc_Vat / 12
+                End If
+                If ProductCode = "NSA" Or ProductCode = "NSM" Then
+                    TenPercentDisc = MedicalPremInc_Vat / 100 * 10
+                    MedicalFinalPremium = MedicalPremInc_Vat - TenPercentDisc
+                End If
+                If ProductCode = "NSM" Then
+                    MedicalFinalPremium = MedicalFinalPremium / 12 
+                End If
+                MedicalTotalFinalSumInsured = MedicalTotalFinalSumInsured + MedicalSumInsured
+                MedicalTotalFinalPremium = MedicalTotalFinalPremium + MedicalFinalPremium
+				
+            End If
+            '---------------End Cover--------------------------'
+            '----------------Temporary Cover---------------------'
+            TempDisableSumInsured = SafecDbl(Engine.Item(RiskChildObject).Item(RiskObject, x).Item("TEMPSI").Value)
+            If TempDisableSumInsured > 0 Then
+                TempDisableBeforeInc_VatPrem = TempDisableSumInsured * TempDisableRate * 12
+                TempDisableInc_VatPrem = TempDisableBeforeInc_VatPrem / Inc_VatCal
+                If ProductCode = "NPA" Then
+                    TempDisableFinalPrem = TempDisableInc_VatPrem + 0
+                End If
+                If ProductCode = "NPM" Then
+                    TempDisableFinalPrem = TempDisableInc_VatPrem / 12
+                End If
+                If ProductCode = "NSA" Or ProductCode = "NSM" Then
+                    TenPercentDisc = TempDisableInc_VatPrem / 100 * 10
+                    TempDisableFinalPrem = TempDisableInc_VatPrem - TenPercentDisc
+                End If
+                If ProductCode = "NSM" Then
+                    TempDisableFinalPrem = TempDisableFinalPrem / 12
+                End If
+                TempDisableFinalSumInsured = TempDisableFinalSumInsured + TempDisableSumInsured
+                TempDisableTotalFinalPrem = TempDisableTotalFinalPrem + TempDisableFinalPrem
+		
+				
+            End If
+            '----------------End Cover --------------------------'
+            '------------End Assign variables----------'
+        
+			
+				Engine.Item(RiskChildObject).Item(RiskObject, x).Item("TOTAL_PRE").Value =  DeathFinalPremium + MedicalFinalPremium + TempDisableFinalPrem
+            '-------------Display Total Premium---------------'
+            'Engine.Item(RiskObject).Item("TOTAL_PRE").value =
+            '-------------End Display Total Premium------------'
+			    x = x + 1
+        Next
+		'----------------------------Strip of Vat-------------------------------'
+				DeathTotalFinalSumInsured = DeathTotalFinalSumInsured / 1.15
+				DeathTotalFinalPremium = DeathTotalFinalPremium / 1.15
+				
+	        	MedicalTotalFinalSumInsured = MedicalTotalFinalSumInsured / 1.15
+				MedicalTotalFinalPremium = MedicalTotalFinalPremium / 1.15
+		
+				TempDisableFinalSumInsured  = TempDisableFinalSumInsured / 1.15
+				TempDisableTotalFinalPrem = TempDisableTotalFinalPrem / 1.15
+			'-------------------End of Vat-------------------------------------'	
+				
+        DeathFinalRate = DeathTotalFinalPremium / DeathTotalFinalSumInsured * 100
+        GenerateOutput DeathTotalFinalSumInsured, DeathFinalRate, DeathTotalFinalPremium, "NPAPADI"
+        MedicalFinalRate = MedicalTotalFinalPremium / MedicalTotalFinalSumInsured * 100
+        GenerateOutput MedicalTotalFinalSumInsured, MedicalFinalRate, MedicalTotalFinalPremium, "NPAPAMEI"
+        TempDisableFinalRate = TempDisableTotalFinalPrem / TempDisableFinalSumInsured * 100
+        GenerateOutput TempDisableFinalSumInsured, TempDisableFinalRate, TempDisableTotalFinalPrem, "NPAPATTDI"
+    End Sub
+    Function GenerateOutput(cSI, cRATE, cPREM, cRatingSection)
+        Dim counter
+        Engine.NewObject("PERSACCL_Output")
+        counter = Engine.Count("PERSACCL_Output")
+        Engine.Item("PERSACCL_Output", counter).Item("Sum_insured").value = cSI
+        Engine.Item("PERSACCL_Output", counter).Item("Rate").value = cRATE
+        Engine.Item("PERSACCL_Output", counter).Item("Premium").value = cPREM
+        Engine.Item("PERSACCL_Output", counter).Item("risk_rating_section").value = cRatingSection
+    End Function
+    Function SafecDbl(value)
+        SafecDbl = 0
+        On Error Resume Next
+        SafecDbl = CDbl(value)
+        On Error GoTo 0
+    End Function
+    Function SafeInt(value)
+        SafeInt = 0
+        On Error Resume Next
+        SafeInt = CInt(value)
+        On Error GoTo 0
+    End Function
+    Function SafecBool(value)
+        SafecBool = 0
+        On Error Resume Next
+        SafecBool = CBool(value)
+        On Error GoTo 0
+    End Function
+    Function SafecLng(value)
+        SafecLng = 0
+        On Error Resume Next
+        SafecLng = CLng(value)
+        On Error GoTo 0
+    End Function
+    Public Function SafeCStr(ByVal oIn)
+        SafeCStr = ""
+        On Error Resume Next
+        SafeCStr = Trim(CStr(oIn))
+        On Error GoTo 0
+    End Function

@@ -1,0 +1,442 @@
+        Sub SetUserDetails()
+            Dim vUserResult 
+        	Dim lUserId
+            Call Extras.CallNamedStoredProcedure(CLng(6722), CStr("GetUserDetails"), vUserResult,Array("sUserName", Extras.Username))
+            If IsArray(vUserResult) Then
+                Engine.Item("GENERAL").Item("LoggedInUser").Value = Extras.Username
+        		lUserId = vUserResult(0,0)
+        		Engine.Item("GENERAL").Item("LoggedInUserFullName").Value = vUserResult(1,0)
+        		Engine.Item("GENERAL").Item("LoggedInUserEmail").Value = vUserResult(2,0)
+            End If
+        
+            'Get user authority level
+            Dim vExtraParameters
+            Dim sRiskCode
+            Dim vResults
+        	Dim sProdCode
+            sProdCode = Extras.ProductCode
+        	
+            vExtraParameters = array( "lUserId", lUserId, "sProdCode", sProdCode)
+            Call Extras.CallNamedStoredProcedure(CLng(6722), "GetUserAuthorityLevel", vResults, vExtraParameters)
+        	If IsArray(vResults) then
+        		If vResults(0,0) <> "" Then
+        			Engine.Item("GENERAL").Item("UserLevel").Value = Replace(vResults(0,0), "U","")
+        			Engine.Item("GENERAL").Item("UserGroup").Value = vResults(0,0)
+        		Else
+        			'Assign Default Level to 1
+        			Engine.Item("GENERAL").Item("UserLevel").Value = 1
+        			Engine.Item("GENERAL").Item("UserGroup").Value = "U1"
+        		End If
+        	End IF
+        End Sub
+
+        Dim iObjectInstanceCount
+        
+        Sub FindObjectInstanceCount(strScreenObjectName)
+        	iObjectInstanceCount = 1
+        
+        	' strScreenObjectName is the object that is associate with this screen (if a child), or "" if the root screen.
+        	If strScreenObjectName <> ""  Then
+        		Dim instanceCount
+        		
+        		' How many instance of this object exist?
+        		instanceCount = engine.count(strScreenObjectName)
+        		
+        		Dim i
+        		for i = 1 to instanceCount
+        			if engine.item(strScreenObjectName, i).item("OI").value = vAdditionalData(cAdditionalData_OIKey) then
+        				iObjectInstanceCount = i
+        			end if
+        		next
+        	End If
+        End Sub
+
+        Sub DefaultTextTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultCommentTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultIntegerTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CLng(strValue)
+        End Sub
+
+        
+        Sub DefaultCheckboxTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanListTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanRadioTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	If InStr(1, LCase(strValue), "code:", 1) = 1 Then
+        		' The default value has been specified as a code (code:<thecode>).
+        		Dim code
+        		Dim effectiveDate
+        		Dim version
+        		
+        		code = Mid(strValue, Len("code:")+1)
+        		effectiveDate = Now()
+        		version = 1
+        		
+        		Dim listItemId
+        		listItemId = Extras.GetField(strListCode, strListCode + "_Id", code, effectiveDate, version)
+        		
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(listItemId)
+        	Else
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        	End If
+        End Sub
+
+        
+        Sub DefaultRateListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	' TODO.
+        End Sub
+
+        
+        Sub DefaultDateTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	
+        	Dim location
+        	Dim Interval
+        	Dim Duration
+        	Dim DateValue
+        	
+        	'Upper case the input
+        	DateValue = UCase(strValue)
+        	'Check to see if we want data AND  Time
+        	location = InStr(1,DateValue,"DATETIME")
+        	if location > 0 then
+        		DateValue=  CDate(FormatDateTime(Now,0)) 'use the standard vb datetime
+        	End If
+        	'Check to see if TODAY is specified as a modifier
+        	location  = InStr(1,DateValue,"TODAY")
+        	If location > 0 Then
+        		'Determine if we are adding values
+        		location  = InStr(1,DateValue,"+")
+        		If location > 0 Then 
+        			Interval = Mid(DateValue,location + 1,1)
+        			
+        			If Interval = "Y" Then
+        				Interval = "YYYY"
+        			End If
+        			
+        			If Interval <> "" Then 
+        				Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        				DateValue = DateAdd(Interval,Duration,CDate(FormatDateTime(Now,2)))	
+        				
+        			Else
+        				'No Interval specified 
+        				'Need an error here!!!!
+        			End If	
+        		Else 
+        			'Check to see if we are subtracting values
+        			location  =InStr(1,DateValue,"-")
+        			If location > 0  Then 
+        				Interval = Mid(DateValue,location + 1,1)
+        				
+        				If Interval <> "" Then 
+        					Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        					DateValue = DateAdd(Interval, Duration * -1,CDate(FormatDateTime(Now,2)))	
+        				Else
+        					'No Interval specified 
+        					'Need an error here!!!!
+        				End If
+        			Else
+        				'No Function specified, so assume we are just using today's date as a shortdate
+        				DateValue = CDate(FormatDateTime(Now,2))
+        			End If
+        			
+        		End If
+        		
+        	End If	
+        	
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDate(DateValue)
+        End Sub
+
+        
+        Sub DefaultCurrencyTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+        
+        Sub DefaultPercentageTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+Sub WebRequired(bIsOnStart)
+	If bIsOnStart = True Then
+		Engine.NewObject("GENERAL")
+		Engine.NewObject("ADDRESS")
+		Engine.NewObject("OWNPLANT")
+		Engine.NewObject("MOBCRANE")
+		Engine.NewObject("MOBPLANT")
+		Engine.NewObject("NONMOB")
+		Engine.NewObject("PLANTENVI")
+		Engine.NewObject("SURVEQUIP")
+		Engine.NewObject("HIREDPLT")
+		Engine.NewObject("AUTOADD")
+		Engine.NewObject("HIRECHARGE")
+		Engine.NewObject("CREDSHORT")
+		Engine.NewObject("DAMAGE")
+		Engine.NewObject("HOLECOVER")
+		Engine.NewObject("EXPENSE")
+		Engine.NewObject("CRANELIFT")
+		Engine.NewObject("REPLACE")
+		Engine.NewObject("WRECK")
+		Engine.NewObject("OTHER")
+		Engine.NewObject("CPIRSK")
+		Engine.NewObject("PREM")
+		Engine.NewObject("BANDONE")
+		Engine.NewObject("BANDTWO")
+		Engine.NewObject("BANDTHREE")
+		Engine.NewObject("BANDFOUR")
+		Engine.NewObject("AGGRE")
+		Engine.NewObject("SUMMARY_HP")
+		Engine.NewObject("SUMMARY_EX")
+		Engine.NewObject("TOTALS")
+		Engine.NewObject("REINSURAN")
+		Engine.NewObject("REINSESC")
+		Engine.NewObject("REINSPLE")
+		Engine.NewObject("REINSACP")
+		Engine.NewObject("REINSSPM")
+		Engine.NewObject("REINSARC")
+		Engine.NewObject("REINSPF")
+		Engine.NewObject("REINSOE")
+		Engine.NewObject("REINSTRE")
+		Engine.NewObject("REFERRALS")
+	End If
+End Sub
+
+Sub onScreenLogic(bIsOnStart)
+        
+        If bIsOnStart = True Or bIsOnStart = False Then
+        	Call SetUserDetails()
+        End If
+        ' The ScreenMain rule is added to every screen automatically.
+        
+        
+        Call FindObjectInstanceCount("")
+End Sub
+
+Sub onValidate_GENERAL__IS_VAT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultListTo("GENERAL", "IS_VAT", "1", "UDL_CMA_VAT")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__DEPPREM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "DEPPREM", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__IS_MTA_REASON(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "IS_MTA_REASON", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__NEXUSQS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultIntegerTo("GENERAL", "NEXUSQS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MOBCRANE__CRANE_CHK(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MOBCRANE", "CRANE_CHK", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MOBPLANT__PLANT_CHK(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MOBPLANT", "PLANT_CHK", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_NONMOB__NON_CHK(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("NONMOB", "NON_CHK", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_PLANTENVI__PNE_CHK(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("PLANTENVI", "PNE_CHK", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SURVEQUIP__SURV_CHK(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SURVEQUIP", "SURV_CHK", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_AUTOADD__AUTOADD_CHK(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("AUTOADD", "AUTOADD_CHK", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_HIRECHARGE__HIRE_CHK(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("HIRECHARGE", "HIRE_CHK", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CREDSHORT__CRED_CHK(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CREDSHORT", "CRED_CHK", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_DAMAGE__DAMAGE_CHK(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("DAMAGE", "DAMAGE_CHK", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_HOLECOVER__HOLECOVER_CHK(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("HOLECOVER", "HOLECOVER_CHK", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_EXPENSE__EXPENSE_CHK(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("EXPENSE", "EXPENSE_CHK", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CRANELIFT__CRANE_CHK(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CRANELIFT", "CRANE_CHK", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_REPLACE__REPLACE_CHK(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("REPLACE", "REPLACE_CHK", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_WRECK__IS_WRECK(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("WRECK", "IS_WRECK", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_PREM__CONVPREM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCurrencyTo("PREM", "CONVPREM", "200", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_REINSURAN__EML(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("REINSURAN", "EML", "100", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_REINSESC__EML(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("REINSESC", "EML", "100", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_REINSACP__EML(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("REINSACP", "EML", "100", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_REINSSPM__EML(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("REINSSPM", "EML", "100", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_REINSARC__EML(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("REINSARC", "EML", "100", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_REINSPF__EML(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("REINSPF", "EML", "100", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_REINSOE__EML(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("REINSOE", "EML", "100", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_REINSTRE__EML(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("REINSTRE", "EML", "100", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_REFERRALS__RefCount(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultIntegerTo("REFERRALS", "RefCount", "0", "{listcode}")
+        End If
+End Sub
+
+Sub DoDefaults(bIsOnStart)
+    Call WebRequired(bIsOnStart)
+    Call onScreenLogic(bIsOnStart)
+    Call onValidate_GENERAL__IS_VAT(bIsOnStart)
+    Call onValidate_GENERAL__DEPPREM(bIsOnStart)
+    Call onValidate_GENERAL__IS_MTA_REASON(bIsOnStart)
+    Call onValidate_GENERAL__NEXUSQS(bIsOnStart)
+    Call onValidate_MOBCRANE__CRANE_CHK(bIsOnStart)
+    Call onValidate_MOBPLANT__PLANT_CHK(bIsOnStart)
+    Call onValidate_NONMOB__NON_CHK(bIsOnStart)
+    Call onValidate_PLANTENVI__PNE_CHK(bIsOnStart)
+    Call onValidate_SURVEQUIP__SURV_CHK(bIsOnStart)
+    Call onValidate_AUTOADD__AUTOADD_CHK(bIsOnStart)
+    Call onValidate_HIRECHARGE__HIRE_CHK(bIsOnStart)
+    Call onValidate_CREDSHORT__CRED_CHK(bIsOnStart)
+    Call onValidate_DAMAGE__DAMAGE_CHK(bIsOnStart)
+    Call onValidate_HOLECOVER__HOLECOVER_CHK(bIsOnStart)
+    Call onValidate_EXPENSE__EXPENSE_CHK(bIsOnStart)
+    Call onValidate_CRANELIFT__CRANE_CHK(bIsOnStart)
+    Call onValidate_REPLACE__REPLACE_CHK(bIsOnStart)
+    Call onValidate_WRECK__IS_WRECK(bIsOnStart)
+    Call onValidate_PREM__CONVPREM(bIsOnStart)
+    Call onValidate_REINSURAN__EML(bIsOnStart)
+    Call onValidate_REINSESC__EML(bIsOnStart)
+    Call onValidate_REINSACP__EML(bIsOnStart)
+    Call onValidate_REINSSPM__EML(bIsOnStart)
+    Call onValidate_REINSARC__EML(bIsOnStart)
+    Call onValidate_REINSPF__EML(bIsOnStart)
+    Call onValidate_REINSOE__EML(bIsOnStart)
+    Call onValidate_REINSTRE__EML(bIsOnStart)
+    Call onValidate_REFERRALS__RefCount(bIsOnStart)
+End Sub
+
+Sub Start()
+    Call DoDefaults(True)
+End Sub
+
+Sub Main()
+    Call DoDefaults(False)
+End Sub
+

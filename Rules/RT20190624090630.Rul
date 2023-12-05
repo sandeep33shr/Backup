@@ -1,0 +1,143 @@
+Sub Start()
+	Dim Total, Premium, totalPremium, totalSI
+	Dim VatFreeTotal, VatFreePremium
+	Dim prodCode, branchName, iTOOFlag, CoverType
+	
+	prodCode  = SafecStr(Engine.Item("GENERAL").Item("PRODCODE").value)
+	branchName = SafecStr(Engine.Item("GENERAL").Item("BRANCH").value)
+	iTOOFlag = SafeBool(Engine.Item("RISK_DETAILS").Item("ITOOAPPROV").value)
+
+	'totalSI = SafecDbl(Engine.Item("RISK_DETAILS").Item("TOTALSI").value)
+	Total = SafecDbl(Engine.Item("RISK_DETAILS").Item("AGGREGATE_LIMIT").value)
+	'Premium = SafecDbl(Engine.Item("RISK_DETAILS").Item("TOTALPREM").value)
+	CoverType = SafecDbl(Engine.Item("RISK_DETAILS").Item("COVERDESC").value)
+	
+	Dim x, nIndex, Cnt, childPrem
+	Premium = 0
+	x = 1
+	Cnt = Engine.Count("SITECHLD")
+	
+	For nIndex = x to Cnt
+		childPrem = SafecDbl(Engine.Item("RISK_DETAILS").Item("SITECHLD", nIndex).Item("PREMIUM").value)
+		Premium = Premium + childPrem
+	Next
+	
+	'If the Annual product was selected
+	If prodCode = "CLA" Then
+
+		If branchName = "ITOO" and iTOOFlag = true Then
+			Dim newRate
+			newRate = SafecDbl((Premium/Total) * 100)
+			VatFreeTotal = SafecDbl(Total/1.15)
+			VatFreePremium = SafecDbl(Premium/1.15)
+			
+			'Pick a rating section based on Sitesafe/Tanksafe selected
+			If CoverType = 1 Then
+				GenerateOutput VatFreeTotal, newRate, VatFreePremium, "ENVSTSS"
+			End If
+			
+			If CoverType = 2 Then
+				GenerateOutput VatFreeTotal, newRate, VatFreePremium, "ENVSTTS"
+			End If
+		Else
+				newRate = SafecDbl((Premium/Total) * 100)
+				VatFreeTotal = SafecDbl(Total/1.15)
+				VatFreePremium = SafecDbl(Premium/1.15)
+			
+			'Pick a rating section based on Sitesafe/Tanksafe selected
+			If CoverType = 1 Then
+				GenerateOutput VatFreeTotal, newRate, VatFreePremium, "ENVSTSSEXC"
+			End If
+			
+			If CoverType = 2 Then
+				GenerateOutput VatFreeTotal, newRate, VatFreePremium, "ENVSTTSEXC"
+			End If
+		End If
+	End If
+	
+	'If the Monthly product was selected
+	If prodCode = "CLM" Then
+		Dim newRateM
+		Dim MonthlyRate, MonthlyPrem
+		If branchName = "ITOO" and iTOOFlag = true Then
+				'Calculate rates and convert to monthly
+				newRateM = SafecDbl((Premium/Total) * 100)
+				MonthlyPrem_Itoo = SafecDbl(Premium/12)
+				MonthlyRate = SafecDbl(newRateM/12)
+				VatFreeTotal = SafecDbl(Total/1.15)
+				VatFreePremium = SafecDbl(MonthlyPrem_Itoo/1.15)
+			
+			'Pick a rating section based on Sitesafe/Tanksafe selected
+			If CoverType = 1 Then
+				GenerateOutput VatFreeTotal, MonthlyRate, VatFreePremium, "ENVSTSS"
+			End If
+			
+			If CoverType = 2 Then
+				GenerateOutput VatFreeTotal, MonthlyRate, VatFreePremium, "ENVSTTS"
+			End If
+		Else
+
+				'Calculate rates and convert to monthly
+				newRateM = SafecDbl((Premium/Total) * 100)
+				MonthlyPrem = SafecDbl(Premium/12)
+				MonthlyRate = SafecDbl(newRateM/12)
+				VatFreeTotal = SafecDbl(Total/1.15)
+				VatFreePremium = SafecDbl(MonthlyPrem/1.15)
+			
+			'Pick a rating section based on Sitesafe/Tanksafe selected
+			If CoverType = 1 Then
+				GenerateOutput VatFreeTotal, MonthlyRate, VatFreePremium, "ENVSTSSEXC"
+			End If
+			
+			If CoverType = 2 Then
+				GenerateOutput VatFreeTotal, MonthlyRate, VatFreePremium, "ENVSTTSEXC"
+			End If
+		End If
+	End If
+
+End Sub
+
+Function GenerateOutput(SI,Rate,Premium,ratingsection)
+
+	Dim count
+	Engine.NewObject("PIPESTORE_Output")
+	count = Engine.Count("PIPESTORE_Output")
+	Engine.Item("PIPESTORE_Output",count).Item("Sum_insured").value=SI
+	Engine.Item("PIPESTORE_Output",count).Item("Rate").value=Rate
+	Engine.Item("PIPESTORE_Output",count).Item("Premium").value=Premium
+	Engine.Item("PIPESTORE_Output",count).Item("risk_rating_section").value= ratingsection
+
+End Function
+
+'double
+Function SafecDbl(value)
+	SafecDbl = 0
+	On Error Resume Next
+	SafecDbl = CDbl(value)
+	On Error GoTo 0
+End Function
+
+'Int
+Function SafeInt(value)
+	SafeInt = 0
+	On Error Resume Next
+	SafeInt = CInt(value)
+	On Error GoTo 0
+End Function
+
+'string
+Function SafecStr(value)
+    SafecStr = ""
+    On Error Resume Next
+    SafecStr = CStr(value)
+    On Error GoTo 0
+End Function
+
+
+'Bool
+Function SafeBool(value)
+	SafeBool = 0
+	On Error Resume Next
+	SafeBool = CBool(value)
+	On Error GoTo 0
+End Function

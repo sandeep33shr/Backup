@@ -1,0 +1,645 @@
+        Dim iObjectInstanceCount
+        
+        Sub FindObjectInstanceCount(strScreenObjectName)
+        	iObjectInstanceCount = 1
+        
+        	' strScreenObjectName is the object that is associate with this screen (if a child), or "" if the root screen.
+        	If strScreenObjectName <> ""  Then
+        		Dim instanceCount
+        		
+        		' How many instance of this object exist?
+        		instanceCount = engine.count(strScreenObjectName)
+        		
+        		Dim i
+        		for i = 1 to instanceCount
+        			if engine.item(strScreenObjectName, i).item("OI").value = vAdditionalData(cAdditionalData_OIKey) then
+        				iObjectInstanceCount = i
+        			end if
+        		next
+        	End If
+        End Sub
+
+        Sub DefaultTextTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultCommentTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultIntegerTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CLng(strValue)
+        End Sub
+
+        
+        Sub DefaultCheckboxTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanListTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanRadioTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	If InStr(1, LCase(strValue), "code:", 1) = 1 Then
+        		' The default value has been specified as a code (code:<thecode>).
+        		Dim code
+        		Dim effectiveDate
+        		Dim version
+        		
+        		code = Mid(strValue, Len("code:")+1)
+        		effectiveDate = Now()
+        		version = 1
+        		
+        		Dim listItemId
+        		listItemId = Extras.GetField(strListCode, strListCode + "_Id", code, effectiveDate, version)
+        		
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(listItemId)
+        	Else
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        	End If
+        End Sub
+
+        
+        Sub DefaultRateListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	' TODO.
+        End Sub
+
+        
+        Sub DefaultDateTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	
+        	Dim location
+        	Dim Interval
+        	Dim Duration
+        	Dim DateValue
+        	
+        	'Upper case the input
+        	DateValue = UCase(strValue)
+        	'Check to see if we want data AND  Time
+        	location = InStr(1,DateValue,"DATETIME")
+        	if location > 0 then
+        		DateValue=  CDate(FormatDateTime(Now,0)) 'use the standard vb datetime
+        	End If
+        	'Check to see if TODAY is specified as a modifier
+        	location  = InStr(1,DateValue,"TODAY")
+        	If location > 0 Then
+        		'Determine if we are adding values
+        		location  = InStr(1,DateValue,"+")
+        		If location > 0 Then 
+        			Interval = Mid(DateValue,location + 1,1)
+        			
+        			If Interval = "Y" Then
+        				Interval = "YYYY"
+        			End If
+        			
+        			If Interval <> "" Then 
+        				Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        				DateValue = DateAdd(Interval,Duration,CDate(FormatDateTime(Now,2)))	
+        				
+        			Else
+        				'No Interval specified 
+        				'Need an error here!!!!
+        			End If	
+        		Else 
+        			'Check to see if we are subtracting values
+        			location  =InStr(1,DateValue,"-")
+        			If location > 0  Then 
+        				Interval = Mid(DateValue,location + 1,1)
+        				
+        				If Interval <> "" Then 
+        					Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        					DateValue = DateAdd(Interval, Duration * -1,CDate(FormatDateTime(Now,2)))	
+        				Else
+        					'No Interval specified 
+        					'Need an error here!!!!
+        				End If
+        			Else
+        				'No Function specified, so assume we are just using today's date as a shortdate
+        				DateValue = CDate(FormatDateTime(Now,2))
+        			End If
+        			
+        		End If
+        		
+        	End If	
+        	
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDate(DateValue)
+        End Sub
+
+        
+        Sub DefaultCurrencyTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+        
+        Sub DefaultPercentageTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+Sub WebRequired(bIsOnStart)
+	If bIsOnStart = True Then
+		Engine.NewObject("GENERAL")
+		Engine.NewObject("ADDRESS")
+		Engine.NewObject("RETROCESSION")
+		Engine.NewObject("RISK_DETAILS")
+		Engine.NewObject("RSKDETPIPI")
+		Engine.NewObject("EMP_LIAB")
+		Engine.NewObject("POLL_LIABIL")
+		Engine.NewObject("PROD_LIAB")
+		Engine.NewObject("PUBLIC_LIAB")
+		Engine.NewObject("SLD")
+		Engine.NewObject("WARREST")
+		Engine.NewObject("EXTBOC")
+		Engine.NewObject("EXTDEFAM")
+		Engine.NewObject("DOCUMNT")
+		Engine.NewObject("EXTHPCN")
+		Engine.NewObject("EXTRUNOFF")
+		Engine.NewObject("BUSINDT")
+		Engine.NewObject("REFERRAL_CLAUSES")
+		Engine.NewObject("NOTES")
+	End If
+End Sub
+
+Sub onScreenLogic(bIsOnStart)
+        ' The ScreenMain rule is added to every screen automatically.
+        
+        
+        Call FindObjectInstanceCount("")
+End Sub
+
+Sub onValidate_GENERAL__IS_MTA_REASON(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "IS_MTA_REASON", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_DETAILS__ITOOAPPROV(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("RISK_DETAILS", "ITOOAPPROV", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_DETAILS__ADD_RETRO_DATE_INFO(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("RISK_DETAILS", "ADD_RETRO_DATE_INFO", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_DETAILS__MADMALCH(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("RISK_DETAILS", "MADMALCH", "1", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_DETAILS__BASISOFLIMIT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultListTo("RISK_DETAILS", "BASISOFLIMIT", "1", "UDL_BOL")
+        End If
+End Sub
+
+Sub onValidate_RISK_DETAILS__BASE_DEDUCT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultListTo("RISK_DETAILS", "BASE_DEDUCT", "1", "UDL_BOD")
+        End If
+End Sub
+
+Sub onValidate_RSKDETPIPI__PROFINDM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("RSKDETPIPI", "PROFINDM", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RSKDETPIPI__BASISOFLIMIT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultListTo("RSKDETPIPI", "BASISOFLIMIT", "1", "UDL_BOL")
+        End If
+End Sub
+
+Sub onValidate_RSKDETPIPI__BASE_DEDUCT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultListTo("RSKDETPIPI", "BASE_DEDUCT", "1", "UDL_BOD")
+        End If
+End Sub
+
+Sub onValidate_RISK_DETAILS__SIZE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("RISK_DETAILS", "SIZE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_DETAILS__MARKET_COND(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("RISK_DETAILS", "MARKET_COND", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_DETAILS__QUALITY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("RISK_DETAILS", "QUALITY", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_DETAILS__DISCRETION(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("RISK_DETAILS", "DISCRETION", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_DETAILS__CLAIMSHISTORY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("RISK_DETAILS", "CLAIMSHISTORY", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_DETAILS__EXTENSION(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("RISK_DETAILS", "EXTENSION", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_DETAILS__CUST_INFO(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("RISK_DETAILS", "CUST_INFO", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_DETAILS__EXTENDED(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("RISK_DETAILS", "EXTENDED", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_DETAILS__EXTNSIONS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("RISK_DETAILS", "EXTNSIONS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_EMP_LIAB__EMP_CHK(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("EMP_LIAB", "EMP_CHK", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_EMP_LIAB__BASE_LIMIT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultListTo("EMP_LIAB", "BASE_LIMIT", "1", "UDL_BOL")
+        End If
+End Sub
+
+Sub onValidate_EMP_LIAB__BASE_RATE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("EMP_LIAB", "BASE_RATE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_EMP_LIAB__BASE_DEDUCT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultListTo("EMP_LIAB", "BASE_DEDUCT", "1", "UDL_BOD")
+        End If
+End Sub
+
+Sub onValidate_POLL_LIABIL__POLL_LIABIL_CHCK(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("POLL_LIABIL", "POLL_LIABIL_CHCK", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_POLL_LIABIL__POLL_BASE_LIMIT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultListTo("POLL_LIABIL", "POLL_BASE_LIMIT", "1", "UDL_BOL")
+        End If
+End Sub
+
+Sub onValidate_POLL_LIABIL__POLL_BASE_RATE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("POLL_LIABIL", "POLL_BASE_RATE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_POLL_LIABIL__POLL_BASE_DEDUCT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultListTo("POLL_LIABIL", "POLL_BASE_DEDUCT", "1", "UDL_BOD")
+        End If
+End Sub
+
+Sub onValidate_PROD_LIAB__PROD_CHK(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("PROD_LIAB", "PROD_CHK", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_PROD_LIAB__BASE_LIMIT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultListTo("PROD_LIAB", "BASE_LIMIT", "1", "UDL_BOL")
+        End If
+End Sub
+
+Sub onValidate_PROD_LIAB__BASE_RATE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("PROD_LIAB", "BASE_RATE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_PROD_LIAB__BASE_DEDUCT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultListTo("PROD_LIAB", "BASE_DEDUCT", "1", "UDL_BOD")
+        End If
+End Sub
+
+Sub onValidate_PUBLIC_LIAB__PUBLIC_CHK(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("PUBLIC_LIAB", "PUBLIC_CHK", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_PUBLIC_LIAB__BASE_LIMIT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultListTo("PUBLIC_LIAB", "BASE_LIMIT", "1", "UDL_BOL")
+        End If
+End Sub
+
+Sub onValidate_PUBLIC_LIAB__BASE_RATE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("PUBLIC_LIAB", "BASE_RATE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_PUBLIC_LIAB__BASE_DEDUCT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultListTo("PUBLIC_LIAB", "BASE_DEDUCT", "1", "UDL_BOD")
+        End If
+End Sub
+
+Sub onValidate_SLD__SLDC_CHCK(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("SLD", "SLDC_CHCK", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SLD__BASE_LIMIT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultListTo("SLD", "BASE_LIMIT", "1", "UDL_BOL")
+        End If
+End Sub
+
+Sub onValidate_SLD__BASE_RATE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("SLD", "BASE_RATE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_SLD__BASE_DEDUCT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultListTo("SLD", "BASE_DEDUCT", "1", "UDL_BOD")
+        End If
+End Sub
+
+Sub onValidate_WARREST__WARREST_CHK(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("WARREST", "WARREST_CHK", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_WARREST__BASE_LIMIT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultListTo("WARREST", "BASE_LIMIT", "1", "UDL_BOL")
+        End If
+End Sub
+
+Sub onValidate_WARREST__BASE_RATE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("WARREST", "BASE_RATE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_WARREST__BASE_DEDUCT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultListTo("WARREST", "BASE_DEDUCT", "1", "UDL_BOD")
+        End If
+End Sub
+
+Sub onValidate_EXTBOC__BOCCH(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("EXTBOC", "BOCCH", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_EXTBOC__LIMIT_OF_INDEM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCurrencyTo("EXTBOC", "LIMIT_OF_INDEM", "250000", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_EXTBOC__DEDUCTIBLE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCurrencyTo("EXTBOC", "DEDUCTIBLE", "2500", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_EXTBOC__BOCCH_TOP_UP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("EXTBOC", "BOCCH_TOP_UP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_EXTDEFAM__DEFAM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("EXTDEFAM", "DEFAM", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_EXTDEFAM__LIMIT_OF_INDEM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCurrencyTo("EXTDEFAM", "LIMIT_OF_INDEM", "250000", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_EXTDEFAM__DEDUCTIBLE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCurrencyTo("EXTDEFAM", "DEDUCTIBLE", "2500", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_EXTDEFAM__DEFAM_TOP_UP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("EXTDEFAM", "DEFAM_TOP_UP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_DOCUMNT__DOC_CHK(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("DOCUMNT", "DOC_CHK", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_DOCUMNT__DOC_LIMIT_OF_IND(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCurrencyTo("DOCUMNT", "DOC_LIMIT_OF_IND", "250000", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_DOCUMNT__DOC_DEDUCTIBLE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCurrencyTo("DOCUMNT", "DOC_DEDUCTIBLE", "2500", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_DOCUMNT__DOC_TOP_UP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("DOCUMNT", "DOC_TOP_UP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_EXTHPCN__HPCN_OTH_ST(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("EXTHPCN", "HPCN_OTH_ST", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_EXTHPCN__LIMIT_OF_INDEM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCurrencyTo("EXTHPCN", "LIMIT_OF_INDEM", "250000", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_EXTHPCN__DEDUCTIBLE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCurrencyTo("EXTHPCN", "DEDUCTIBLE", "2500", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_EXTHPCN__HPCN_OTH_TOP_UP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("EXTHPCN", "HPCN_OTH_TOP_UP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_EXTRUNOFF__RUN_OFF_COV(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("EXTRUNOFF", "RUN_OFF_COV", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_EXTRUNOFF__LIMIT_OF_INDEM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultTextTo("EXTRUNOFF", "LIMIT_OF_INDEM", "36 months", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_EXTRUNOFF__RUN_OFF_TOP_UP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("EXTRUNOFF", "RUN_OFF_TOP_UP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BUSINDT__BUS_IDENT_THEFT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BUSINDT", "BUS_IDENT_THEFT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BUSINDT__LIMIT_OF_INDEMNITY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCurrencyTo("BUSINDT", "LIMIT_OF_INDEMNITY", "500000", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BUSINDT__DEDUCTIBLE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCurrencyTo("BUSINDT", "DEDUCTIBLE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BUSINDT__BOCCH_TOP_UP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BUSINDT", "BOCCH_TOP_UP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub DoDefaults(bIsOnStart)
+    Call WebRequired(bIsOnStart)
+    Call onScreenLogic(bIsOnStart)
+    Call onValidate_GENERAL__IS_MTA_REASON(bIsOnStart)
+    Call onValidate_RISK_DETAILS__ITOOAPPROV(bIsOnStart)
+    Call onValidate_RISK_DETAILS__ADD_RETRO_DATE_INFO(bIsOnStart)
+    Call onValidate_RISK_DETAILS__MADMALCH(bIsOnStart)
+    Call onValidate_RISK_DETAILS__BASISOFLIMIT(bIsOnStart)
+    Call onValidate_RISK_DETAILS__BASE_DEDUCT(bIsOnStart)
+    Call onValidate_RSKDETPIPI__PROFINDM(bIsOnStart)
+    Call onValidate_RSKDETPIPI__BASISOFLIMIT(bIsOnStart)
+    Call onValidate_RSKDETPIPI__BASE_DEDUCT(bIsOnStart)
+    Call onValidate_RISK_DETAILS__SIZE(bIsOnStart)
+    Call onValidate_RISK_DETAILS__MARKET_COND(bIsOnStart)
+    Call onValidate_RISK_DETAILS__QUALITY(bIsOnStart)
+    Call onValidate_RISK_DETAILS__DISCRETION(bIsOnStart)
+    Call onValidate_RISK_DETAILS__CLAIMSHISTORY(bIsOnStart)
+    Call onValidate_RISK_DETAILS__EXTENSION(bIsOnStart)
+    Call onValidate_RISK_DETAILS__CUST_INFO(bIsOnStart)
+    Call onValidate_RISK_DETAILS__EXTENDED(bIsOnStart)
+    Call onValidate_RISK_DETAILS__EXTNSIONS(bIsOnStart)
+    Call onValidate_EMP_LIAB__EMP_CHK(bIsOnStart)
+    Call onValidate_EMP_LIAB__BASE_LIMIT(bIsOnStart)
+    Call onValidate_EMP_LIAB__BASE_RATE(bIsOnStart)
+    Call onValidate_EMP_LIAB__BASE_DEDUCT(bIsOnStart)
+    Call onValidate_POLL_LIABIL__POLL_LIABIL_CHCK(bIsOnStart)
+    Call onValidate_POLL_LIABIL__POLL_BASE_LIMIT(bIsOnStart)
+    Call onValidate_POLL_LIABIL__POLL_BASE_RATE(bIsOnStart)
+    Call onValidate_POLL_LIABIL__POLL_BASE_DEDUCT(bIsOnStart)
+    Call onValidate_PROD_LIAB__PROD_CHK(bIsOnStart)
+    Call onValidate_PROD_LIAB__BASE_LIMIT(bIsOnStart)
+    Call onValidate_PROD_LIAB__BASE_RATE(bIsOnStart)
+    Call onValidate_PROD_LIAB__BASE_DEDUCT(bIsOnStart)
+    Call onValidate_PUBLIC_LIAB__PUBLIC_CHK(bIsOnStart)
+    Call onValidate_PUBLIC_LIAB__BASE_LIMIT(bIsOnStart)
+    Call onValidate_PUBLIC_LIAB__BASE_RATE(bIsOnStart)
+    Call onValidate_PUBLIC_LIAB__BASE_DEDUCT(bIsOnStart)
+    Call onValidate_SLD__SLDC_CHCK(bIsOnStart)
+    Call onValidate_SLD__BASE_LIMIT(bIsOnStart)
+    Call onValidate_SLD__BASE_RATE(bIsOnStart)
+    Call onValidate_SLD__BASE_DEDUCT(bIsOnStart)
+    Call onValidate_WARREST__WARREST_CHK(bIsOnStart)
+    Call onValidate_WARREST__BASE_LIMIT(bIsOnStart)
+    Call onValidate_WARREST__BASE_RATE(bIsOnStart)
+    Call onValidate_WARREST__BASE_DEDUCT(bIsOnStart)
+    Call onValidate_EXTBOC__BOCCH(bIsOnStart)
+    Call onValidate_EXTBOC__LIMIT_OF_INDEM(bIsOnStart)
+    Call onValidate_EXTBOC__DEDUCTIBLE(bIsOnStart)
+    Call onValidate_EXTBOC__BOCCH_TOP_UP(bIsOnStart)
+    Call onValidate_EXTDEFAM__DEFAM(bIsOnStart)
+    Call onValidate_EXTDEFAM__LIMIT_OF_INDEM(bIsOnStart)
+    Call onValidate_EXTDEFAM__DEDUCTIBLE(bIsOnStart)
+    Call onValidate_EXTDEFAM__DEFAM_TOP_UP(bIsOnStart)
+    Call onValidate_DOCUMNT__DOC_CHK(bIsOnStart)
+    Call onValidate_DOCUMNT__DOC_LIMIT_OF_IND(bIsOnStart)
+    Call onValidate_DOCUMNT__DOC_DEDUCTIBLE(bIsOnStart)
+    Call onValidate_DOCUMNT__DOC_TOP_UP(bIsOnStart)
+    Call onValidate_EXTHPCN__HPCN_OTH_ST(bIsOnStart)
+    Call onValidate_EXTHPCN__LIMIT_OF_INDEM(bIsOnStart)
+    Call onValidate_EXTHPCN__DEDUCTIBLE(bIsOnStart)
+    Call onValidate_EXTHPCN__HPCN_OTH_TOP_UP(bIsOnStart)
+    Call onValidate_EXTRUNOFF__RUN_OFF_COV(bIsOnStart)
+    Call onValidate_EXTRUNOFF__LIMIT_OF_INDEM(bIsOnStart)
+    Call onValidate_EXTRUNOFF__RUN_OFF_TOP_UP(bIsOnStart)
+    Call onValidate_BUSINDT__BUS_IDENT_THEFT(bIsOnStart)
+    Call onValidate_BUSINDT__LIMIT_OF_INDEMNITY(bIsOnStart)
+    Call onValidate_BUSINDT__DEDUCTIBLE(bIsOnStart)
+    Call onValidate_BUSINDT__BOCCH_TOP_UP(bIsOnStart)
+End Sub
+
+Sub Start()
+    Call DoDefaults(True)
+End Sub
+
+Sub Main()
+    Call DoDefaults(False)
+End Sub
+

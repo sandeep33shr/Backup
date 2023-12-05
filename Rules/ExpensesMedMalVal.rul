@@ -1,0 +1,986 @@
+Public Const kOpenClaim = "C_CO"
+Public Const kMaintainClaim = "C_CR"
+Public Const kPayClaim = "C_CP"
+
+' Public Const kCLAIMDETAILS_ClaimNumber = 0
+' Public Const kCLAIMDETAILS_LossDate = 1
+' Public Const kCLAIMDETAILS_Amount = 2
+' Public Const kCLAIMDETAILS_Description = 3
+' Public Const kCLAIMDETAILS_Status = 4
+' Public Const kCLAIMDETAILS_PrimaryCause = 5
+' Public Const kCLAIMDETAILS_SecondaryCause = 6
+' Public Const kCLAIMDETAILS_CatastropheCode = 7
+' Public Const kCLAIMDETAILS_LastModifiedDate = 8
+' Public Const kCLAIMDETAILS_PERILArray = 9
+' Public Const kCLAIMDETAILS_ClaimID = 10
+' Public Const kCLAIMDETAILS_TransactionType = 11
+' Public Const kCLAIMDETAILS_RiskDescription = 12
+
+' Public Const kPERIL_PerilDescription = 0
+' Public Const kPERIL_TotalReserve = 1
+' Public Const kPERIL_TotalPaid = 2
+' Public Const kPERIL_RESERVEArray = 3
+' Public Const kPERIL_ClaimPerilID = 4
+' Public Const kPERIL_SumInsured = 5
+' Public Const kPERIL_RECOVERIESArray = 6
+
+' Public Const kRECOVERIES_ReserveID = 0
+' Public Const kRECOVERIES_ReserveType = 1
+' Public Const kRECOVERIES_IsSalvage = 2
+' Public Const kRECOVERIES_ThisReserve = 3
+' Public Const kRECOVERIES_IsUpdated = 4
+
+'THIS ARRAY CHANGES AT PAYMENT AND HAS 7 FIELDS ONLY OTHERWISE 10
+' Public Const kCP_RESERVE_Reserve_id = 0
+' Public Const kCP_RESERVE_description = 1
+' Public Const kCP_RESERVE_this_payment = 2
+' Public Const kCP_RESERVE_Tax_Code = 3
+' Public Const kCP_RESERVE_Payment_Party_To = 4
+' Public Const kCP_RESERVE_ShortName = 5
+' Public Const kCP_RESERVE_MediaType = 6
+' Public Const kCP_RESERVE_Party_Bank_id = 7
+
+' Public Const kRESERVE_ReserveID = 0
+' Public Const kRESERVE_Description = 1
+' Public Const kRESERVE_InitialReserve = 2
+' Public Const kRESERVE_RevisedReserve = 3
+' Public Const kRESERVE_RevisionCount = 4
+' Public Const kRESERVE_ThisRevision = 5
+' Public Const kRESERVE_ThisPayment = 6
+' Public Const kRESERVE_PaidToDate = 7
+' Public Const kRESERVE_IsExcess = 8
+' Public Const kRESERVE_IsIndemnity = 9
+' Public Const kRESERVE_IsExpense = 10
+
+Public m_lReturn
+Public m_aClaimDetails
+Public m_aClaimPaymentDetails
+
+Dim m_aUpdateReserve()
+Const kUpdateReserve_TotalFields = 2
+Const kUpdateReserve_PerilID = 0
+Const kUpdateReserve_ReserveTypeID = 1
+Const kUpdateReserve_Amount = 2
+
+Dim m_aUpdatePayment()
+Const kUpdatePayment_PerilID = 0
+Const kUpdatePayment_ReserveTypeID = 1
+Const kUpdatePayment_PayeeType = 2
+Const kUpdatePayment_Payee = 3
+Const kUpdatePayment_Amount = 4
+Const kUpdatePayment_MediaType = 5
+Const kUpdatePayment_MediaRef = 6
+Const kUpdatePayment_ClaimPaymentToID = 7
+Const kUpdatePayment_TaxGroupIDorCODE = 8
+Const kUpdatePayment_TaxAmount = 9
+Const kUpdatePayment_IsExGratia = 10
+Const kUpdatePayment_TotalFields = 10
+
+Dim m_aUpdateRecovery()
+Const kUpdateRecovery_TotalFields = 4
+Const kUpdateRecovery_PerilID = 0
+Const kUpdateRecovery_RecoveryTypeID = 1
+Const kUpdateRecovery_Amount = 2
+Const kUpdateRecovery_RecoveryPartyTypeId = 3
+Const kUpdateRecovery_PartyKey = 4
+Const kRECOVERYPARTY_OTHERPARTY = 4
+
+
+Dim bPaymentSuccessful: bPaymentSuccessful = True
+Const ICSS = 4033
+IsDefaultMode = False
+m_bReferred = False
+
+Sub Start()
+	Call CoreReserves()	
+	Call CoreRecoveries ()
+	Call CorePayment()
+	
+End Sub
+
+Sub CoreReserves()
+	IsDefaultMode = False
+    m_bReferred = False
+	If LoadClaimDetails() <> 1 Then
+		'Call  the validation message saying we are not able to fetch the details etc if required
+	End If
+	
+	If Not IsArray(m_aClaimDetails(kCLAIMSDETAILS_ArrayOfPerils, 0)) Then
+		Exit Sub
+	End If
+
+	With Engine.Item("MEDMALCLAIM")
+		Dim iRecord
+		Dim iTotalRecord
+		Dim sReserveCode
+		Dim sReserveTypeID
+		Dim nIsExGratia
+		Dim sPerilCode
+		Dim iPerilID
+		Dim nPayeeType
+		Dim nPayee
+		Dim nMediaType
+		Dim sMediaRef
+		Dim sPayeeTypeCode
+		Dim crPaymentAmount
+		Dim crTotalPayments
+		iTotalRecord = .Count("SCHEDULE_LOSS")
+		'Call WriteToLog(iTotalRecord)
+		For iRecord = 1 To iTotalRecord
+			'THIS CAN BE ANY LOGIC YOU WANT AS PER YOUR BUSINESS
+				sReserveCode =(GetUDLCode((.Item("SCHEDULE_LOSS", iRecord).Item("DESCRIPTION").Value),"UDL_CLA_RESERVE"))
+				sReserveTypeID = SafeCLng(GetUdlField("Reserve_Type", "Reserve_Type_Id", sReserveCode))
+				
+				sPerilCode =UCase(GetUDLCode((.Item("SCHEDULE_LOSS", iRecord).Item("PERIL").Value), "UDL_MEDMAL_PERIL_TYPE"))
+							
+				iPerilID = SafeCLng(GetCoreListID("Peril_Type", "Peril_Type_Id", sPerilCode))
+				
+			If Trim(m_aClaimDetails(kCLAIMDETAILS_TransactionType, 0)) <> kPayClaim Then
+			'Call WriteToLog(.Item("SCHEDULE_LOSS", iRecord).Item("PERIL").Value & " " & sReserveTypeID & " " &  SafeCCur(.Item("SCHEDULE_LOSS", iRecord).Item("RESERVE").Value))
+				'.Item("SCHEDULE_LOSS", iRecord).Item("PERIL").Value
+				Call UpdateReserve(iPerilID, sReserveTypeID, SafeCCur(.Item("SCHEDULE_LOSS", iRecord).Item("RESERVE").Value))	
+			End If
+		Next
+	End With
+
+	If Trim(m_aClaimDetails(kCLAIMDETAILS_TransactionType, 0)) <> kPayClaim Then
+		Call UpdateCoreReserves()
+	End If
+End Sub
+
+Sub CorePayment()
+	IsDefaultMode = False
+    m_bReferred = False
+	Call LoadClaimDetails()
+	
+	With Engine.Item("MEDMALCLAIM")
+		Dim iRecord
+		Dim iTotalRecord
+		Dim sReserveCode
+		Dim sReserveTypeID
+		Dim nIsExGratia
+		Dim iPerilCode
+		Dim iPerilID
+		Dim nPayeeType
+		Dim nPayee
+		Dim nMediaTypeCode
+		Dim nMediaType
+		Dim sMediaRef
+		Dim nClaimPaymentToID
+		Dim crTaxAmount
+		Dim sTaxGroupCode
+		Dim oTaxGroupIDorCODE
+		Dim sPayeeTypeCode
+		Dim crPaymentAmount
+		Dim crTotalPayments
+		iTotalRecord = .Count("SCHEDULE_LOSS")
+		If TransactionType <> kTRANSACTIONTYPE_OpenClaim Then
+			
+			For iRecord = 1 To iTotalRecord
+				'THIS CAN BE ANY LOGIC YOU WANT AS PER YOUR BUSINESS
+			
+				sReserveCode =(GetUDLCode((.Item("SCHEDULE_LOSS", iRecord).Item("DESCRIPTION").Value),"UDL_CLA_RESERVE"))
+				sReserveTypeID = SafeCLng(GetUdlField("Reserve_Type", "Reserve_Type_Id", sReserveCode))
+				iPerilCode = UCase(GetUDLCode((.Item("SCHEDULE_LOSS", iRecord).Item("PERIL").Value), "UDL_MEDMAL_PERIL_TYPE"))
+				iPerilID = SafeCLng(GetCoreListID("Peril_Type", "Peril_Type_Id", iPerilCode))
+				nIsExGratia =(.Item("SCHEDULE_LOSS", iRecord).Item("IS_EXGRATIA").Value)
+				crPaymentAmount = SafeCCur(.Item("SCHEDULE_LOSS", iRecord).item("PAID_AMOUNT").value)
+				nMediaTypeCode = UCase(GetUDLCode((.Item("SCHEDULE_LOSS", iRecord).Item("PAYMENT_TYPE").Value), "UDL_CLA_MEDIATYPE"))
+				'SafeCLng(.Item("SCHEDULE_LOSS", iRecord).item("PAYMENT_TYPE").value)
+				nMediaType = SafeCLng(GetCoreListID("MediaType", "MediaType_Id", nMediaTypeCode))
+				
+				'Added to test VAT calculation 
+				sTaxGroupCode = UCase(GetUDLCode((.Item("SCHEDULE_LOSS", iRecord).Item("TAX_GROUP").Value), "UDL_CLA_TAXGROUP"))
+				oTaxGroupIDorCODE = SafeCLng(GetCoreListID("Tax_Group", "tax_group_id", sTaxGroupCode))
+				crTaxAmount = SafeCCur(.Item("SCHEDULE_LOSS", iRecord).item("TAX_AMOUNT").value)
+				
+				Call WriteToLog(nMediaTypeCode & " " & nMediaType)
+				SafeCLng(.Item("SCHEDULE_LOSS", iRecord).item("PAYMENT_TYPE").value)
+				sMediaRef = (.Item("SCHEDULE_LOSS", iRecord).item("MEDIA_REF").value)
+				sPayeeTypeCode = UCase(GetUDLCode((.Item("SCHEDULE_LOSS", iRecord).Item("PAYEE_TYPE").Value), "UDL_COM_PAYEE_TYPE"))
+				
+				If crPaymentAmount > 0 Then 
+					crTotalPayments = crTotalPayments + crPaymentAmount
+				End If 
+				
+				If sPayeeTypeCode = "CLMPAYABLE" Then 
+					nPayeeType = kPAYEETYPE_ClaimPayable
+					nPayee = -1
+					Call UpdatePayment(iPerilID, sReserveTypeID, crPaymentAmount,nPayeeType, nPayee, nMediaType, sMediaRef, 0, oTaxGroupIDorCODE, crTaxAmount, nIsExGratia) 
+						
+				ElseIf sPayeeTypeCode ="PARTY" Then
+					nPayeeType = kPAYEETYPE_Party
+					nPayee = (.Item("SCHEDULE_LOSS", iRecord).Item("PARTY_NAME").Value)
+					Call UpdatePayment(iPerilID, sReserveTypeID, crPaymentAmount,nPayeeType, nPayee, nMediaType, sMediaRef, 0, oTaxGroupIDorCODE, crTaxAmount, nIsExGratia)
+					
+				ElseIf sPayeeTypeCode = "CLIENT" Then
+					nPayeeType = kPAYEETYPE_Party
+					sPartyShortname = Extras.PartyShortName
+					Extras.GetPartyCntFromShortName sPartyShortname,nPartyCnt
+					
+					nPayee = nPartyCnt 
+					'nPayeeType = kPAYEETYPE_Party
+					'nPayee = (.Item("SCHEDULE_LOSS", iRecord).Item("CLIENT").Value)
+					Call UpdatePayment(iPerilID, sReserveTypeID, crPaymentAmount,nPayeeType, nPayee, nMediaType, sMediaRef, 0, oTaxGroupIDorCODE, crTaxAmount, nIsExGratia)
+				
+				Else
+					Refer("Payee Type not selected")
+					bPaymentSuccessful = False
+				End If 
+				
+				'If sPayeeTypeCode = "AGENT" Then
+					'nPayeeType = kPAYEETYPE_Party
+					'nPayee = (.Item("SCHEDULE_LOSS", iRecord).Item("PERSONAL_CLIENT").Value)
+				'End If
+								
+			Next
+		End If 
+		
+		'Call WriteToLog(bPaymentSuccessful)
+		
+	End With
+
+	If TransactionType <> kTRANSACTIONTYPE_OpenClaim Then
+		Call UpdateCorePayment()
+			'If (crTotalPayments > 0) And (bPaymentSuccessful = True) Then
+				'.item("Paid_Payment_Processed_Flag").value = 1 
+			'End If
+	End If
+End Sub
+
+Sub CoreRecoveries()
+    IsDefaultMode = False
+    m_bReferred = False
+    Call LoadClaimDetails()
+	Dim iPerilCode
+    Dim nPerilTypeID
+    Dim nRecoveryTypeID
+    Dim sRecoveryTypeCode
+    Dim n
+    Dim crRecoveryAmount
+    Dim nPartyKey
+    Dim iRecord
+    Dim iTotalRecord
+
+    With Engine.Item("MEDMALCLAIM")
+        If Trim(m_aClaimDetails(kCLAIMDETAILS_TransactionType, 0)) <> kPayClaim Then
+            iTotalRecord = .Count("RECOVERIES")
+
+            For iRecord = 1 To iTotalRecord
+
+                ' Get the ID for the perils code we are updating
+                iPerilCode = UCase(GetUDLCode((.Item("RECOVERIES", iRecord).Item("PERIL").Value), "UDL_MEDMAL_PERIL_TYPE"))
+				nPerilTypeID = SafeCLng(GetCoreListID("Peril_Type", "Peril_Type_Id", iPerilCode))
+				
+                ' Get Recovery type ID			
+                sRecoveryTypeCode = UCase(GetUDLCode((.Item("RECOVERIES", iRecord).Item("RECOVERY_TYPE").Value), "UDL_SPECIAL_RECO_TYPE"))
+				
+				If sRecoveryTypeCode = "TPREC" Then 
+					  nRecoveryTypeID = SafeCLng(GetCoreListID("Recovery_type", "Recovery_type_Id","TPREC"))
+						
+				ElseIf sRecoveryTypeCode ="SALRECNON" Then
+					 nRecoveryTypeID = SafeCLng(GetCoreListID("Recovery_type", "Recovery_type_Id","SALRECNON"))
+				
+				ElseIf sRecoveryTypeCode ="FEEREC" Then
+					 nRecoveryTypeID = SafeCLng(GetCoreListID("Recovery_type", "Recovery_type_Id","FEEREC"))
+				
+                End If 
+									
+				' Get the Recovery Amount
+                crRecoveryAmount = SafeCCur(.Item("RECOVERIES", iRecord).item("NEGOTIATED_AMOUNT").value)
+
+                ' Get the Party Key 
+                nPartyKey = SafeCLng(.Item("RECOVERIES", iRecord).item("OTHER_PARTY").value)
+			
+                If crRecoveryAmount > 0 Then
+                    Call UpdateRecovery(nPerilTypeID, nRecoveryTypeID, crRecoveryAmount, nPartyKey)
+                    Call UpdateCoreRecoveries()
+                End If
+            Next
+        End If
+    End With
+End Sub
+
+
+Sub UpdateReserve(ByVal iPerilID, ByVal sReserveTypeID, ByVal cReserveAmount)
+	Dim iRecord
+	Dim iTotalRecords
+	Dim iCurrentRecord
+
+	iCurrentRecord = 0
+	iTotalRecords = SafeUbound(m_aUpdateReserve, 2)
+	
+	For iRecord = 1 To iTotalRecords
+		If m_aUpdateReserve(kUpdateReserve_PerilID, iRecord) = iPerilID And m_aUpdateReserve(kUpdateReserve_ReserveTypeID, iRecord) = sReserveTypeID Then
+			iCurrentRecord = iRecord
+			Exit For
+		End If
+	Next
+
+	If iCurrentRecord = 0 Then
+		iCurrentRecord = iTotalRecords + 1
+		ReDim Preserve m_aUpdateReserve(kUpdateReserve_TotalFields, iCurrentRecord)
+	End If
+
+	m_aUpdateReserve(kUpdateReserve_PerilID, iCurrentRecord) = iPerilID
+	m_aUpdateReserve(kUpdateReserve_ReserveTypeID, iCurrentRecord) = sReserveTypeID
+	m_aUpdateReserve(kUpdateReserve_Amount, iCurrentRecord) = SafeCCur(m_aUpdateReserve(kUpdateReserve_Amount, iCurrentRecord)) + cReserveAmount
+	
+End Sub
+
+Public Sub UpdatePayment(ByVal nPerilTypeID, ByVal nReserveTypeID, ByVal crPaymentAmount, ByVal nPayeeType, ByVal nPayee, ByVal nMediaType, ByVal sMediaRef, ByVal nClaimPaymentToID, ByVal oTaxGroupIDorCODE, ByVal crTaxAmount, ByVal nIsExGratia)
+    Dim iRecord
+    Dim iTotalRecords
+    Dim iCurrentRecord
+
+    If crPaymentAmount = 0 Then
+        Exit Sub
+    End If
+    iCurrentRecord = 0
+    iTotalRecords = SafeUbound(m_aUpdatePayment, 2)
+	
+    For iRecord = 1 To iTotalRecords
+        If m_aUpdatePayment(kUpdatePayment_PerilTypeID, iRecord) = nPerilTypeID And m_aUpdatePayment(kUpdatePayment_ReserveTypeID, iRecord) = nReserveTypeID Then
+            iCurrentRecord = iRecord
+            Exit For
+        End If
+    Next
+
+    If nPayeeType = kPAYEETYPE_ClaimPayable Then
+        nPayee = -1
+    End If
+
+    For iRecord = 1 To iTotalRecords
+        If SafeCLng(m_aUpdatePayment(kUpdatePayment_PerilTypeID, iRecord)) <> nPerilTypeID Then
+            Refer("You cannot make payment on two perils at same time.")
+			bPaymentSuccessful = False
+        End If
+        If SafeCLng(m_aUpdatePayment(kUpdatePayment_Payee, iRecord)) <> SafeCLng(nPayee) Then
+            Refer("Payee cannot be different.")
+			bPaymentSuccessful = False
+        End If
+        If SafeCLng(m_aUpdatePayment(kUpdatePayment_ClaimPaymentToID, iRecord)) <> nClaimPaymentToID Then
+            Refer("Claim Payment To Cannot be different.")
+			bPaymentSuccessful = False			
+        End If
+
+        If m_aUpdatePayment(kUpdatePayment_TaxGroupIDorCODE, iRecord) <> oTaxGroupIDorCODE Then
+            Refer("Tax Group Cannot be different.")
+			bPaymentSuccessful = False			
+        End If
+
+        If SafeCLng(m_aUpdatePayment(kUpdatePayment_MediaType, iRecord)) <> nMediaType Then
+            Refer("Please select same Media type for current payment.")
+			bPaymentSuccessful = False			
+        End If
+
+        If SafeCLng(m_aUpdatePayment(kUpdatePayment_PayeeType, iRecord)) <> nPayeeType Then
+            Refer("Payee Type cannot be different.")
+			bPaymentSuccessful = False			
+        End If
+
+        If m_bReferred = True Then
+			bPaymentSuccessful = False
+            Exit For
+        End If
+    Next
+
+    If iCurrentRecord = 0 Then
+        iCurrentRecord = iTotalRecords + 1
+        ReDim Preserve m_aUpdatePayment(kUpdatePayment_TotalFields, iCurrentRecord)
+    End If
+
+    m_aUpdatePayment(kUpdatePayment_PerilTypeID, iCurrentRecord) = nPerilTypeID
+    m_aUpdatePayment(kUpdatePayment_ReserveTypeID, iCurrentRecord) = nReserveTypeID
+    m_aUpdatePayment(kUpdatePayment_Payee, iCurrentRecord) = nPayee
+    m_aUpdatePayment(kUpdatePayment_PayeeType, iCurrentRecord) = nPayeeType
+    m_aUpdatePayment(kUpdatePayment_Amount, iCurrentRecord) = SafeCCur(m_aUpdatePayment(kUpdatePayment_Amount, iCurrentRecord)) + crPaymentAmount
+    m_aUpdatePayment(kUpdatePayment_MediaType, iCurrentRecord) = nMediaType
+    m_aUpdatePayment(kUpdatePayment_ClaimPaymentToID, iCurrentRecord) = nClaimPaymentToID
+    m_aUpdatePayment(kUpdatePayment_TaxGroupIDorCODE, iCurrentRecord) = oTaxGroupIDorCODE
+    m_aUpdatePayment(kUpdatePayment_TaxAmount, iCurrentRecord) = SafeCCur(m_aUpdatePayment(kUpdatePayment_TaxAmount, iCurrentRecord)) + crTaxAmount
+    m_aUpdatePayment(kUpdatePayment_IsExGratia, iCurrentRecord) = SafeCInt(nIsExGratia)
+
+	'TAKING ONLY LAST VALID REFRENCE IN ACCOUNT
+    If sMediaRef <> "" Then
+        m_aUpdatePayment(kUpdatePayment_MediaRef, iCurrentRecord) = sMediaRef
+    End If
+
+End Sub
+
+Public Sub UpdateRecovery(ByVal nPerilTypeID, ByVal nRecoveryTypeID, ByVal crReserveAmount, ByVal nPartyKey)
+    Dim iRecord
+    Dim iTotalRecords
+    Dim iCurrentRecord
+
+    iCurrentRecord = 0
+    iTotalRecords = SafeUbound(m_aUpdateRecovery, 2)
+
+    For iRecord = 1 To iTotalRecords
+        If m_aUpdateRecovery(kUpdateRecovery_PerilID, iRecord) = nPerilTypeID And SafeCLng(m_aUpdateRecovery(kUpdateRecovery_RecoveryTypeID, iRecord)) = nRecoveryTypeID Then
+            iCurrentRecord = iRecord
+            Exit For
+        End If
+    Next
+
+    If iCurrentRecord = 0 Then
+        iCurrentRecord = iTotalRecords + 1
+        ReDim Preserve m_aUpdateRecovery(kUpdateRecovery_TotalFields, iCurrentRecord)
+    End If
+
+    m_aUpdateRecovery(kUpdateRecovery_PerilID, iCurrentRecord) = nPerilTypeID
+    m_aUpdateRecovery(kUpdateRecovery_RecoveryTypeID, iCurrentRecord) = nRecoveryTypeID
+    m_aUpdateRecovery(kUpdateRecovery_RecoveryPartyTypeId, iCurrentRecord) = kRECOVERYPARTY_OTHERPARTY
+    m_aUpdateRecovery(kUpdateRecovery_PartyKey, iCurrentRecord) = nPartyKey
+    m_aUpdateRecovery(kUpdateRecovery_Amount, iCurrentRecord) = SafeCCur(m_aUpdateRecovery(kUpdateRecovery_Amount, iCurrentRecord)) + crReserveAmount
+	
+End Sub
+
+Sub UpdateCoreReserves()
+    Dim iRecord
+    Dim iTotalRecord
+    Dim IsClaimReservesUpdated
+
+    If Not IsArray(m_aClaimDetails(kCLAIMSDETAILS_ArrayOfPerils, 0)) Then
+        Exit Sub
+    End If
+
+    IsClaimReservesUpdated = False
+    iTotalRecord = SafeUbound(m_aUpdateReserve, 2)
+
+    For iRecord = 1 To iTotalRecord
+        Dim bIsFound
+        Dim nPerilID
+        Dim sPerilDescription
+        Dim iPerilRecord
+        Dim iReserveRecord
+
+        Dim nReserveTypeID
+        Dim crReserveAmount
+        Dim crPreviousReserve
+        Dim crFinalReserve
+        Dim nReserveID
+        bIsFound = False
+        nReserveTypeID = SafeCLng(m_aUpdateReserve(kUpdateReserve_ReserveTypeID, iRecord))
+	
+		
+        crReserveAmount = m_aUpdateReserve(kUpdateReserve_Amount, iRecord)
+				
+        nPerilID = SafeCLng(m_aUpdateReserve(kUpdateReserve_PerilID, iRecord))
+        sPerilDescription = UCase(Trim(GetListColumnFromValue("Peril_Type", "Description", "Peril_Type_id", nPerilID)))
+        For iPerilRecord = 0 To UBound(m_aClaimDetails(kCLAIMSDETAILS_ArrayOfPerils, 0), 2)
+
+            If UCase(Trim(m_aClaimDetails(kCLAIMSDETAILS_ArrayOfPerils, 0)(kPERIL_Description, iPerilRecord))) = sPerilDescription Then
+                If IsArray(m_aClaimDetails(kCLAIMSDETAILS_ArrayOfPerils, 0)(kPERIL_ArrayofReserve, iPerilRecord)) Then
+                    For iReserveRecord = 0 To UBound(m_aClaimDetails(kCLAIMSDETAILS_ArrayOfPerils, 0)(kPERIL_ArrayofReserve, iPerilRecord), 2)
+
+                        If SafeCLng(m_aClaimDetails(kCLAIMSDETAILS_ArrayOfPerils, 0)(kPERIL_ArrayofReserve, iPerilRecord)(kRESERVE_ReserveTypeID, iReserveRecord)) = nReserveTypeID Then
+                            If TransactionType <> kTRANSACTIONTYPE_OpenClaim Then
+                                nReserveID = SafeCLng(m_aClaimDetails(kCLAIMSDETAILS_ArrayOfPerils, 0)(kPERIL_ArrayofReserve, iPerilRecord)(kRESERVE_ReserveID, iReserveRecord))
+								Call Extras.GetPreviousReserve(nReserveID, crPreviousReserve)
+                                crFinalReserve = crReserveAmount - crPreviousReserve
+								
+                                If crFinalReserve <> 0 Then
+                                    m_aClaimDetails(kCLAIMSDETAILS_ArrayOfPerils, 0)(kPERIL_ArrayofReserve, iPerilRecord)(kRESERVE_ThisRevision, iReserveRecord) = crFinalReserve
+                                    m_aClaimDetails(kCLAIMSDETAILS_ArrayOfPerils, 0)(kPERIL_ArrayofReserve, iPerilRecord)(kRESERVE_IsUpdated, iReserveRecord) = 1
+                                    IsClaimReservesUpdated = True
+                                End If
+                            Else
+                                crFinalReserve = crReserveAmount
+                                m_aClaimDetails(kCLAIMSDETAILS_ArrayOfPerils, 0)(kPERIL_ArrayofReserve, iPerilRecord)(kRESERVE_InitialReserve, iReserveRecord) = crFinalReserve
+                                m_aClaimDetails(kCLAIMSDETAILS_ArrayOfPerils, 0)(kPERIL_ArrayofReserve, iPerilRecord)(kRESERVE_ThisRevision, iReserveRecord) = crFinalReserve
+                                m_aClaimDetails(kCLAIMSDETAILS_ArrayOfPerils, 0)(kPERIL_ArrayofReserve, iPerilRecord)(kRESERVE_IsUpdated, iReserveRecord) = 1
+                                IsClaimReservesUpdated = True
+									
+								 
+                            End If
+                            bIsFound = True
+                            Exit For
+                        End If
+                    Next
+                End If
+				
+            End If
+
+            If bIsFound = True Then
+			 
+			
+			 'Call WriteToLog(m_aClaimDetails(kCLAIMSDETAILS_ArrayOfPerils, 0)(kPERIL_ArrayofReserve, iPerilRecord)(kRESERVE_InitialReserve, iReserveRecord))
+                Exit For
+            End If
+			
+        Next
+
+        If bIsFound = False Then
+            Refer("Reserve Type with ID " & nReserveTypeID & " is not configured for Peril " & sPerilDescription)
+        End If
+
+    Next
+	 
+    'If IsClaimReservesUpdated And m_bReferred = False Then
+		Extras.ClaimReservesUpdated = True
+		m_lReturn = Extras.UpdateClaimReserves(m_aClaimDetails, True)	
+		
+		'Call WriteToLog("Reserve Table updated successfully " & m_lReturn)
+	'End If
+
+End Sub
+
+Sub UpdateCorePayment()
+    Dim iRecord
+    Dim iTotalRecord
+    Dim IsClaimReservesUpdated
+    Dim tempPaymentReserveArray()
+	
+	
+    If Not IsArray(m_aClaimPaymentDetails(kCLAIMSDETAILS_ArrayOfPerils, 0)) Then
+	     	   Exit Sub		
+    End If
+	  
+    IsClaimReservesUpdated = False
+    iTotalRecord = SafeUbound(m_aUpdatePayment, 2)
+	
+	
+    Dim crUserCalculatedTaxAmount
+    crUserCalculatedTaxAmount = 0
+
+    For iRecord = 1 To iTotalRecord
+        Dim bIsFound
+        Dim nPerilID
+        Dim sPerilDescription
+        Dim nReserveTypeID
+        Dim cReserveAmount
+        Dim nPayeeCnt
+        Dim sPayeeShortCode
+        Dim nMediaType
+        Dim sMediaTypeCode
+        Dim nTaxGroupID
+        Dim sTaxGroupCode
+
+        bIsFound = False
+        sPayeeShortCode = ""
+        sMediaTypeCode = ""
+		
+        nReserveTypeID = SafeCLng(m_aUpdatePayment(kUpdatePayment_ReserveTypeID, iRecord))
+		
+        cReserveAmount = m_aUpdatePayment(kUpdatePayment_Amount, iRecord)
+
+        nPerilID = SafeCLng(m_aUpdatePayment(kUpdatePayment_PerilTypeID, iRecord))
+        sPerilDescription = GetListColumnFromValue("Peril_Type", "Description", "Peril_Type_id", nPerilID)
+		
+		
+		
+        nPayeeCnt = SafeCLng(m_aUpdatePayment(kUpdatePayment_Payee, iRecord))
+		
+        'Payee IS MANDATORY
+        If nPayeeCnt <> -1 Then
+            sPayeeShortCode = GetListColumnFromValue("Party", "shortname", "party_cnt", nPayeeCnt)
+            If sPayeeShortCode = "" Then
+                Refer("Please Provide a valid Payee..")
+				bPaymentSuccessful = False
+                Exit For
+            End If
+        End If
+
+        nMediaType = SafeCLng(m_aUpdatePayment(kUpdatePayment_MediaType, iRecord))
+        If nMediaType > 0 Then
+            sMediaTypeCode = GetListCodeFromID("MediaType", nMediaType)
+            If sMediaTypeCode = "" Then
+                Refer("Please Provide a Media Type..")
+				bPaymentSuccessful = False
+                Exit For
+            End If
+        End If
+
+        If IsNumeric(m_aUpdatePayment(kUpdatePayment_TaxGroupIDorCODE, iRecord)) Then
+            nTaxGroupID = SafeCLng(m_aUpdatePayment(kUpdatePayment_TaxGroupIDorCODE, iRecord))
+            sTaxGroupCode = GetListCodeFromID("Tax_Group", nTaxGroupID)
+			
+        Else
+			nTaxGroupID = GetListIDFromCode("Tax_Group", sTaxGroupCode)
+            sTaxGroupCode = SafeCStr(m_aUpdatePayment(kUpdatePayment_TaxGroupIDorCODE, iRecord))
+            
+			
+        End If
+        'IF NEITHER CODE NOR ID WAS PROVIDED THAT MEANS USER IS NOT TAKING TAX IN ACCOUNT
+        'IF BOTH ARE EVALUATED THAT MEANS IT IS VALID
+        'IF EITHER IS FALSE WE NEED TO INFORM USER,SAYING WHATEVER YOU PROVIDE IS NOT VALID.
+        If (sTaxGroupCode = "" Xor nTaxGroupID = 0) Then
+            Refer("Please Provide a valid Tax Group..")
+			bPaymentSuccessful = False
+            Exit For
+        End If
+
+        crUserCalculatedTaxAmount = crUserCalculatedTaxAmount + SafeCDbl(m_aUpdatePayment(kUpdatePayment_TaxAmount, iRecord))
+
+        Dim nSpecificPerilIndex
+        Dim nSpecificReserveIndex
+        Dim oPerilArray
+        Dim oReserveArray
+
+        oPerilArray = m_aClaimDetails(kCLAIMSDETAILS_ArrayOfPerils, 0)
+        nSpecificPerilIndex = GetIndexFromArray(oPerilArray, 0, kPERIL_Description, sPerilDescription)
+
+        If nSpecificPerilIndex < 0 Then
+            'LEAST LIKELY POSSIBLE
+            Refer("Couldn't find the peril")
+			bPaymentSuccessful = False
+            Exit For
+        End If
+
+        oReserveArray = oPerilArray(kPERIL_ArrayofReserve, nSpecificPerilIndex)
+        nSpecificReserveIndex = GetIndexFromArray(oReserveArray, 0, kRESERVE_ReserveTypeID, nReserveTypeID)
+
+        If nSpecificReserveIndex < 0 Then
+            Refer("Couldn't find the reserve")
+			bPaymentSuccessful = False
+            Exit For
+        End If
+
+        Dim nClaimPerilID
+        Dim nReserveID
+        Dim oClaimPaymentObject
+
+        nClaimPerilID = SafeCLng(oPerilArray(kPERIL_PerilID, nSpecificPerilIndex))
+        nReserveID = SafeCLng(oReserveArray(kRESERVE_ReserveTypeID, nSpecificReserveIndex))
+
+        m_lReturn = Extras.GetNewClaimPaymentItem(nClaimPerilID, nReserveID, oClaimPaymentObject)
+		
+		
+        If m_lReturn <> 1 Then
+            Refer("Payment Failed for peril " & sPerilDescription)
+			bPaymentSuccessful = False
+            Exit For
+        End If
+
+        Dim iColIndex
+        
+		'AK - Amended
+		Dim nCurrentPaymentCnt
+
+        oClaimPaymentObject(kRESERVE_CP_ThisPayment) = SafeCDbl(m_aUpdatePayment(kUpdatePayment_Amount, iRecord))
+        oClaimPaymentObject(kRESERVE_CP_TaxGroupCode) = sTaxGroupCode
+        'YOU CAN CHANGE AND USE THE PAYEE TYPE YOU WANT
+        oClaimPaymentObject(kRESERVE_CP_PayeeType) = SafeCLng(m_aUpdatePayment(kUpdatePayment_PayeeType, iRecord))
+        oClaimPaymentObject(kRESERVE_CP_PayeeShortCode) = sPayeeShortCode
+        oClaimPaymentObject(kRESERVE_CP_MediaType) = sMediaTypeCode
+        oClaimPaymentObject(kRESERVE_CP_BankPaymentType) = ""
+        oClaimPaymentObject(kRESERVE_CP_CurrencyCode) = SafeCStr(Extras.CurrentCurrencyISOCode)
+        oClaimPaymentObject(kRESERVE_CP_MediaRef) = SafeCStr(m_aUpdatePayment(kUpdatePayment_MediaRef, iRecord))
+        oClaimPaymentObject(kRESERVE_CP_ClaimPaymentToID) = SafeCLng(m_aUpdatePayment(kUpdatePayment_ClaimPaymentToID, iRecord))
+        oClaimPaymentObject(kRESERVE_CP_IsExGratia) = SafeCLng(m_aUpdatePayment(kUpdatePayment_IsExGratia, iRecord))
+		
+		'AK - Amended
+        'nSpecificPerilIndex is going to be same for paymentReserve
+        nCurrentPaymentCnt = SafeUbound(m_aClaimPaymentDetails(kCLAIMSDETAILS_ArrayOfPerils, 0)(kPERIL_ArrayofReserve, nSpecificPerilIndex), 2)
+        If nCurrentPaymentCnt > 0 Then
+           nCurrentPaymentCnt = nCurrentPaymentCnt + 1
+        End If
+
+        ReDim Preserve tempPaymentReserveArray(kRESERVE_CP_FieldCount, iRecord)
+
+		'Blank all peril payment arrays before populating the required one
+		Dim iPerilCount
+		For iPerilCount = 0 to SafeUBound(m_aClaimDetails(kCLAIMSDETAILS_ArrayOfPerils, 0),2)
+			m_aClaimPaymentDetails(kCLAIMSDETAILS_ArrayOfPerils, 0)(kPERIL_ArrayofReserve, iPerilCount) = tempPaymentReserveArray
+		Next
+				
+        For iColIndex = 0 To kRESERVE_CP_FieldCount
+            tempPaymentReserveArray(iColIndex, iRecord) = oClaimPaymentObject(iColIndex)
+        Next
+        
+		'AK - Amended
+		m_aClaimPaymentDetails(kCLAIMSDETAILS_ArrayOfPerils, 0)(kPERIL_ArrayofReserve, nSpecificPerilIndex) = tempPaymentReserveArray
+        IsClaimReservesUpdated = True
+		
+    Next
+
+    If IsClaimReservesUpdated And m_bReferred = False Then
+        m_lReturn = Extras.UpdateClaimPaymentDetails(m_aClaimPaymentDetails, Nothing, Nothing, crUserCalculatedTaxAmount, bIsSpecifiedScriptCalculatedTax, True)
+        Call WriteToLog(m_lReturn)
+		If m_lReturn <> 1 Then
+            Refer("Claim Payment Failed. Please Check Error Log For Details.")
+			bPaymentSuccessful = False
+        End If
+    End If
+
+End Sub
+
+Sub UpdateCoreRecoveries()
+    Dim iRecord
+    Dim iTotalRecord
+    Dim IsClaimRecoveryUpdated
+
+    If Not IsArray(m_aClaimDetails(kCLAIMSDETAILS_ArrayOfPerils, 0)) Then
+        Exit Sub
+    End If
+
+    IsClaimRecoveryUpdated = False
+    iTotalRecord = SafeUbound(m_aUpdateRecovery, 2)
+
+    For iRecord = 1 To iTotalRecord
+        Dim bIsFound
+        Dim nPerilID
+        Dim sPerilDescription
+        Dim iPerilRecord
+        Dim iRecoveriesRecord
+
+        Dim iRecoveryTypeID
+        Dim cThisRecovery
+        Dim cRecoveryAmount
+
+        bIsFound = False
+
+        nPerilID = SafeCLng(m_aUpdateRecovery(kUpdateRecovery_PerilID, iRecord))
+        sPerilDescription = GetListColumnFromValue("Peril_Type", "Description", "Peril_Type_id", nPerilID)
+
+        iRecoveryTypeID = SafeCLng(m_aUpdateRecovery(kUpdateRecovery_RecoveryTypeID, iRecord))
+        cRecoveryAmount = SafeCCur(m_aUpdateRecovery(kUpdateRecovery_Amount, iRecord))
+
+
+        For iPerilRecord = 0 To UBound(m_aClaimDetails(kCLAIMSDETAILS_ArrayOfPerils, 0), 2)
+            If m_aClaimDetails(kCLAIMSDETAILS_ArrayOfPerils, 0)(kPERIL_Description, iPerilRecord) = sPerilDescription Then
+                If IsArray(m_aClaimDetails(kCLAIMSDETAILS_ArrayOfPerils, 0)(kPERIL_ArrayOfRecoveries, iPerilRecord)) Then
+                    For iRecoveriesRecord = 0 To UBound(m_aClaimDetails(kCLAIMSDETAILS_ArrayOfPerils, 0)(kPERIL_ArrayOfRecoveries, iPerilRecord), 2)
+                        If SafeCLng(m_aClaimDetails(kCLAIMSDETAILS_ArrayOfPerils, 0)(kPERIL_ArrayOfRecoveries, iPerilRecord)(kRECOVERY_ReserveType, iRecoveriesRecord)) = iRecoveryTypeID Then
+
+                            Dim crPreviousReserve
+                            crPreviousReserve = SafeCCur(m_aClaimDetails(kCLAIMSDETAILS_ArrayOfPerils, 0)(kPERIL_ArrayOfRecoveries, iPerilRecord)(kRECOVERY_InitialReserve, iRecoveriesRecord)) + SafeCCur(m_aClaimDetails(kCLAIMSDETAILS_ArrayOfPerils, 0)(kPERIL_ArrayOfRecoveries, iPerilRecord)(kRECOVERY_RevisedReserve, iRecoveriesRecord))
+                            cThisRecovery = cRecoveryAmount - crPreviousReserve
+                            m_aClaimDetails(kCLAIMSDETAILS_ArrayOfPerils, 0)(kPERIL_ArrayOfRecoveries, iPerilRecord)(kRECOVERY_ThisReserve, iRecoveriesRecord) = cThisRecovery
+                            If cThisRecovery <> 0 Then
+                                m_aClaimDetails(kCLAIMSDETAILS_ArrayOfPerils, 0)(kPERIL_ArrayOfRecoveries, iPerilRecord)(kRECOVERY_IsUpdated, iRecoveriesRecord) = 1
+                                IsClaimRecoveryUpdated = True
+                            End If
+                            If SafeCLng(m_aUpdateRecovery(kUpdateRecovery_RecoveryPartyTypeId, iRecord)) <> 0 Then
+                                m_aClaimDetails(kCLAIMSDETAILS_ArrayOfPerils, 0)(kPERIL_ArrayOfRecoveries, iPerilRecord)(kRECOVERY_PartyTypeId, iRecoveriesRecord) = SafeCLng(m_aUpdateRecovery(kUpdateRecovery_RecoveryPartyTypeId, iRecord))
+                            End If
+
+                            If SafeCLng(m_aUpdateRecovery(kUpdateRecovery_PartyKey, iRecord)) Then
+                                m_aClaimDetails(kCLAIMSDETAILS_ArrayOfPerils, 0)(kPERIL_ArrayOfRecoveries, iPerilRecord)(kRECOVERY_PartyKey, iRecoveriesRecord) = SafeCLng(m_aUpdateRecovery(kUpdateRecovery_PartyKey, iRecord))
+                            End If
+
+                            bIsFound = True
+
+                            Exit For
+                        End If
+                    Next
+                End If
+            End If
+
+            If bIsFound = True Then
+                Exit For
+            End If
+        Next
+    Next
+
+    'If IsClaimRecoveryUpdated And m_bReferred = False Then
+        'THIS FUNCTION EXPECTS ONLY ARRAYOFPERILS
+        m_lReturn = Extras.UpdateClaimRecoveries(m_aClaimDetails(kCLAIMSDETAILS_ArrayOfPerils, 0))
+		Call WriteToLog(m_lReturn)
+        If m_lReturn <> 1 Then
+            Refer("Update Recoveries Failed. Please Check Error Log For Details.")
+        End If
+    'End If
+
+End Sub
+
+
+Public Function GetListCodeFromID(ByVal sTableName, ByVal nID)
+    GetListCodeFromID = GetListColumnFromValue(sTableName, "Code", sTableName & "_ID", nID)
+End Function
+
+Public Function GetListIDFromCode(ByVal sTableName, ByVal sCode)
+    GetListIDFromCode = SafeCLng(GetListColumnFromValue(sTableName, sTableName & "_ID", "Code", sCode))
+End Function
+
+Public Function GetListColumnFromValue(ByVal sTableName, ByVal sGetColumnValueof, ByVal SearchByColumn, ByVal SearchByValue)
+    GetListColumnFromValue = ""
+    Dim oData
+    Call Extras.GetTableData(oData, sTableName, sGetColumnValueof, SearchByColumn & " = '" & SearchByValue & "'")
+    If IsArray(oData) Then
+        GetListColumnFromValue = SafeCStr(oData(0, 0))
+    End If
+End Function
+
+Function GetIndexFromArray(ByVal oArray, ByVal nSearchFromIndex, ByVal nFindByColumnIndex, ByVal oValueOfColumn)
+    Dim nTotalItems
+    Dim iIndex
+    Dim nReturn
+    nReturn = -1
+    nTotalItems = SafeUbound(oArray, 2)
+    For iIndex = nSearchFromIndex To nTotalItems
+        If UCase(SafeCStr(oArray(nFindByColumnIndex, iIndex))) = UCase(SafeCStr(oValueOfColumn)) Then
+            nReturn = iIndex
+            Exit For
+        End If
+    Next
+    GetIndexFromArray = nReturn
+End Function
+
+Function GetUdlField(sUDLName, sFieldName, sDropdownId)
+    '**************************************************************************************
+    Dim vResult
+    Dim sSQL
+
+    sSQL = "Select " & sFieldName & " From " & sUDLName & " with (nolock)"
+    sSQL = sSQL & " Where " & sUDLName & "_id = '" & sDropdownId & "'"
+
+    Call Extras.CallNamedStoredProcedure(ICSS, "RetrieveData", vResult, Array("sSQL", sSQL))
+    If IsArray(vResult) Then
+        GetUdlField = vResult(0, 0)
+    Else
+        GetUdlField = vResult
+    End If
+End Function
+
+Function GetCoreListID(sUDLName, sFieldName, sCode)
+    '**************************************************************************************
+    Dim vResult
+    Dim sSQL
+
+    sSQL = "Select " & sFieldName & " From " & sUDLName & " with (nolock)"
+    sSQL = sSQL & " Where " & "Code = '" & sCode & "'"
+
+    Call Extras.CallNamedStoredProcedure(ICSS, "RetrieveData", vResult, Array("sSQL", sSQL))
+    If IsArray(vResult) Then
+        GetCoreListID = vResult(0, 0)
+    Else
+        GetCoreListID = vResult
+    End If
+End Function
+
+Function LoadClaimDetails()
+	LoadClaimDetails = 1
+
+	m_lReturn = Extras.GetClaimInformationDetail(m_aClaimDetails)
+	If m_lReturn <> 1 Then
+		LoadClaimDetails = 0
+		Exit Function
+    End If
+
+	If TransactionType <> kTRANSACTIONTYPE_OpenClaim Then
+		m_lReturn = Extras.GetClaimPaymentAgainstPeril(m_aClaimPaymentDetails)
+		
+		If m_lReturn <> 1 Then
+			LoadClaimDetails = 0
+			Exit Function
+		End If
+	End If
+End Function
+
+Public Sub Refer(ByVal sReason)
+    Dim iCount
+    m_bReferred = True
+    If IsDefaultMode = True Then
+        Call WriteToLog(sReason)
+    Else
+        Engine.NewObject(kDataModelCode & "_Output")
+        iCount = Engine.Count(kDataModelCode & "_Output")
+        Engine.Item(kDataModelCode & "_Output", iCount).Item("Refer_Reason").Value = sReason
+    End If
+End Sub
+
+Public Sub WriteToLog(ByVal sMessage)
+	Dim objFileSystem, objTextStream, objRegistry, sRulePath, sLogfile
+	Dim iPosition
+	Dim sFinalErrorDetails
+	Set objRegistry = CreateObject("Wscript.shell")
+	On Error Resume Next
+	sRulePath = Trim(objRegistry.RegRead("HKLM\Software\Pure\PureInstallation\Common\GIS\RulePath"))
+	On Error Resume Next
+	sRulePath = Trim(objRegistry.RegRead("HKLM\Software\Wow6432Node\Pure\PureInstallation\Common\GIS\RulePath"))
+	sRulePath = UCase(sRulePath)
+	iPosition = InStrRev(sRulePath, "PURE") + 3
+	If sRulePath = "" Then
+		sLogfile = "ScriptErrorLog.log"
+	Else
+		sLogfile = Left(sRulePath, iPosition) & "\ScriptErrorLog.log"
+	End If
+
+	sFinalErrorDetails = vbCrLf & " *** Script log at " & FormatDateTime(Now) & " **** " & vbCrLf
+	sFinalErrorDetails = sFinalErrorDetails & "User Name: " & Extras.Username & vbCrLf
+	sFinalErrorDetails = sFinalErrorDetails & "Message	: " & sMessage
+
+	Set objFileSystem = CreateObject("Scripting.FileSystemObject")
+	Set objTextStream = objFileSystem.OpenTextFile(sLogfile, 8, True)
+
+	objTextStream.WriteLine(sFinalErrorDetails)
+	objTextStream.Close()
+	Set objFileSystem = Nothing
+	Set objTextStream = Nothing
+	Set objRegistry = Nothing
+End Sub
+
+Function GetUDLCode(SearchValue, UdlName)
+	DIM vResult
+	DIM sSQL	
+	
+	SearchValue = SafecLng(SearchValue)
+	
+    IF SafecLng(SearchValue) = 0 THEN
+        GetUDLCode = 0
+		Exit Function
+    END IF
+	
+	sSQL = "Select Code from " & UdlName & " Where " & UdlName & "_id = " & SearchValue 
+	Call Extras.CallNamedStoredProcedure(4033, "RetrieveData", vResult, Array("sSQL",sSQL))
+	If IsArray(vResult) then			
+		GetUDLCode =  vResult(0,0)	
+	else
+		GetUDLCode = vResult
+	End if
+End Function
+
+Public Function SafeCInt(ByVal vIn)
+	SafeCInt = 0
+	On Error Resume Next
+	SafeCInt = CInt(vIn)
+	On Error GoTo 0
+End Function
+
+Public Function SafeCDbl(ByVal vIn)
+	SafeCDbl = 0
+	On Error Resume Next
+	SafeCDbl = CDbl(vIn)
+	On Error GoTo 0
+End Function
+
+Public Function SafeCCur(ByVal vIn)
+	SafeCCur = 0
+	On Error Resume Next
+	SafeCCur = CDbl(vIn)
+	On Error GoTo 0
+End Function
+
+Public Function SafeCStr(ByVal vIn)
+	SafeCStr = ""
+	On Error Resume Next
+	SafeCStr = Trim(CStr(vIn))
+	On Error GoTo 0
+End Function
+
+Public Function SafeCBool(ByVal vIn)
+	SafeCBool = 0
+	On Error Resume Next
+	SafeCBool = CBool(vIn)
+	On Error GoTo 0
+End Function
+
+Public Function SafeUbound(ByVal vArray, ByVal index)
+	SafeUbound = 0
+	On Error Resume Next
+	SafeUbound = UBound(vArray, index)
+	On Error GoTo 0
+End Function
+
+Public Function SafeCLng(ByVal oIn)
+	SafeCLng = 0
+	On Error Resume Next
+	SafeCLng = CLng(oIn)
+	On Error GoTo 0
+End Function
+
+
+
+

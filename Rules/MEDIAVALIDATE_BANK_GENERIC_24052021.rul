@@ -1,0 +1,1191 @@
+' ---------------------------------------------------------------------------
+' SCRIPT NAME: 	MEDIAVALIDATE_BANK_GENERIC.rul
+' AIM:			Validation of Bank Account Numbers for Hollard Namibia
+' AUTHOR: 		Muhammad Adam
+' DATE: 		9 October 2018
+' ---------------------------------------------------------------------------
+
+Dim vAccountNumber
+Dim vBranchCode
+Dim vBankName
+Dim vIsValid
+Dim vAccountType
+Dim AccountNumberVal
+Dim AccountNumberSecondVal
+Dim Length
+Dim Flag
+
+Dim CDVResult
+Dim CDV(10)
+Dim CDVBond(10)
+Dim CDVFNB(10)
+Dim CDVNED(10)
+Dim CDVNEDNAM(10)
+Dim CDVSTD(10)
+Dim CDVWHK(10)
+Dim CDVATH(10)
+Dim CDVINV(10)
+Dim CDVHBZ(10)
+Dim CDVRES(10)
+Dim CDVAFR(10)
+
+'Creating the CDV Table
+
+CDV(0) = 0
+CDV(1) = 1
+CDV(2) = 1
+CDV(3) = 9
+CDV(4) = 8
+CDV(5) = 7
+CDV(6) = 6
+CDV(7) = 5
+CDV(8) = 4
+CDV(9) = 3
+CDV(10) = 2
+
+CDVBond(0) = 13
+CDVBond(1) = 10
+CDVBond(2) = 9
+CDVBond(3) = 8
+CDVBond(4) = 7
+CDVBond(5) = 6
+CDVBond(6) = 5
+CDVBond(7) = 4
+CDVBond(8) = 3
+CDVBond(9) = 2
+CDVBond(10) = 1
+
+CDVFNB(0) = 1
+CDVFNB(1) = 2
+CDVFNB(2) = 1
+CDVFNB(3) = 2
+CDVFNB(4) = 1
+CDVFNB(5) = 2
+CDVFNB(6) = 1
+CDVFNB(7) = 2
+CDVFNB(8) = 1
+CDVFNB(9) = 2
+CDVFNB(10) = 1
+
+CDVNED(0) = 1
+CDVNED(1) = 1
+CDVNED(2) = 9
+CDVNED(3) = 8
+CDVNED(4) = 7
+CDVNED(5) = 6
+CDVNED(6) = 5
+CDVNED(7) = 4
+CDVNED(8) = 3
+CDVNED(9) = 2
+CDVNED(10) = 1
+
+CDVNEDNAM(0) = 5
+CDVNEDNAM(1) = 4
+CDVNEDNAM(2) = 3
+CDVNEDNAM(3) = 2
+CDVNEDNAM(4) = 7
+CDVNEDNAM(5) = 6
+CDVNEDNAM(6) = 5
+CDVNEDNAM(7) = 4
+CDVNEDNAM(8) = 3
+CDVNEDNAM(9) = 2
+CDVNEDNAM(10) = 1
+
+
+CDVSTD(0) = 1
+CDVSTD(1) = 1
+CDVSTD(2) = 9
+CDVSTD(3) = 8
+CDVSTD(4) = 7
+CDVSTD(5) = 6
+CDVSTD(6) = 5
+CDVSTD(7) = 4
+CDVSTD(8) = 3
+CDVSTD(9) = 2
+CDVSTD(10) = 1
+
+CDVWHK(0) = 0
+CDVWHK(1) = 0
+CDVWHK(2) = 0
+CDVWHK(3) = 0
+CDVWHK(4) = 0
+CDVWHK(5) = 0
+CDVWHK(6) = 0
+CDVWHK(7) = 0
+CDVWHK(8) = 0
+CDVWHK(9) = 0
+CDVWHK(10) = 0
+
+CDVATH(0) = 1
+CDVATH(1) = 1
+CDVATH(2) = 9
+CDVATH(3) = 8
+CDVATH(4) = 7
+CDVATH(5) = 6
+CDVATH(6) = 5
+CDVATH(7) = 4
+CDVATH(8) = 3
+CDVATH(9) = 2
+CDVATH(10) = 1
+
+CDVINV(0) = 0
+CDVINV(1) = 0
+CDVINV(2) = 0
+CDVINV(3) = 23
+CDVINV(4) = 19
+CDVINV(5) = 17
+CDVINV(6) = 13
+CDVINV(7) = 7
+CDVINV(8) = 5
+CDVINV(9) = 3
+CDVINV(10) = 1
+
+CDVHBZ(0) = 0
+CDVHBZ(1) = 0
+CDVHBZ(2) = 0
+CDVHBZ(3) = 0
+CDVHBZ(4) = 0
+CDVHBZ(5) = 1
+CDVHBZ(6) = 3
+CDVHBZ(7) = 7
+CDVHBZ(8) = 1
+CDVHBZ(9) = 3
+CDVHBZ(10) = 1
+
+CDVRES(0) = 1
+CDVRES(1) = 1
+CDVRES(2) = 1
+CDVRES(3) = 8
+CDVRES(4) = 7
+CDVRES(5) = 6
+CDVRES(6) = 5
+CDVRES(7) = 4
+CDVRES(8) = 3
+CDVRES(9) = 2
+CDVRES(10) = 1
+
+CDVAFR(0) = 1
+CDVAFR(1) = 2
+CDVAFR(2) = 1
+CDVAFR(3) = 2
+CDVAFR(4) = 1
+CDVAFR(5) = 2
+CDVAFR(6) = 1
+CDVAFR(7) = 2
+CDVAFR(8) = 1
+CDVAFR(9) = 2
+CDVAFR(10) = 1
+
+
+Sub Start()
+	'Retrieve Information from the shared storage. The information retrieved after the ValidateBankAccountNumber web service is called 
+	vAccountNumber = oSharedStorage.sAccountNo
+	vBranchCode = oSharedStorage.sBankBranchCode
+	vBankName = oSharedStorage.sBankName
+	vAccountType = oSharedStorage.sAccountType
+	
+	'For testing rules in backoffice
+	'vBankName = "FNB"
+	'vAccountType = "Cheque"
+	
+	If Trim(vAccountNumber) <> "" and Trim(vBankName) <> "" Then
+		vBankName = Trim(vBankName)
+		vAccountType = Trim(vAccountType)
+		Flag = False
+		
+		'FNB selected
+		If (vBankName = "FNB" or vBankName = "FIRNAMIBIA") Then
+			Call ValidateFNB(vAccountNumber, vBranchCode, vAccountType)
+		End If
+		
+		'Standard Bank Selected
+		If (vBankName = "STD" or vBankName = "STDBANK") Then
+			Call ValidateStandardBank(vAccountNumber, vBranchCode)
+		End If
+		
+		'Nedbank selected
+		If vBankName = "NDB" Then
+			Call ValidateNedbank(vAccountNumber, vBranchCode, vAccountType)
+		End If
+		
+		'Cape of Good Hope Bank selected
+		If vBankName = "GOODHOPE" Then
+			Call ValidateCapeGoodHope(vAccountNumber, vAccountType)
+		End If
+		
+		'French Bank selected
+		If vBankName = "FRENBANK" Then
+			Call ValidateByAccountCurrent(vAccountType)
+		End If
+		
+		'Bank of Athens Selected
+		If vBankName = "ATHENBANK" Then
+			Call ValidateBankOfAthens(vAccountNumber, vAccountType, vBranchCode)
+		End If
+		
+		'First Corp selected
+		If vBankName = "FIRSTCORP" Then
+			Call ValidateFirstCorp(vAccountNumber, vAccountType)
+		End If
+		
+		'Bank of Libson selected
+		If vBankName = "BANKLSN" Then
+			Call ValidateBankLisbon(vAccountNumber, vAccountType)
+		End If
+		
+		'Commercial Bank of Namibia selected
+		If vBankName = "COMMBANK" Then
+			Call ValidateByAccountCurrent(vAccountType)
+		End If
+		
+		'Investec Bank selected
+		If vBankName = "INVTECBANK" Then
+			Call ValidateInvestec(vAccountNumber, vAccountType, vBranchCode)
+		End If
+		
+		'Citibank, N.A selected
+		If vBankName = "CITIBANK" Then
+			Call ValidateByAccountCurrent(vAccountType)
+		End If
+		
+		'Bank Windhoek selected
+		If vBankName = "BWK" Then
+			Call ValidateBankWindhoek(vAccountNumber, vBranchCode)
+		End If
+		
+		'KWAZULU Finance Corporation selected
+		If vBankName = "KZFINCORP" Then
+			Call ValidateByAccountCurrent(vAccountType)
+		End If
+		
+		'Citizen Bank selected
+		If vBankName = "CITIZEN" Then
+			Call ValidateByAccountCurrent(vAccountType)
+		End If
+		
+		'SWABOU Bank selected
+		If vBankName = "SWABOU" Then
+			Call ValidateByAccountSavings(vAccountType)
+		End If
+		
+		'HBZ Bank selected
+		If vBankName = "HBZBANK" Then
+			Call ValidateHBZ(vAccountNumber, vAccountType, vBranchCode)
+		End If
+		
+		'RESERVE Bank selected
+		If vBankName = "RESERVEBK" Then
+			Call ValidateReserve(vAccountType, vBranchCode)
+		End If
+		
+		'African Bank selected
+		If vBankName = "AFRICABK" Then
+			Call ValidateAfrican(vAccountType, vBranchCode)
+		End If
+		
+		'Overseas Bank of Africa Selected
+		If vBankName = "AFRICABKOS" Then
+			Call ValidateOverseasAfrica(vAccountNumber, vAccountType)
+		End If
+		
+		'Bank of Taiwan Selected
+		If vBankName = "BANKTWN" Then
+			Call ValidateTaiwan(vAccountNumber, vAccountType)
+		End If
+		
+		'New SME Bank Selected
+		If (vBankName = "SMEBANK-RU" OR vBankName = "SMEBANK-MA" OR vBankName = "SMEBANKRU" OR vBankName = "SMEBANKMA") Then
+			Call ValidateSME(vAccountNumber)
+		End If
+		
+		If vBankName = "NAMBANK" Then
+			Call ValidateBON(vAccountNumber)
+		End If
+	Else
+		oSharedStorage.vValid = True
+	End If
+End Sub
+
+'Validate Standard Bank details - old
+Function ValidateStandardBankOLD(sAccountNumber)
+	Length = Len(sAccountNumber)
+	
+	'Check the length of the Account Number.
+	'Length must be 11 digits or less
+	If (Length = 11 Or Length < 11) And Trim(sAccountNumber) <> "" Then
+	
+		'Get the ninth digit of the Account Number
+		sAccountNumber = Trim(sAccountNumber)
+		AccountNumberVal = Mid(sAccountNumber,9,1)
+		
+		'The ninth digit cannot be a nine
+		If AccountNumberVal <> "9" Then
+			'Valid Bank Details
+			oSharedStorage.vValid = True
+		Else
+			'Invalid Bank Details
+			oSharedStorage.vValid = False
+		End If
+		
+	Else
+		'Invalid Bank Details
+		oSharedStorage.vValid = False
+	End If
+	
+End Function
+
+'Validate Standard Bank details
+Function ValidateStandardBank(sAccountNumber, sBranchCode)
+	Length = Len(sAccountNumber)
+	sBranchCode = Trim(sBranchCode)
+	sAccountNumber = Trim(sAccountNumber)
+	If (sBranchCode >= 000000 and sBranchCode <= 060066) OR (sBranchCode >= 063968 and sBranchCode <= 099999) Then
+		If Length = 11 Or Length = 9 Then
+			If Length = 9 Then
+				sAccountNumber = "00" + sAccountNumber
+			End If
+			CDVResult = CDVCheck(sAccountNumber, "STD", 11)
+			If CDVResult = True Then
+				oSharedStorage.vValid = True
+			Else
+				oSharedStorage.vValid = False
+			End If
+		Else
+			'Invalid Bank Details
+			oSharedStorage.vValid = False
+		End If
+	Else
+		'Invalid Bank Details
+		oSharedStorage.vValid = False
+	End If
+	
+End Function
+
+'Validate Bank Details for Cape of Good Hope Bank
+Function ValidateCapeGoodHope(sAccountNumber, sAccountType)
+	sAccountNumber = Trim(sAccountNumber)
+	sAccountType = UCase(sAccountType)
+	If sAccountType = "SAVINGS" or sAccountType = "2" Then
+		Length = Len(sAccountNumber)
+		If Length = 7 and sAccountNumber <> "" Then
+			oSharedStorage.vValid = True
+		Else
+			oSharedStorage.vValid = False
+		End If
+	Else
+		oSharedStorage.vValid = False
+	End If
+End Function
+
+'Validate Bank Details for Nedbank Account Type?
+Function ValidateNedbankAccType(sAccountNumber, sAccountType)
+	sAccountNumber = Trim(sAccountNumber)
+	sAccountType = UCase(sAccountType)
+	If sAccountNumber <> "" And Len(sAccountNumber) = 10 Then
+		AccountNumberVal = Mid(sAccountNumber,1,1)
+		
+		If sAccountType = "CURRENT" or sAccountType = "CHEQUE" or sAccountType = "1" Then
+			If AccountNumberVal = "1" Then
+				oSharedStorage.vValid = True
+			Else
+				oSharedStorage.vValid = False
+			End If
+		ElseIf sAccountType = "TRANSMISSION" or sAccountType = "SAVINGS" or sAccountType = "2" Then
+			If AccountNumberVal = "2" Then
+				oSharedStorage.vValid = True
+			Else
+				oSharedStorage.vValid = False
+			End If
+		Else
+			oSharedStorage.vValid = False
+		End If
+		
+	ElseIf sAccountNumber <> "" And Len(sAccountNumber) = 11 Then
+		AccountNumberVal = Mid(sAccountNumber,1,1)
+		
+		If sAccountType = "BOND" Then
+			If AccountNumberVal = "8" Then
+				oSharedStorage.vValid = True
+			Else
+				oSharedStorage.vValid = False
+			End If
+		Else
+			oSharedStorage.vValid = False
+		End If
+	Else
+		oSharedStorage.vValid = False
+	End If
+End Function
+
+'Validate Bank Details for Nedbank - Old
+Function ValidateNedbankOLD(sAccountNumber, sBranchCode, sAccountType)
+	sBranchCode = Trim(sBranchCode)
+	sAccountType = UCase(sAccountType)
+	sAccountNumber = Trim(sAccountNumber)
+	Length = Len(sAccountNumber)
+		If Length = 10 Then
+			AccountNumberVal = Mid(sAccountNumber,1,1)
+			If sAccountType = "CURRENT" or sAccountType = "CHEQUE" or sAccountType = "1" Then
+				'Check if the first Digit is a 1
+				If AccountNumberVal = "1" Then
+					CDVResult = CDVCheck(sAccountNumber, "NED", Length, 10)
+					If CDVResult = True Then
+						oSharedStorage.vValid = True
+					Else
+						oSharedStorage.vValid = False
+					End If
+				Else
+					oSharedStorage.vValid = False
+				End If
+			ElseIf sAccountType = "TRANSMISSION" or sAccountType = "SAVINGS" or sAccountType = "2" Then
+				'Check if the first digit is a 2
+				If AccountNumberVal = "2" Then
+					oSharedStorage.vValid = True
+					' 'If a CDV check is required
+					' CDVResult = CDVCheck(sAccountNumber, "CDV", Length, 10)
+					' If CDVResult = True Then
+						' oSharedStorage.vValid = True
+					' Else
+						' oSharedStorage.vValid = False
+					' End If
+				Else
+					oSharedStorage.vValid = False
+				End If
+			Else
+				oSharedStorage.vValid = False
+			End If		
+		ElseIf Length = 11 Then
+			AccountNumberVal = Mid(sAccountNumber,1,1)
+			If sAccountType = "CURRENT" or sAccountType = "CHEQUE" or sAccountType = "1" or sAccountType = "BOND" or sAccountType = "1" Then
+				If AccountNumberVal = "8" or AccountNumberVal = "1" Then
+					CDVResult = CDVCheck(sAccountNumber, "NED2", Length, 11)
+					If CDVResult = True Then
+						oSharedStorage.vValid = True
+					Else
+						oSharedStorage.vValid = False
+					End If
+				Else
+					oSharedStorage.vValid = False
+				End If
+			Else
+				oSharedStorage.vValid = False
+			End If
+		ElseIf Length = 16 and sBranchCode >= 46100000 and sBranchCode <= 46199900 Then
+			AccountNumberVal = Mid(sAccountNumber,7,1)
+			If sAccountType = "TRANSMISSION" or sAccountType = "SAVINGS" or sAccountType = "2" Then
+				'Check if the seventh digit is a 2
+				If AccountNumberVal = "2" Then
+					oSharedStorage.vValid = True
+				Else
+					oSharedStorage.vValid = False
+				End If
+			Else
+				oSharedStorage.vValid = False
+			End If
+		Else
+			oSharedStorage.vValid = False
+		End If
+End Function
+
+'Validate Bank Details for Nedbank
+Function ValidateNedbank(sAccountNumber, sBranchCode, sAccountType)
+	sBranchCode = Trim(sBranchCode)
+	sAccountType = UCase(sAccountType)
+	sAccountNumber = Trim(sAccountNumber)
+	Length = Len(sAccountNumber)
+	If (sBranchCode >= 100000 and sBranchCode <= 199999) OR (sBranchCode >= 461000 and sBranchCode <= 461999) Then
+		If Length = 10 Or Length = 11 Then
+			If Length = 10 Then
+				sAccountNumber = "0" + sAccountNumber
+			End If
+			CDVResult = CDVCheck(sAccountNumber, "NED", 11)
+			If CDVResult = True Then
+				oSharedStorage.vValid = True
+			Else
+				oSharedStorage.vValid = False
+			End If
+		Else
+			oSharedStorage.vValid = False
+		End If
+	Else
+		oSharedStorage.vValid = False
+	End If
+End Function
+
+'Validate FNB details - Old
+Function ValidateFNBOLD(sAccountNumber, sBranchCode, sAccountType)
+	sAccountNumber = Trim(sAccountNumber)
+	sAccountType = UCase(sAccountType)
+	Length = Len(sAccountNumber)
+	If sAccountType = "CHEQUE" or sAccountType = "1" or sAccountType = "CURRENT" Then
+		If Length = 13 Then
+			AccountNumberVal = Left(sAccountNumber,1)
+			If AccountNumberVal = "3" Then
+				Dim newAccNum, Temp1, Temp2, editedAccNum
+				newAccNum = Left(sAccountNumber, 11)
+				Temp1 = Left(newAccNum, 3)
+				Temp2 = Right(newAccNum, 6)
+				editedAccNum = Temp1 + "00" + Temp2
+				
+				CDVResult = CDVCheck(editedAccNum, "Bond", 11, 11)
+			
+				If CDVResult = True Then
+					oSharedStorage.vValid = True
+				Else
+					oSharedStorage.vValid = False
+				End If
+			Else
+				oSharedStorage.vValid = False
+			End If
+		ElseIf Length = 10 or Length = 11 Then
+			CDVResult = CDVCheck(sAccountNumber, "CDV", Length, 10)
+			
+			If CDVResult = True Then
+				oSharedStorage.vValid = True
+			Else
+				oSharedStorage.vValid = False
+			End If
+		End If
+	ElseIf sAccountType = "SAVINGS" or sAccountType = "2" Then
+		If Length = 9 Then
+			CDVResult = CDVCheck(sAccountNumber, "CDV", 9, 10)
+			
+			If CDVResult = True Then
+				oSharedStorage.vValid = True
+			Else
+				oSharedStorage.vValid = False
+			End If
+		Else
+			oSharedStorage.vValid = False
+		End If
+	Else
+		oSharedStorage.vValid = False
+	End If
+	
+End Function
+
+'Validate FNB details
+Function ValidateFNB(sAccountNumber, sBranchCode, sAccountType)
+	sAccountNumber = Trim(sAccountNumber)
+	sBranchCode = Trim(sBranchCode)
+	Length = Len(sAccountNumber)
+	If sBranchCode >= 200000 and sBranchCode <= 299999 Then
+		If Length = 11 Then
+			CDVResult = CDVCheck(sAccountNumber, "FNB", Length)
+			
+			If CDVResult = True Then
+				oSharedStorage.vValid = True
+			Else
+				oSharedStorage.vValid = False
+			End If
+		Else
+			oSharedStorage.vValid = False
+		End If
+	Else
+		oSharedStorage.vValid = False
+	End If
+	
+End Function
+
+'Validate Bank of Windhoek
+Function ValidateBankWindhoek(sAccountNumber, sBranchCode)
+	sAccountNumber = Trim(sAccountNumber)
+	Length = Len(sAccountNumber)
+	sBranchCode = Trim(sBranchCode)
+	If sBranchCode >= 480000 and sBranchCode <= 489999 Then
+		If Length = 10 Then
+			CDVResult = CDVCheck(sAccountNumber, "WHK", Length)
+			
+			If CDVResult = True Then
+				oSharedStorage.vValid = True
+			Else
+				oSharedStorage.vValid = False
+			End If
+		Else
+			oSharedStorage.vValid = False
+		End If
+	Else
+		oSharedStorage.vValid = False
+	End If
+End Function
+
+'Validate Account Number for the Bank Of Athens -- Old
+Function ValidateBankOfAthensOld(sAccountNumber, sAccountType)
+	Length = Len(sAccountNumber)
+	sAccountType = UCase(sAccountType)
+	If sAccountType = "CURRENT" or sAccountType = "CHEQUE" or sAccountType = "1" Then
+		If Length = 7 And Trim(sAccountNumber) <> "" Then
+			oSharedStorage.vValid = True
+		Else
+			oSharedStorage.vValid = False
+		End If
+	ElseIf sAccountType = "SAVINGS" or sAccountType = "2" Then
+		If Length = 16 And Trim(sAccountNumber) <> "" Then
+			'Check if the 11th digit is a 4
+			sAccountNumber = Trim(sAccountNumber)
+			AccountNumberVal = Mid(sAccountNumber,11,1)
+			If AccountNumberVal = 4 Then
+				oSharedStorage.vValid = True
+			Else
+				oSharedStorage.vValid = False
+			End If
+		Else
+			oSharedStorage.vValid = False
+		End If
+	Else
+		oSharedStorage.vValid = False
+	End If
+End Function
+
+'Validate Account Number for the Bank Of Athens
+Function ValidateBankOfAthens(sAccountNumber, sAccountType, sBranchCode)
+	Length = Len(sAccountNumber)
+	sAccountType = UCase(sAccountType)
+	sAccountNumber = Trim(sAccountNumber)
+	sBranchCode = Trim(sBranchCode)
+	If sBranchCode >= 410000 and sBranchCode <= 419999 Then
+		If Length = 7 And Trim(sAccountNumber) <> "" Then
+			If sAccountType = "CURRENT" or sAccountType = "CHEQUE" or sAccountType = "1" Then
+				oSharedStorage.vValid = True
+			ElseIf sAccountType = "SAVINGS" or sAccountType = "2" Then
+				sAccountNumber = Trim(sAccountNumber)
+				sAccountNumber = "000000000" + sAccountNumber
+				AccountNumberVal = Mid(sAccountNumber,11,1)
+				If AccountNumberVal = 4 Then
+					oSharedStorage.vValid = True
+				Else
+					oSharedStorage.vValid = False
+				End If
+			Else
+				oSharedStorage.vValid = False
+			End If
+		Else
+			oSharedStorage.vValid = False
+		End If
+	Else
+		oSharedStorage.vValid = False
+	End If
+End Function
+
+'Validate Bank Details for First Corp
+Function ValidateFirstCorp(sAccountNumber, sAccountType)
+	sAccountNumber = Trim(sAccountNumber)
+	sAccountType = UCase(sAccountType)
+	If sAccountType = "CURRENT" or sAccountType = "CHEQUE" or sAccountType = "1" Then
+		Length = Len(sAccountNumber)
+		If Length = 9 and sAccountNumber <> "" Then
+			oSharedStorage.vValid = True
+		Else
+			oSharedStorage.vValid = False
+		End If
+	Else
+		oSharedStorage.vValid = False
+	End If
+End Function
+
+'Validate Bank Details for Bank of Lisbon
+Function ValidateBankLisbon(sAccountNumber, sAccountType)
+	sAccountNumber = Trim(sAccountNumber)
+	sAccountType = UCase(sAccountType)
+	Length = Len(sAccountNumber)
+	
+	If Length = 7 and Trim(sAccountNumber) <> "" Then
+		If sAccountType = "CURRENT" or sAccountType = "CHEQUE" or sAccountType = "1" Then
+			AccountNumberVal = Left(sAccountNumber,1)
+			AccountNumberSecondVal = Left(sAccountNumber,2)
+			If AccountNumberVal = "4" or AccountNumberSecondVal = "14" Then
+				oSharedStorage.vValid = True
+			Else
+				oSharedStorage.vValid = False
+			End If
+		ElseIf sAccountType = "SAVINGS" or sAccountType = "2" Then
+			AccountNumberVal = Left(sAccountNumber,1)
+			If AccountNumberVal = "2" Then
+				oSharedStorage.vValid = True
+			Else
+				oSharedStorage.vValid = False
+			End If
+		Else
+			oSharedStorage.vValid = False
+		End If
+	Else
+		oSharedStorage.vValid = False
+	End If
+End Function
+
+'Validate Bank Details for All Banks for Current Account Type
+Function ValidateByAccountCurrent(sAccountType)
+	sAccountType = UCase(sAccountType)
+	If sAccountType = "CURRENT" or sAccountType = "CHEQUE" or sAccountType = "1" Then
+		oSharedStorage.vValid = True
+	Else
+		oSharedStorage.vValid = False
+	End If
+End Function
+
+'Validate Bank Details for All Banks for Savings Account Type
+Function ValidateByAccountSavings(sAccountType)
+	sAccountType = UCase(sAccountType)
+	If sAccountType = "SAVINGS" or sAccountType = "2" Then
+		oSharedStorage.vValid = True
+	Else
+		oSharedStorage.vValid = False
+	End If
+End Function
+
+'Validate Bank Details for All Banks for Transmission Account Type
+Function ValidateByAccountTransmission(sAccountType)
+	sAccountType = UCase(sAccountType)
+	If sAccountType = "TRANSMISSION" or sAccountType = "5" Then
+		oSharedStorage.vValid = True
+	Else
+		oSharedStorage.vValid = False
+	End If
+End Function
+
+'Validate Overseas Bank of Africa
+Function ValidateOverseasAfrica(sAccountNumber, sAccountType)
+	sAccountType = UCase(sAccountType)
+	If sAccountType = "CURRENT" or sAccountType = "CHEQUE" or sAccountType = "1" Then
+		sAccountNumber = Trim(sAccountNumber)
+		Length = Len(sAccountNumber)
+		If Length = 10 Then
+			oSharedStorage.vValid = True
+		Else
+			oSharedStorage.vValid = False
+		End If
+	Else
+		oSharedStorage.vValid = False
+	End If
+End Function
+
+'Validate Bank Details for Bank of Taiwan -- Old
+Function ValidateTaiwanOld(sAccountNumber, sAccountType)
+	sAccountNumber = Trim(sAccountNumber)
+	Length = Len(sAccountNumber)
+	sAccountType = UCase(sAccountType)
+	If Length = 16 Then
+		AccountNumberVal = Mid(sAccountNumber,7,1)
+		AccountNumberSecondVal = Mid(sAccountNumber,8,1)
+		If AccountNumberVal = "1" and AccountNumberSecondVal = "4" and (sAccountType = "SAVINGS" or sAccountType = "2") Then
+			oSharedStorage.vValid = True
+		ElseIf AccountNumberVal <> "1" and AccountNumberSecondVal <> "4" and (sAccountType = "CURRENT" or sAccountType = "CHEQUE" or sAccountType = "1") Then
+			oSharedStorage.vValid = True
+		Else
+			oSharedStorage.vValid = False
+		End If
+	Else
+		oSharedStorage.vValid = False
+	End If
+			
+End Function
+
+'Validate Bank Details for Bank of Taiwan
+Function ValidateTaiwan(sAccountNumber, sAccountType)
+	Dim Cnt, LengthCnt
+	sAccountNumber = Trim(sAccountNumber)
+	Length = Len(sAccountNumber)
+	sAccountType = UCase(sAccountType)
+	Stop
+	If sAccountType = "CURRENT" or sAccountType = "CHEQUE" or sAccountType = "1" Then
+		oSharedStorage.vValid = True
+	ElseIf sAccountType = "SAVINGS" or sAccountType = "2" Then
+		LengthCnt = 15 - Length
+		For Cnt = 0 to LengthCnt
+			sAccountNumber = "0" + sAccountNumber
+		Next
+		
+		AccountNumberVal = Mid(sAccountNumber,7,1)
+		AccountNumberSecondVal = Mid(sAccountNumber,8,1)
+		
+		If AccountNumberVal = "1" and AccountNumberSecondVal = "4" Then
+			oSharedStorage.vValid = True
+		Else
+			oSharedStorage.vValid = False
+		End If
+	Else
+		oSharedStorage.vValid = False
+	End If
+End Function
+
+'Validate Bank Details for New SME Branch -- Old
+Function ValidateSMEOld(sAccountNumber)
+	sAccountNumber = Trim(sAccountNumber)
+	Length = Len(sAccountNumber)
+	If Length = 11 and Trim(sAccountNumber) <> "" Then
+		oSharedStorage.vValid = True
+	ElseIf Length = 16 and Trim(sAccountNumber) <> "" Then
+		Dim ninth, tenth, eleventh, twelfth, thirteenth, fourteenth
+		AccountNumberVal = Mid(sAccountNumber,8,1)
+		ninth = Mid(sAccountNumber,9,1)
+		tenth = Mid(sAccountNumber,10,1)
+		eleventh = Mid(sAccountNumber,11,1)
+		twelfth = Mid(sAccountNumber,12,1)
+		thirteenth = Mid(sAccountNumber,13,1)
+		fourteenth = Mid(sAccountNumber,14,1)
+		
+		If AccountNumberVal <> "0" Then
+			oSharedStorage.vValid = False
+		ElseIf (ninth = "0" and tenth = "0" and eleventh = "0" and twelfth  = "0" and thirteenth = "0" and fourteenth = "0") Then
+			oSharedStorage.vValid = False
+		Else
+			oSharedStorage.vValid = True
+		End If
+	Else
+		oSharedStorage.vValid - False
+	End If
+End Function
+
+'Validate Bank Details for New SME Branch
+Function ValidateSME(sAccountNumber)
+	Dim eighth, ninth, tenth, eleventh, twelfth, thirteenth, fourteenth
+	sAccountNumber = Trim(sAccountNumber)
+	Length = Len(sAccountNumber)
+	If Length = 11 and Trim(sAccountNumber) <> "" Then
+		sAccountNumber = "00000" + sAccountNumber
+		eighth = Mid(sAccountNumber,8,1)
+		ninth = Mid(sAccountNumber,9,1)
+		tenth = Mid(sAccountNumber,10,1)
+		eleventh = Mid(sAccountNumber,11,1)
+		twelfth = Mid(sAccountNumber,12,1)
+		thirteenth = Mid(sAccountNumber,13,1)
+		fourteenth = Mid(sAccountNumber,14,1)
+		
+		If eighth <> "0" Then
+			oSharedStorage.vValid = False
+		ElseIf (ninth = "0" and tenth = "0" and eleventh = "0" and twelfth  = "0" and thirteenth = "0" and fourteenth = "0") Then
+			oSharedStorage.vValid = False
+		Else
+			oSharedStorage.vValid = True
+		End If
+	Else
+		oSharedStorage.vValid - False
+	End If
+End Function
+
+'Validate Bank details for Investec
+Function ValidateInvestec(sAccountNumber, sAccountType, sBranchCode)
+	sAccountNumber = Trim(sAccountNumber)
+	sAccountType = UCase(sAccountType)
+	sBranchCode = Trim(sBranchCode)
+	If sBranchCode >= 580000 and sBranchCode <= 580999 Then
+		If sAccountType = "CURRENT" or sAccountType = "CHEQUE" or sAccountType = "1" Then
+			CDVResult = CDVCheck(sAccountNumber, "INV", Length)
+			
+			If CDVResult = True Then
+				oSharedStorage.vValid = True
+			Else
+				oSharedStorage.vValid = False
+			End If
+		Else
+			oSharedStorage.vValid = False
+		End If
+	Else
+		oSharedStorage.vValid = False
+	End If
+End Function
+
+'Validate Bank details for HBZ
+Function ValidateHBZ(sAccountNumber, sAccountType, sBranchCode)
+	sAccountNumber = Trim(sAccountNumber)
+	sAccountType = UCase(sAccountType)
+	sBranchCode = Trim(sBranchCode)
+	If sBranchCode >= 570000 and sBranchCode <= 570999 Then
+		If sAccountType = "SAVINGS" or sAccountType = "2" Then
+			CDVResult = CDVCheck(sAccountNumber, "HBZ", Length)
+			
+			If CDVResult = True Then
+				oSharedStorage.vValid = True
+			Else
+				oSharedStorage.vValid = False
+			End If
+		Else
+			oSharedStorage.vValid = False
+		End If
+	Else
+		oSharedStorage.vValid = False
+	End If
+End Function
+
+'Validate Bank details for ReservenBank
+Function ValidateReserve(sAccountType, sBranchCode)
+	sAccountType = UCase(sAccountType)
+	sBranchCode = Trim(sBranchCode)
+	If sBranchCode >= 900000 and sBranchCode <= 999999 Then
+		If sAccountType = "SAVINGS" or sAccountType = "2" Then
+			oSharedStorage.vValid = True
+		Else
+			oSharedStorage.vValid = False
+		End If
+	Else
+		oSharedStorage.vValid = False
+	End If
+End Function
+
+'Validate Bank details for African Bank
+Function ValidateAfrican(sAccountType, sBranchCode)
+	sAccountType = UCase(sAccountType)
+	sBranchCode = Trim(sBranchCode)
+	If sBranchCode >= 430000 and sBranchCode <= 430999 Then
+		If sAccountType = "TRANSMISSION" or sAccountType = "5" Then
+			oSharedStorage.vValid = True
+		Else
+			oSharedStorage.vValid = False
+		End If
+	Else
+		oSharedStorage.vValid = False
+	End If
+End Function
+
+'Validate Bank details for Bank of Namibia
+Function ValidateBON(sAccountNumber)
+	sAccountNumber = Trim(sAccountNumber)
+	Length = Len(sAccountNumber)
+	If Length = 10 Then
+		oSharedStorage.vValid = True
+	Else
+		oSharedStorage.vValid = False
+	End If
+End Function
+
+'CDV Table calculations
+Function CDVCheck(sAccNumber, sCDVType, iLength)
+	Dim Cnt, AccNum, SumResArr, Result, ArrResult
+	Dim Temp, CDVMod
+	
+	CDVCheck = False
+	Temp = 0
+	Cnt = 0
+	SumResArr = 0
+	Result = 0
+	iLength = iLength - 1
+	
+	'Test Bond Bank account type 
+	If sCDVType = "Bond" Then
+		'Loop through account number
+		For Cnt = 0 to iLength
+			Temp = Cnt + 1
+			'Retrieve the digit of the account number
+			AccNum = Mid(sAccNumber,Temp,1)
+			'Multiply the digit of the account number with the corresponding cdv digit
+			ArrResult = AccNum * CDVBond(Cnt)
+			SumResArr = SumResArr + ArrResult
+		Next
+		
+		'Account for the CFACT number or the Fudge Factor
+		SumResArr = SumResArr + 10
+		'Apply the modulus
+		Result = SumResArr Mod CDVMod
+		
+		'If the Bond check fails, try the other CDV
+		If Result <> 0 Then
+			'Reset Variables
+			Temp = 0
+			Cnt = 0
+			SumResArr = 0
+			Result = 0
+			'Loop through account number
+			For Cnt = 0 to iLength
+				Temp = Cnt + 1
+				'Retrieve the digit of the account number
+				AccNum = Mid(sAccNumber,Temp,1)
+				'Multiply the digit of the account number with the corresponding cdv digit
+				ArrResult = AccNum * CDVFNB(Cnt)
+				'Sum of the results of the multiplication
+				SumResArr = SumResArr + ArrResult
+			Next
+			
+			'Account for the CFACT number or the Fudge Factor
+			SumResArr = SumResArr + 10
+			'Apply the modulus
+			Result = SumResArr Mod CDVMod
+		End If
+	End If
+	
+	'Test any other account type
+	If sCDVType = "FNB" Then
+		CDVMod = 10
+		'Loop through account number
+		For Cnt = 0 to iLength
+			Temp = Cnt + 1
+			'Retrieve the digit of the account number
+			AccNum = Mid(sAccNumber,Temp,1)
+			'Multiply the digit of the account number with the corresponding cdv digit
+			ArrResult = AccNum * CDVFNB(Cnt)
+			'Sum of the results of the multiplication
+			SumResArr = SumResArr + ArrResult
+		Next
+		
+		'Account for the CFACT number or the Fudge Factor
+		SumResArr = SumResArr + 10
+		'Apply the modulus
+		Result = SumResArr Mod CDVMod
+	End If
+	
+	'Test Standard Bank account Numbers
+	If sCDVType = "STD" Then
+		Dim AccNumCheck, AccNumFirstDigitCheck
+		CDVMod = 11
+		'Loop through account number
+		For Cnt = 0 to iLength
+			Temp = Cnt + 1
+			'Retrieve the digit of the account number
+			AccNum = Mid(sAccNumber,Temp,1)
+			'Multiply the digit of the account number with the corresponding cdv digit
+			ArrResult = AccNum * CDVSTD(Cnt)
+			'Sum of the results of the multiplication
+			SumResArr = SumResArr + ArrResult
+		Next
+		
+		'Account for the CFACT number or the Fudge Factor
+		SumResArr = SumResArr
+		'Apply the modulus
+		Result = SumResArr Mod CDVMod
+		
+		If Result = 5 Then
+			AccNumCheck = Mid(sAccNumber,1,2)
+			AccNumFirstDigitCheck = Mid(sAccNumber,1,1)
+			If AccNumCheck <> "00" Then 'AND AccNumFirstDigitCheck = "6" Then
+				Result = 0
+			End If
+		End If
+	End If
+	
+	If sCDVType = "NED" Then
+		CDVMod = 11
+		'Loop through account number
+		For Cnt = 0 to iLength
+			Temp = Cnt + 1
+			'Retrieve the digit of the account number
+			AccNum = Mid(sAccNumber,Temp,1)
+			'Multiply the digit of the account number with the corresponding cdv digit
+			ArrResult = AccNum * CDVNED(Cnt)
+			'Sum of the results of the multiplication
+			SumResArr = SumResArr + ArrResult
+		Next
+		
+		'Account for the CFACT number or the Fudge Factor
+		SumResArr = SumResArr + 9
+		'Apply the modulus
+		Result = SumResArr Mod CDVMod
+		
+		'If the Bond check fails, try the other CDV
+		If Result <> 0 Then
+			'Reset Variables
+			Temp = 0
+			Cnt = 0
+			SumResArr = 0
+			Result = 0
+			CDVMod = 11
+			
+			'Loop through account number
+			For Cnt = 0 to iLength
+				Temp = Cnt + 1
+				'Retrieve the digit of the account number
+				AccNum = Mid(sAccNumber,Temp,1)
+				'Multiply the digit of the account number with the corresponding cdv digit
+				ArrResult = AccNum * CDVNEDNAM(Cnt)
+				'Sum of the results of the multiplication
+				SumResArr = SumResArr + ArrResult
+			Next
+			
+			'Account for the CFACT number or the Fudge Factor
+			SumResArr = SumResArr
+			'Apply the modulus
+			Result = SumResArr Mod CDVMod
+		End If
+		
+		If Result <> 0 Then
+			'Reset Variables
+			Temp = 0
+			Cnt = 0
+			SumResArr = 0
+			Result = 0
+			CDVMod = 11
+			
+			'Loop through account number
+			For Cnt = 0 to iLength
+				Temp = Cnt + 1
+				'Retrieve the digit of the account number
+				AccNum = Mid(sAccNumber,Temp,1)
+				'Multiply the digit of the account number with the corresponding cdv digit
+				ArrResult = AccNum * CDVNED(Cnt)
+				'Sum of the results of the multiplication
+				SumResArr = SumResArr + ArrResult
+			Next
+			
+			'Account for the CFACT number or the Fudge Factor
+			SumResArr = SumResArr + 18
+			'Apply the modulus
+			Result = SumResArr Mod CDVMod
+		End If
+	End If
+
+	If sCDVType = "WHK" Then
+		CDVMod = 00
+		'Loop through account number
+		For Cnt = 0 to iLength
+			Temp = Cnt + 1
+			'Retrieve the digit of the account number
+			AccNum = Mid(sAccNumber,Temp,1)
+			'Multiply the digit of the account number with the corresponding cdv digit
+			ArrResult = AccNum * CDVWHK(Cnt)
+			'Sum of the results of the multiplication
+			SumResArr = SumResArr + ArrResult
+		Next
+		
+		'Account for the CFACT number or the Fudge Factor
+		SumResArr = SumResArr
+		'Apply the modulus
+		Result = SumResArr 'Mod CDVMod
+	End If
+	
+	If sCDVType = "INV" Then
+		CDVMod = 11
+		'Loop through account number
+		For Cnt = 0 to iLength
+			Temp = Cnt + 1
+			'Retrieve the digit of the account number
+			AccNum = Mid(sAccNumber,Temp,1)
+			'Multiply the digit of the account number with the corresponding cdv digit
+			ArrResult = AccNum * CDVINV(Cnt)
+			'Sum of the results of the multiplication
+			SumResArr = SumResArr + ArrResult
+		Next
+		
+		'Account for the CFACT number or the Fudge Factor
+		SumResArr = SumResArr
+		'Apply the modulus
+		Result = SumResArr Mod CDVMod
+	End If
+	
+	If sCDVType = "HBZ" Then
+		CDVMod = 11
+		'Loop through account number
+		For Cnt = 0 to iLength
+			Temp = Cnt + 1
+			'Retrieve the digit of the account number
+			AccNum = Mid(sAccNumber,Temp,1)
+			'Multiply the digit of the account number with the corresponding cdv digit
+			ArrResult = AccNum * CDVHBZ(Cnt)
+			'Sum of the results of the multiplication
+			SumResArr = SumResArr + ArrResult
+		Next
+		
+		'Account for the CFACT number or the Fudge Factor
+		SumResArr = SumResArr
+		'Apply the modulus
+		Result = SumResArr Mod CDVMod
+	End If
+	
+	'The Bank account is only valid when the Result is 0
+	If Result = 0 Then
+		CDVCheck = True
+	End If
+End Function
+
+Function IsBankValidCheck(vIsValid)
+	If vIsValid = False Then
+		oSharedStorage.vValid = False
+	End If
+End Function

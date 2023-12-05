@@ -1,0 +1,48 @@
+Sub Start()
+                Dim Total
+                Dim newRate
+                Dim totalPremium
+
+                Total = SafecDbl(Engine.Item("GLASS").Item("SUM_INSURED").value)
+                totalPremium = SafecDbl(Engine.Item("GLASS").Item("GLASS_PREMIUM").value)
+                newRate = (totalPremium / Total) * 100
+
+                GenerateOutput Total, newRate, totalPremium, "TEST"
+End Sub
+
+Function GenerateOutput(SI,Rate,Premium,ratingsection)
+
+Dim count
+Engine.NewObject("TEST_Output")
+count = Engine.Count("TEST_Output")
+Engine.Item("TEST_Output",count).Item("Sum_insured").value=SI
+Engine.Item("TEST_Output",count).Item("Rate").value=Rate
+Engine.Item("TEST_Output",count).Item("Premium").value=Premium
+Engine.Item("TEST_Output",count).Item("risk_rating_section").value= ratingsection
+
+End Function
+
+
+'double
+Function SafecDbl(value)
+SafecDbl = 0
+On Error Resume Next
+SafecDbl = CDbl(value)
+On Error GoTo 0
+End Function
+
+'Int
+Function SafeInt(value)
+SafeInt = 0
+On Error Resume Next
+SafeInt = CInt(value)
+On Error GoTo 0
+End Function
+
+'Bool
+Function SafeBool(value)
+SafeBool = 0
+On Error Resume Next
+SafeBool = CBool(value)
+On Error GoTo 0
+End Function

@@ -1,0 +1,373 @@
+        Dim iObjectInstanceCount
+        
+        Sub FindObjectInstanceCount(strScreenObjectName)
+        	iObjectInstanceCount = 1
+        
+        	' strScreenObjectName is the object that is associate with this screen (if a child), or "" if the root screen.
+        	If strScreenObjectName <> ""  Then
+        		Dim instanceCount
+        		
+        		' How many instance of this object exist?
+        		instanceCount = engine.count(strScreenObjectName)
+        		
+        		Dim i
+        		for i = 1 to instanceCount
+        			if engine.item(strScreenObjectName, i).item("OI").value = vAdditionalData(cAdditionalData_OIKey) then
+        				iObjectInstanceCount = i
+        			end if
+        		next
+        	End If
+        End Sub
+
+        Sub DefaultTextTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultCommentTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultIntegerTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CLng(strValue)
+        End Sub
+
+        
+        Sub DefaultCheckboxTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanListTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanRadioTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	If InStr(1, LCase(strValue), "code:", 1) = 1 Then
+        		' The default value has been specified as a code (code:<thecode>).
+        		Dim code
+        		Dim effectiveDate
+        		Dim version
+        		
+        		code = Mid(strValue, Len("code:")+1)
+        		effectiveDate = Now()
+        		version = 1
+        		
+        		Dim listItemId
+        		listItemId = Extras.GetField(strListCode, strListCode + "_Id", code, effectiveDate, version)
+        		
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(listItemId)
+        	Else
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        	End If
+        End Sub
+
+        
+        Sub DefaultRateListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	' TODO.
+        End Sub
+
+        
+        Sub DefaultDateTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	
+        	Dim location
+        	Dim Interval
+        	Dim Duration
+        	Dim DateValue
+        	
+        	'Upper case the input
+        	DateValue = UCase(strValue)
+        	'Check to see if we want data AND  Time
+        	location = InStr(1,DateValue,"DATETIME")
+        	if location > 0 then
+        		DateValue=  CDate(FormatDateTime(Now,0)) 'use the standard vb datetime
+        	End If
+        	'Check to see if TODAY is specified as a modifier
+        	location  = InStr(1,DateValue,"TODAY")
+        	If location > 0 Then
+        		'Determine if we are adding values
+        		location  = InStr(1,DateValue,"+")
+        		If location > 0 Then 
+        			Interval = Mid(DateValue,location + 1,1)
+        			
+        			If Interval = "Y" Then
+        				Interval = "YYYY"
+        			End If
+        			
+        			If Interval <> "" Then 
+        				Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        				DateValue = DateAdd(Interval,Duration,CDate(FormatDateTime(Now,2)))	
+        				
+        			Else
+        				'No Interval specified 
+        				'Need an error here!!!!
+        			End If	
+        		Else 
+        			'Check to see if we are subtracting values
+        			location  =InStr(1,DateValue,"-")
+        			If location > 0  Then 
+        				Interval = Mid(DateValue,location + 1,1)
+        				
+        				If Interval <> "" Then 
+        					Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        					DateValue = DateAdd(Interval, Duration * -1,CDate(FormatDateTime(Now,2)))	
+        				Else
+        					'No Interval specified 
+        					'Need an error here!!!!
+        				End If
+        			Else
+        				'No Function specified, so assume we are just using today's date as a shortdate
+        				DateValue = CDate(FormatDateTime(Now,2))
+        			End If
+        			
+        		End If
+        		
+        	End If	
+        	
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDate(DateValue)
+        End Sub
+
+        
+        Sub DefaultCurrencyTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+        
+        Sub DefaultPercentageTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+Sub WebRequired(bIsOnStart)
+	If bIsOnStart = True Then
+		Engine.NewObject("CPROCLAIM")
+	End If
+End Sub
+
+Sub onScreenLogic(bIsOnStart)
+        If bIsOnStart = True Then
+        
+        		 'Instantiate Risk object(s)
+        		Extras.RiskDataEngine.NewObject("RISK_DETAILS")
+        		Extras.RiskDataEngine.NewObject("GENERAL_DETAILS")
+        
+        		'Instantiate Claims object(s)
+        		Engine.NewObject("CPROCLAIM")
+        
+        		'---------------------------------------------------
+        		'---START: Non-child screen properties population---	
+        		'---------------------------------------------------
+        
+        		Dim cpiLiab, cpiPrem, retroDate, basisOfDeduct, basisOfLmt
+        		Dim iTooApproved, address
+        		Dim IsRetroInfo, retroInfo, percClaim, minAmount, cpiRate, feesTurn, retroDateInc
+        		'Dim extGL
+        		Dim isEmpLiab, EmpLiabBOL, EmpLiabLMT,EmpLiabRate, EmpLiabPrem, EmpLiabDed, EmpLiabBOD
+        		Dim isLegDef, LegDefBOL, LegDefLMT, LegDefRate, LegDefPrem, LegDefDed, LegDefBOD
+        		Dim isProdLiab, ProdLiabBOL, ProdLiabLMT, ProdLiabRate, ProdLiabPrem, ProdLiabDed, ProdLiabBOD
+        		Dim isPubLiab, PubLiabBOL, PubLiabLMT, PubLiabRate, PubLiabPrem, PubLiabDed, PubLiabBOD
+        		Dim isWrngArr, WrngArrBOL, WrngArrLMT, WrngArrPrem, WrngArrRate, WrngArrDed, WrngArrBOD
+        		
+        		'Collect data from Policy risk
+        		'Main Risk Details
+        		iTooApproved = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("ITOOAPPROV").Value
+        		cpiLiab = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("LIMIT_OF_INDEMNITY").Value 
+        		feesTurn = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("FEES_TURNOVERS").Value
+        		cpiRate = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("BASE_RATE").Value
+        		cpiPrem = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("PREMIUM").Value
+        		basisOfDeduct = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("BASISOFDEDUCTIBLE").Value
+        		basisOfLmt = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("BASISOFLIMIT").Value
+        		retroDateInc = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("RETROACTIVE_DATE_INCEPTION").value
+        		retroDate = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("RETROACTIVE_DATE").Value
+        		IsRetroInfo = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("ADD_RETRO_DATE_INFO").Value
+        		retroInfo = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("RETRO_DATE").Value
+        		percClaim = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("PERCENTAGE_OF_CLAIM").Value
+        		minAmount = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("MINIMUM_AMOUNT").Value
+        		'extGL = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("IS_EXTENDED_GL").Value
+        		address = Extras.RiskDataEngine.Item("ADDRESS").Item("LINE1").Value
+        
+        		'Extension Details
+        		isEmpLiab = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("IS_EMPLOYERS_LIABILITY").Value
+        		EmpLiabBOL = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("EMPLOYERS_LIABILITY_BOL").Value
+        		EmpLiabLMT = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("EMPLOYERS_LIABILITY_LIMIT").Value
+        		EmpLiabRate = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("EMPLOYERS_LIABILITY_RATE").Value
+        		EmpLiabPrem = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("EMPLOYERS_LIABILITY_PREMIUM").Value
+        		EmpLiabDed = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("EMPLOYERS_LIABILITY_DEDU").Value
+        		EmpLiabBOD = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("EMPLOYERS_LIABILITY_BOD").Value
+        		isProdLiab = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("IS_PRODUCTS_LIABILITY").Value
+        		ProdLiabBOL = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("PRODUCTS_LIABILITY_BOL").Value
+        		ProdLiabLMT = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("PRODUCTS_LIABILITY_LIMIT").Value
+        		ProdLiabRate = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("PRODUCTS_LIABILITY_RATE").Value
+        		ProdLiabPrem = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("PRODUCTS_LIABILITY_PREMIUM").Value
+        		ProdLiabDed = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("PRODUCTS_LIABILITY_DEDU").Value
+        		ProdLiabBOD = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("PRODUCTS_LIABILITY_BOD").Value
+        		isPubLiab = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("IS_PUBLIC_LIABILITY").Value
+        		PubLiabBOL = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("PUBLIC_LIABILITY_BOL").Value
+        		PubLiabLMT = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("PUBLIC_LIABILITY_LIMIT").Value
+        		PubLiabRate = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("PUBLIC_LIABILITY_RATE").Value
+        		PubLiabPrem = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("PUBLIC_LIABILITY_PREMIUM").Value
+        		PubLiabDed = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("PUBLIC_LIABILITY_DEDU").Value
+        		PubLiabBOD = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("PUBLIC_LIABILITY_BOD").Value
+        		isLegDef = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("IS_LEGAL_DEFENCE").Value
+        		LegDefBOL = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("LEGAL_DEFENCE_BOL").Value
+        		LegDefLMT = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("LEGAL_DEFENCE_LIMIT").Value
+        		LegDefRate = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("LEGAL_DEFENCE_RATE").Value
+        		LegDefPrem = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("LEGAL_DEFENCE_PREMIUM").Value
+        		LegDefDed = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("LEGAL_DEFENCE_DEDU").Value
+        		LegDefBOD = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("LEGAL_DEFENCE_BOD").Value
+        		isWrngArr = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("IS_WRONGFUL_ARREST").Value
+        		WrngArrBOL = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("WRONGFUL_ARREST_BOL").Value
+        		WrngArrLMT = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("WRONGFUL_ARREST_LIMIT").Value
+        		WrngArrRate = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("WRONGFUL_ARREST_RATE").Value
+        		WrngArrPrem = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("WRONGFUL_ARREST_PREMIUM").Value
+        		WrngArrDed = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("WRONGFUL_ARREST_DEDU").Value
+        		WrngArrBOD = Extras.RiskDataEngine.Item("GENERAL_DETAILS").Item("WRONGFUL_ARREST_BOD").Value
+        		
+        		
+        		'Send data to the claim screen
+        		Engine.Item("CPROCLAIM").Item("MAXOFDEDUC").Value = cpiLiab
+        		Engine.Item("CPROCLAIM").Item("LIMITOFINDEM").Value = cpiLiab
+        		Engine.Item("CPROCLAIM").Item("PREMIUM").Value = cpiPrem
+        		Engine.Item("CPROCLAIM").Item("BASISLMT").Value = basisOfLmt
+        		Engine.Item("CPROCLAIM").Item("BASISOFDEDUC").Value = basisOfDeduct
+        		Engine.Item("CPROCLAIM").Item("RETRODATE").Value = retroDate
+        		Engine.Item("CPROCLAIM").Item("FEES_TURNOVERS").Value = feesTurn
+        		Engine.Item("CPROCLAIM").Item("BASE_RATE").Value = cpiRate
+        		Engine.Item("CPROCLAIM").Item("ITOOAPPROV").Value = iTooApproved
+        		Engine.Item("CPROCLAIM").Item("ADD_RETRO_DATE_INFO").Value = IsRetroInfo
+        		Engine.Item("CPROCLAIM").Item("RETRO_DATE").Value = retroInfo
+        		Engine.Item("CPROCLAIM").Item("PERCENTAGE_OF_CLAIM").Value = percClaim
+        		Engine.Item("CPROCLAIM").Item("MINIMUM_AMOUNT").Value = minAmount
+        		Engine.Item("CPROCLAIM").Item("RETROACTIVE_DATE_INCEPTION").Value = retroDateInc
+        
+        		Engine.Item("CPROCLAIM").Item("ADDRESS").Value = address
+        		'Claim screen extensions
+        		Engine.Item("CPROCLAIM").Item("IS_EMPLOYERS_LIABILITY").Value = isEmpLiab
+        		Engine.Item("CPROCLAIM").Item("EMPLOYERS_LIABILITY_BOL").Value = EmpLiabBOL
+        		Engine.Item("CPROCLAIM").Item("EMPLOYERS_LIABILITY_LIMIT").Value = EmpLiabLMT
+        		Engine.Item("CPROCLAIM").Item("EMPLOYERS_LIABILITY_RATE").Value = EmpLiabRate
+        		Engine.Item("CPROCLAIM").Item("EMPLOYERS_LIABILITY_PREMIUM").Value = EmpLiabPrem
+        		Engine.Item("CPROCLAIM").Item("EMPLOYERS_LIABILITY_DEDU").Value = EmpLiabDed
+        		Engine.Item("CPROCLAIM").Item("EMPLOYERS_LIABILITY_BOD").Value = EmpLiabBOD
+        		Engine.Item("CPROCLAIM").Item("IS_PRODUCTS_LIABILITY").Value = isProdLiab
+        		Engine.Item("CPROCLAIM").Item("PRODUCTS_LIABILITY_BOL").Value = ProdLiabBOL
+        		Engine.Item("CPROCLAIM").Item("PRODUCTS_LIABILITY_LIMIT").Value = ProdLiabLMT
+        		Engine.Item("CPROCLAIM").Item("PRODUCTS_LIABILITY_RATE").Value = ProdLiabRate
+        		Engine.Item("CPROCLAIM").Item("PRODUCTS_LIABILITY_PREMIUM").Value = ProdLiabPrem
+        		Engine.Item("CPROCLAIM").Item("PRODUCTS_LIABILITY_DEDU").Value = ProdLiabDed
+        		Engine.Item("CPROCLAIM").Item("PRODUCTS_LIABILITY_BOD").Value = ProdLiabBOD
+        		Engine.Item("CPROCLAIM").Item("IS_PUBLIC_LIABILITY").Value = isPubLiab
+        		Engine.Item("CPROCLAIM").Item("PUBLIC_LIABILITY_BOL").Value = PubLiabBOL
+        		Engine.Item("CPROCLAIM").Item("PUBLIC_LIABILITY_LIMIT").Value = PubLiabLMT
+        		Engine.Item("CPROCLAIM").Item("PUBLIC_LIABILITY_RATE").Value = PubLiabRate
+        		Engine.Item("CPROCLAIM").Item("PUBLIC_LIABILITY_PREMIUM").Value = PubLiabPrem
+        		Engine.Item("CPROCLAIM").Item("PUBLIC_LIABILITY_DEDU").Value = PubLiabDed
+        		Engine.Item("CPROCLAIM").Item("PUBLIC_LIABILITY_BOD").Value = PubLiabBOD
+        		Engine.Item("CPROCLAIM").Item("IS_LEGAL_DEFENCE").Value = isLegDef
+        		Engine.Item("CPROCLAIM").Item("LEGAL_DEFENCE_BOL").Value = LegDefBOL
+        		Engine.Item("CPROCLAIM").Item("LEGAL_DEFENCE_LIMIT").Value = LegDefLMT
+        		Engine.Item("CPROCLAIM").Item("LEGAL_DEFENCE_RATE").Value = LegDefRate
+        		Engine.Item("CPROCLAIM").Item("LEGAL_DEFENCE_PREMIUM").Value = LegDefPrem
+        		Engine.Item("CPROCLAIM").Item("LEGAL_DEFENCE_DEDU").Value = LegDefDed
+        		Engine.Item("CPROCLAIM").Item("LEGAL_DEFENCE_BOD").Value = LegDefBOD
+        		Engine.Item("CPROCLAIM").Item("IS_WRONGFUL_ARREST").Value = isWrngArr
+        		Engine.Item("CPROCLAIM").Item("WRONGFUL_ARREST_BOL").Value = WrngArrBOL
+        		Engine.Item("CPROCLAIM").Item("WRONGFUL_ARREST_LIMIT").Value = WrngArrLMT
+        		Engine.Item("CPROCLAIM").Item("WRONGFUL_ARREST_RATE").Value = WrngArrRate
+        		Engine.Item("CPROCLAIM").Item("WRONGFUL_ARREST_PREMIUM").Value = WrngArrPrem
+        		Engine.Item("CPROCLAIM").Item("WRONGFUL_ARREST_DEDU").Value = WrngArrDed
+        		Engine.Item("CPROCLAIM").Item("WRONGFUL_ARREST_BOD").Value = WrngArrBOD
+        		
+        		Call DoInstanceCount
+         End If
+        End Sub
+
+        Sub DoInstanceCount
+        ' The ScreenMain rule is added to every screen automatically.
+        
+        
+        Call FindObjectInstanceCount("")
+End Sub
+
+Sub onValidate_CPROCLAIM__THIRDPARTY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CPROCLAIM", "THIRDPARTY", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CPROCLAIM__SALVAGE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CPROCLAIM", "SALVAGE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CPROCLAIM__RECOVERY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CPROCLAIM", "RECOVERY", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CPROCLAIM__IS_THRDTLS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CPROCLAIM", "IS_THRDTLS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CPROCLAIM__IS_ASSESSDETAIL(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CPROCLAIM", "IS_ASSESSDETAIL", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CPROCLAIM__IS_NAMAPP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CPROCLAIM", "IS_NAMAPP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CPROCLAIM__ASSESSOR(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CPROCLAIM", "ASSESSOR", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CPROCLAIM__LAWYRS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CPROCLAIM", "LAWYRS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CPROCLAIM__WITNESS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CPROCLAIM", "WITNESS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub DoDefaults(bIsOnStart)
+    Call WebRequired(bIsOnStart)
+    Call onScreenLogic(bIsOnStart)
+    Call onValidate_CPROCLAIM__THIRDPARTY(bIsOnStart)
+    Call onValidate_CPROCLAIM__SALVAGE(bIsOnStart)
+    Call onValidate_CPROCLAIM__RECOVERY(bIsOnStart)
+    Call onValidate_CPROCLAIM__IS_THRDTLS(bIsOnStart)
+    Call onValidate_CPROCLAIM__IS_ASSESSDETAIL(bIsOnStart)
+    Call onValidate_CPROCLAIM__IS_NAMAPP(bIsOnStart)
+    Call onValidate_CPROCLAIM__ASSESSOR(bIsOnStart)
+    Call onValidate_CPROCLAIM__LAWYRS(bIsOnStart)
+    Call onValidate_CPROCLAIM__WITNESS(bIsOnStart)
+End Sub
+
+Sub Start()
+    Call DoDefaults(True)
+End Sub
+
+Sub Main()
+    Call DoDefaults(False)
+End Sub
+

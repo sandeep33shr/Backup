@@ -1,0 +1,642 @@
+        Sub SetUserDetails()
+            Dim vUserResult 
+        	Dim lUserId
+            Call Extras.CallNamedStoredProcedure(CLng(6722), CStr("GetUserDetails"), vUserResult,Array("sUserName", Extras.Username))
+            If IsArray(vUserResult) Then
+                Engine.Item("GENERAL").Item("LoggedInUser").Value = Extras.Username
+        		lUserId = vUserResult(0,0)
+        		Engine.Item("GENERAL").Item("LoggedInUserFullName").Value = vUserResult(1,0)
+        		Engine.Item("GENERAL").Item("LoggedInUserEmail").Value = vUserResult(2,0)
+            End If
+        
+            'Get user authority level
+            Dim vExtraParameters
+            Dim sRiskCode
+            Dim vResults
+        	Dim sProdCode
+            sProdCode = Extras.ProductCode
+        	
+            vExtraParameters = array( "lUserId", lUserId, "sProdCode", sProdCode)
+            Call Extras.CallNamedStoredProcedure(CLng(6722), "GetUserAuthorityLevel", vResults, vExtraParameters)
+        	If IsArray(vResults) then
+        		If vResults(0,0) <> "" Then
+        			Engine.Item("GENERAL").Item("UserLevel").Value = Replace(vResults(0,0), "U","")
+        			Engine.Item("GENERAL").Item("UserGroup").Value = vResults(0,0)
+        		Else
+        			'Assign Default Level to 1
+        			Engine.Item("GENERAL").Item("UserLevel").Value = 1
+        			Engine.Item("GENERAL").Item("UserGroup").Value = "U1"
+        		End If
+        	End IF
+        End Sub
+
+        Dim iObjectInstanceCount
+        
+        Sub FindObjectInstanceCount(strScreenObjectName)
+        	iObjectInstanceCount = 1
+        
+        	' strScreenObjectName is the object that is associate with this screen (if a child), or "" if the root screen.
+        	If strScreenObjectName <> ""  Then
+        		Dim instanceCount
+        		
+        		' How many instance of this object exist?
+        		instanceCount = engine.count(strScreenObjectName)
+        		
+        		Dim i
+        		for i = 1 to instanceCount
+        			if engine.item(strScreenObjectName, i).item("OI").value = vAdditionalData(cAdditionalData_OIKey) then
+        				iObjectInstanceCount = i
+        			end if
+        		next
+        	End If
+        End Sub
+
+        Sub DefaultTextTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultCommentTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultIntegerTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CLng(strValue)
+        End Sub
+
+        
+        Sub DefaultCheckboxTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanListTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanRadioTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	If InStr(1, LCase(strValue), "code:", 1) = 1 Then
+        		' The default value has been specified as a code (code:<thecode>).
+        		Dim code
+        		Dim effectiveDate
+        		Dim version
+        		
+        		code = Mid(strValue, Len("code:")+1)
+        		effectiveDate = Now()
+        		version = 1
+        		
+        		Dim listItemId
+        		listItemId = Extras.GetField(strListCode, strListCode + "_Id", code, effectiveDate, version)
+        		
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(listItemId)
+        	Else
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        	End If
+        End Sub
+
+        
+        Sub DefaultRateListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	' TODO.
+        End Sub
+
+        
+        Sub DefaultDateTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	
+        	Dim location
+        	Dim Interval
+        	Dim Duration
+        	Dim DateValue
+        	
+        	'Upper case the input
+        	DateValue = UCase(strValue)
+        	'Check to see if we want data AND  Time
+        	location = InStr(1,DateValue,"DATETIME")
+        	if location > 0 then
+        		DateValue=  CDate(FormatDateTime(Now,0)) 'use the standard vb datetime
+        	End If
+        	'Check to see if TODAY is specified as a modifier
+        	location  = InStr(1,DateValue,"TODAY")
+        	If location > 0 Then
+        		'Determine if we are adding values
+        		location  = InStr(1,DateValue,"+")
+        		If location > 0 Then 
+        			Interval = Mid(DateValue,location + 1,1)
+        			
+        			If Interval = "Y" Then
+        				Interval = "YYYY"
+        			End If
+        			
+        			If Interval <> "" Then 
+        				Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        				DateValue = DateAdd(Interval,Duration,CDate(FormatDateTime(Now,2)))	
+        				
+        			Else
+        				'No Interval specified 
+        				'Need an error here!!!!
+        			End If	
+        		Else 
+        			'Check to see if we are subtracting values
+        			location  =InStr(1,DateValue,"-")
+        			If location > 0  Then 
+        				Interval = Mid(DateValue,location + 1,1)
+        				
+        				If Interval <> "" Then 
+        					Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        					DateValue = DateAdd(Interval, Duration * -1,CDate(FormatDateTime(Now,2)))	
+        				Else
+        					'No Interval specified 
+        					'Need an error here!!!!
+        				End If
+        			Else
+        				'No Function specified, so assume we are just using today's date as a shortdate
+        				DateValue = CDate(FormatDateTime(Now,2))
+        			End If
+        			
+        		End If
+        		
+        	End If	
+        	
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDate(DateValue)
+        End Sub
+
+        
+        Sub DefaultCurrencyTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+        
+        Sub DefaultPercentageTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+Sub WebRequired(bIsOnStart)
+	If bIsOnStart = True Then
+		Engine.NewObject("GENERAL")
+		Engine.NewObject("ADDRESS")
+		Engine.NewObject("CYBER")
+		Engine.NewObject("EMPLIAB")
+		Engine.NewObject("EMPLIAB_EXT")
+		Engine.NewObject("EL_NOTES")
+		Engine.NewObject("COMLIAB")
+		Engine.NewObject("COMB_EXT")
+		Engine.NewObject("DNOLIAB")
+		Engine.NewObject("PUBLIAB")
+		Engine.NewObject("PUBLIAB_EXT")
+		Engine.NewObject("PUBLIABDEF")
+		Engine.NewObject("PUBLIABPD")
+		Engine.NewObject("FPPLIAB")
+		Engine.NewObject("REFERRALS")
+	End If
+End Sub
+
+Sub onScreenLogic(bIsOnStart)
+        
+        If bIsOnStart = True Or bIsOnStart = False Then
+        	Call SetUserDetails()
+        End If
+        ' The ScreenMain rule is added to every screen automatically.
+        
+        
+        Call FindObjectInstanceCount("")
+End Sub
+
+Sub onValidate_GENERAL__IS_MTA_REASON(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "IS_MTA_REASON", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__IS_VAT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultListTo("GENERAL", "IS_VAT", "1", "UDL_CMA_VAT")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__IS_CYBER(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "IS_CYBER", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__IS_EMPLOYERS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "IS_EMPLOYERS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__IS_COMBINED(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "IS_COMBINED", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__IS_DNO(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "IS_DNO", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__IS_PUBLIC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "IS_PUBLIC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__IS_FARE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "IS_FARE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__IS_MIGRATED(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultIntegerTo("GENERAL", "IS_MIGRATED", "1", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__NEXUSQS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultIntegerTo("GENERAL", "NEXUSQS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CYBER__FLAT_PREMIUM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CYBER", "FLAT_PREMIUM", "1", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CYBER__IS_NO(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CYBER", "IS_NO", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CYBER__IS_DOM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CYBER", "IS_DOM", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CYBER__IS_STORES(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CYBER", "IS_STORES", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CYBER__IS_NOTAWARE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CYBER", "IS_NOTAWARE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_CYBER__HAS_IMPL(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("CYBER", "HAS_IMPL", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_EMPLIAB__FLAT_PREMIUM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("EMPLIAB", "FLAT_PREMIUM", "1", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_EMPLIAB_EXT__IS_EXT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("EMPLIAB_EXT", "IS_EXT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_COMLIAB__FLAT_PREM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("COMLIAB", "FLAT_PREM", "1", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_COMLIAB__IS_PUBLIC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("COMLIAB", "IS_PUBLIC", "1", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_COMLIAB__IS_PRODUCT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("COMLIAB", "IS_PRODUCT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_COMLIAB__IS_UMBRELLA(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("COMLIAB", "IS_UMBRELLA", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_COMLIAB__QUESTION(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("COMLIAB", "QUESTION", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_COMLIAB__BASIS_COVER(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultTextTo("COMLIAB", "BASIS_COVER", "Claims Made", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_COMLIAB__LIMIT_INDEMNITY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCurrencyTo("COMLIAB", "LIMIT_INDEMNITY", "1000000", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_COMLIAB__FPAPERCENT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("COMLIAB", "FPAPERCENT", "10", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_COMLIAB__MINAMOUNT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCurrencyTo("COMLIAB", "MINAMOUNT", "1500", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_COMB_EXT__IS_ACPC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("COMB_EXT", "IS_ACPC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_COMB_EXT__IS_LDC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("COMB_EXT", "IS_LDC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_COMB_EXT__IS_WA(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("COMB_EXT", "IS_WA", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_COMLIAB__DF_LIMIT_INDEMNITY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCurrencyTo("COMLIAB", "DF_LIMIT_INDEMNITY", "1000000", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_COMLIAB__DF_FPAPERCENT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("COMLIAB", "DF_FPAPERCENT", "10", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_COMLIAB__DF_MINAMOUNT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCurrencyTo("COMLIAB", "DF_MINAMOUNT", "1500", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_DNOLIAB__FLAT_PREM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("DNOLIAB", "FLAT_PREM", "1", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_DNOLIAB__QUESTION_1(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("DNOLIAB", "QUESTION_1", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_DNOLIAB__QUESTION_2(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("DNOLIAB", "QUESTION_2", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_DNOLIAB__QUESTION_3(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("DNOLIAB", "QUESTION_3", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_DNOLIAB__QUESTION_4(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("DNOLIAB", "QUESTION_4", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_DNOLIAB__QUESTION_5(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("DNOLIAB", "QUESTION_5", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_DNOLIAB__QUESTION_6(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("DNOLIAB", "QUESTION_6", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_DNOLIAB__QUESTION_7(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("DNOLIAB", "QUESTION_7", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_DNOLIAB__QUESTION_8(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("DNOLIAB", "QUESTION_8", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_PUBLIAB__FLAT_PREMIUM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("PUBLIAB", "FLAT_PREMIUM", "1", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_PUBLIAB__IS_GENERAL_TENANTS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("PUBLIAB", "IS_GENERAL_TENANTS", "1", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_PUBLIAB__IS_DEF_WORKMAN(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("PUBLIAB", "IS_DEF_WORKMAN", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_PUBLIAB__IS_PRODUCT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("PUBLIAB", "IS_PRODUCT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_PUBLIAB__BASIS_COVER(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultTextTo("PUBLIAB", "BASIS_COVER", "Claims Made", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_PUBLIAB__MULTI_PREM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("PUBLIAB", "MULTI_PREM", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_PUBLIAB_EXT__ADDITIONAL_CLAIMS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("PUBLIAB_EXT", "ADDITIONAL_CLAIMS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_PUBLIAB_EXT__LEGAL(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("PUBLIAB_EXT", "LEGAL", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_PUBLIAB_EXT__WRONGFUL(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("PUBLIAB_EXT", "WRONGFUL", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_PUBLIAB_EXT__SPECIAL(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("PUBLIAB_EXT", "SPECIAL", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_PUBLIAB__BASIS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultListTo("PUBLIAB", "BASIS", "1", "UDL_CMA_PL_BASIS")
+        End If
+End Sub
+
+Sub onValidate_PUBLIAB__QUE_RECIEVED(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("PUBLIAB", "QUE_RECIEVED", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_PUBLIAB__PD_BASIS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultListTo("PUBLIAB", "PD_BASIS", "1", "UDL_CMA_PL_BASIS")
+        End If
+End Sub
+
+Sub onValidate_PUBLIAB__PD_QUE_RECIEVED(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("PUBLIAB", "PD_QUE_RECIEVED", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_FPPLIAB__FLAT_PREMIUM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("FPPLIAB", "FLAT_PREMIUM", "1", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_FPPLIAB__FAP_RATE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultPercentageTo("FPPLIAB", "FAP_RATE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_FPPLIAB__FAP_AMOUNT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCurrencyTo("FPPLIAB", "FAP_AMOUNT", "5000", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_REFERRALS__RefCount(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultIntegerTo("REFERRALS", "RefCount", "0", "{listcode}")
+        End If
+End Sub
+
+Sub DoDefaults(bIsOnStart)
+    Call WebRequired(bIsOnStart)
+    Call onScreenLogic(bIsOnStart)
+    Call onValidate_GENERAL__IS_MTA_REASON(bIsOnStart)
+    Call onValidate_GENERAL__IS_VAT(bIsOnStart)
+    Call onValidate_GENERAL__IS_CYBER(bIsOnStart)
+    Call onValidate_GENERAL__IS_EMPLOYERS(bIsOnStart)
+    Call onValidate_GENERAL__IS_COMBINED(bIsOnStart)
+    Call onValidate_GENERAL__IS_DNO(bIsOnStart)
+    Call onValidate_GENERAL__IS_PUBLIC(bIsOnStart)
+    Call onValidate_GENERAL__IS_FARE(bIsOnStart)
+    Call onValidate_GENERAL__IS_MIGRATED(bIsOnStart)
+    Call onValidate_GENERAL__NEXUSQS(bIsOnStart)
+    Call onValidate_CYBER__FLAT_PREMIUM(bIsOnStart)
+    Call onValidate_CYBER__IS_NO(bIsOnStart)
+    Call onValidate_CYBER__IS_DOM(bIsOnStart)
+    Call onValidate_CYBER__IS_STORES(bIsOnStart)
+    Call onValidate_CYBER__IS_NOTAWARE(bIsOnStart)
+    Call onValidate_CYBER__HAS_IMPL(bIsOnStart)
+    Call onValidate_EMPLIAB__FLAT_PREMIUM(bIsOnStart)
+    Call onValidate_EMPLIAB_EXT__IS_EXT(bIsOnStart)
+    Call onValidate_COMLIAB__FLAT_PREM(bIsOnStart)
+    Call onValidate_COMLIAB__IS_PUBLIC(bIsOnStart)
+    Call onValidate_COMLIAB__IS_PRODUCT(bIsOnStart)
+    Call onValidate_COMLIAB__IS_UMBRELLA(bIsOnStart)
+    Call onValidate_COMLIAB__QUESTION(bIsOnStart)
+    Call onValidate_COMLIAB__BASIS_COVER(bIsOnStart)
+    Call onValidate_COMLIAB__LIMIT_INDEMNITY(bIsOnStart)
+    Call onValidate_COMLIAB__FPAPERCENT(bIsOnStart)
+    Call onValidate_COMLIAB__MINAMOUNT(bIsOnStart)
+    Call onValidate_COMB_EXT__IS_ACPC(bIsOnStart)
+    Call onValidate_COMB_EXT__IS_LDC(bIsOnStart)
+    Call onValidate_COMB_EXT__IS_WA(bIsOnStart)
+    Call onValidate_COMLIAB__DF_LIMIT_INDEMNITY(bIsOnStart)
+    Call onValidate_COMLIAB__DF_FPAPERCENT(bIsOnStart)
+    Call onValidate_COMLIAB__DF_MINAMOUNT(bIsOnStart)
+    Call onValidate_DNOLIAB__FLAT_PREM(bIsOnStart)
+    Call onValidate_DNOLIAB__QUESTION_1(bIsOnStart)
+    Call onValidate_DNOLIAB__QUESTION_2(bIsOnStart)
+    Call onValidate_DNOLIAB__QUESTION_3(bIsOnStart)
+    Call onValidate_DNOLIAB__QUESTION_4(bIsOnStart)
+    Call onValidate_DNOLIAB__QUESTION_5(bIsOnStart)
+    Call onValidate_DNOLIAB__QUESTION_6(bIsOnStart)
+    Call onValidate_DNOLIAB__QUESTION_7(bIsOnStart)
+    Call onValidate_DNOLIAB__QUESTION_8(bIsOnStart)
+    Call onValidate_PUBLIAB__FLAT_PREMIUM(bIsOnStart)
+    Call onValidate_PUBLIAB__IS_GENERAL_TENANTS(bIsOnStart)
+    Call onValidate_PUBLIAB__IS_DEF_WORKMAN(bIsOnStart)
+    Call onValidate_PUBLIAB__IS_PRODUCT(bIsOnStart)
+    Call onValidate_PUBLIAB__BASIS_COVER(bIsOnStart)
+    Call onValidate_PUBLIAB__MULTI_PREM(bIsOnStart)
+    Call onValidate_PUBLIAB_EXT__ADDITIONAL_CLAIMS(bIsOnStart)
+    Call onValidate_PUBLIAB_EXT__LEGAL(bIsOnStart)
+    Call onValidate_PUBLIAB_EXT__WRONGFUL(bIsOnStart)
+    Call onValidate_PUBLIAB_EXT__SPECIAL(bIsOnStart)
+    Call onValidate_PUBLIAB__BASIS(bIsOnStart)
+    Call onValidate_PUBLIAB__QUE_RECIEVED(bIsOnStart)
+    Call onValidate_PUBLIAB__PD_BASIS(bIsOnStart)
+    Call onValidate_PUBLIAB__PD_QUE_RECIEVED(bIsOnStart)
+    Call onValidate_FPPLIAB__FLAT_PREMIUM(bIsOnStart)
+    Call onValidate_FPPLIAB__FAP_RATE(bIsOnStart)
+    Call onValidate_FPPLIAB__FAP_AMOUNT(bIsOnStart)
+    Call onValidate_REFERRALS__RefCount(bIsOnStart)
+End Sub
+
+Sub Start()
+    Call DoDefaults(True)
+End Sub
+
+Sub Main()
+    Call DoDefaults(False)
+End Sub
+

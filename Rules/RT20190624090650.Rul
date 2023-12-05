@@ -1,0 +1,285 @@
+Sub Start()
+	Dim limitIndem, baseRate, vatFreeSumInsured, Premium, vatFreePremium, OverridePrem
+	Dim prodCode, branchName, iTOOFlag
+	
+	Dim ExtReportChk, ClaimsPrepChk, CostRecovChk, ReinsRecChk, EmergLegChk, InvCostChk, TPartyChk
+	Dim ExtReportPrem, ClaimsPrepPrem, CostRecovPrem, ReinsRecPrem, EmergLegPrem, InvCostPrem, TPartyPrem
+	Dim TotalExtensionsPrem, TotalPremium
+	
+	'Retrieve Main Risk Details
+	prodCode  = SafecStr(Engine.Item("GENERAL").Item("PRODCODE").value)
+	branchName = SafecStr(Engine.Item("GENERAL").Item("BRANCH").value)
+	iTOOFlag = ConvertToBool(Engine.Item("RISK_DETAILS").Item("ITOOAPPROV").value)
+	limitIndem = SafecDbl(Engine.Item("RISK_DETAILS").Item("LIMIT_OF_INDEMNITY").value)
+	baseRate = SafecDbl (Engine.Item("RISK_DETAILS").Item("BASE_RATE").value)
+	
+	'--------------------Extensions--------------------'
+	
+	'Retrieve Top Up Checkbox information for Extensions
+	ExtReportChk = ConvertToBool(Engine.Item("RISK_EXTENSIONS").Item("ERP_TOP").value)
+	ClaimsPrepChk = ConvertToBool(Engine.Item("RISK_EXTENSIONS").Item("CPC_TOP").value)
+	CostRecovChk = ConvertToBool(Engine.Item("RISK_EXTENSIONS").Item("COR_TOP").value)
+	ReinsRecChk = ConvertToBool(Engine.Item("RISK_EXTENSIONS").Item("ROR_TOP").value)
+	EmergLegChk = ConvertToBool(Engine.Item("RISK_EXTENSIONS").Item("ELC_TOP").value)
+	InvCostChk = ConvertToBool(Engine.Item("RISK_EXTENSIONS").Item("IC_TOP").value)
+	TPartyChk = ConvertToBool(Engine.Item("RISK_EXTENSIONS").Item("TPLC_TOP").value)
+	
+	'Retrieve Premium of Extensions if Top Up checkbox is checked
+	
+	'Extended Reporting Period Extension
+	If ExtReportChk = True Then
+		ExtReportPrem = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("ERP_PREM").value)
+	End If
+	
+	'Claims Preparation Costs Extension
+	If ClaimsPrepChk = True Then
+		ClaimsPrepPrem = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("CPC_PREM").value)
+	End If
+	
+	'Cost of Recovery Extension
+	If CostRecovChk = True Then
+		CostRecovPrem = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("COR_PREM").value)
+	End If
+	
+	'Reinstating Office Records Extension
+	If ReinsRecChk = True Then
+		ReinsRecPrem = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("ROR_PREM").value)
+	End If
+	
+	'Emergency Legal Costs Extension
+	If EmergLegChk = True Then
+		EmergLegPrem = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("ELC_PREM").value)
+	End If
+	
+	'Investigation Costs Extension
+	If InvCostChk = True Then
+		InvCostPrem = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("IC_PREM").value)
+	End If
+	
+	'Third Party Legal Costs
+	If TPartyChk = True Then
+		TPartyPrem = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("TPLC_PREM").value)
+	End If
+	
+	'Sum the Extension for Treaty Exclusion
+	TotalExtensionsPrem = ExtReportPrem + ClaimsPrepPrem + CostRecovPrem + ReinsRecPrem + EmergLegPrem + InvCostPrem + TPartyPrem
+	
+	'--------------------End Extensions--------------------'
+	
+	
+	'If the annual product is selected
+	If prodCode = "CLA" Then
+		
+		'Calculate the premium
+		Premium = (limitIndem * (baseRate * 0.01))
+		
+		'Strip VAT from the Sum Insured and Premium
+		vatFreePremium = SafecDbl(Premium / 1.15)
+		vatFreeSumInsured = SafecDbl (limitIndem / 1.15)
+		
+		
+		'If the Branch is ITOO and ITOO Approved checkbox is checked
+			'Display each rating separately
+		If branchName = "ITOO" and iTOOFlag = True Then
+			
+			'Call the main risk rating section
+			GenerateOutput vatFreeSumInsured, baseRate, vatFreePremium, "TRSTLIAB"
+			
+			'Call the rating sections of Top Up Extensions
+			If ExtReportChk = True Then
+				Dim VatFreeExtPrem
+				VatFreeExtPrem = SafecDbl(ExtReportPrem/1.15)
+				GenerateOutput 0, 0, VatFreeExtPrem, "TREXERP"
+			End If
+			
+			If ClaimsPrepChk = True Then
+				Dim VatFreeCPrepPrem
+				VatFreeCPrepPrem = SafecDbl(ClaimsPrepPrem/1.15)
+				GenerateOutput 0, 0, VatFreeCPrepPrem, "EXTCPC"
+			End If
+			
+			If CostRecovChk = True Then
+				Dim VatFreeCostPrem
+				VatFreeCostPrem = SafecDbl(CostRecovPrem/1.15)
+				GenerateOutput 0, 0, VatFreeCostPrem, "TREXCOR"
+			End If
+			
+			If ReinsRecChk = True Then
+				Dim VatFreeReinsPrem
+				VatFreeReinsPrem = SafecDbl(ReinsRecPrem/1.15)
+				GenerateOutput 0, 0, VatFreeReinsPrem, "TREXROR"
+			End If
+			
+			If EmergLegChk = True Then
+				Dim VatFreeEmergPrem
+				VatFreeEmergPrem = SafecDbl(EmergLegPrem/1.15)
+				GenerateOutput 0, 0, VatFreeEmergPrem, "TREXELC"
+			End If
+			
+			If InvCostChk = True Then
+				Dim VatFreeInvPrem
+				VatFreeInvPrem = SafecDbl(InvCostPrem/1.15)
+				GenerateOutput 0, 0, VatFreeInvPrem, "TREXIC"
+			End If
+			
+			If TPartyChk = True Then
+				Dim VatFreeTPartyPrem
+				VatFreeTPartyPrem = SafecDbl(TPartyPrem/1.15)
+				GenerateOutput 0, 0, VatFreeTPartyPrem, "TREXTPLC"
+			End If
+			
+		Else
+			'If any other branch/Not ITOO Approved
+			
+			'Add the Extensions Premium to the risk premium
+			If TotalExtensionsPrem > 0 Then
+				TotalPremium = Premium + TotalExtensionsPrem
+			Else
+				TotalPremium = Premium
+			End If
+			
+			'Strip VAT from new total premium
+			vatFreePremium = SafecDbl(TotalPremium / 1.15)
+			GenerateOutput vatFreeSumInsured, baseRate, vatFreePremium, "TRSTLIABEX"
+		End If
+	End If
+	
+	
+	'If the monthly product is selected
+	If prodCode = "CLM" Then
+		
+		Dim MonthlyRate
+		
+		'Calculate the Monthly Rate
+		MonthlyRate = SafecDbl(baseRate/12)
+		'Calculate the premium based on the Monthly Rate
+		Premium = SafecDbl(limitIndem * (MonthlyRate * 0.01))
+
+		'Strip VAT from the Sum Insured and Premium
+		vatFreePremium = SafecDbl(Premium / 1.15)
+		vatFreeSumInsured = SafecDbl (limitIndem / 1.15)
+		
+		'If the Branch is ITOO and ITOO Approved checkbox is checked
+			'Display each rating separately
+		If branchName = "ITOO" and iTOOFlag = True Then
+			
+			'Call the main risk rating section
+			GenerateOutput vatFreeSumInsured, MonthlyRate, vatFreePremium, "TRSTLIAB"
+			
+			'Call the rating sections of Top Up Extensions
+			If ExtReportChk = True Then
+				Dim VatFreeMonthlyExtPrem, ExtMonthlyPrem
+				ExtMonthlyPrem = ExtReportPrem/12
+				VatFreeMonthlyExtPrem = SafecDbl(ExtMonthlyPrem/1.15)
+				GenerateOutput 0, 0, VatFreeMonthlyExtPrem, "TREXERP"
+			End If
+			
+			If ClaimsPrepChk = True Then
+				Dim VatFreeMonthlyCPrepPrem, ClaimsMonthlyPrem
+				ClaimsMonthlyPrem = ClaimsPrepPrem/12
+				VatFreeMonthlyCPrepPrem = SafecDbl(ClaimsMonthlyPrem/1.15)
+				GenerateOutput 0, 0, VatFreeMonthlyCPrepPrem, "EXTCPC"
+			End If
+			
+			If CostRecovChk = True Then
+				Dim VatFreeMonthlyCostPrem, CostMonthlyPrem
+				CostMonthlyPrem = CostRecovPrem/12
+				VatFreeMonthlyCostPrem = SafecDbl(CostMonthlyPrem/1.15)
+				GenerateOutput 0, 0, VatFreeMonthlyCostPrem, "TREXCOR"
+			End If
+			
+			If ReinsRecChk = True Then
+				Dim VatFreeMonthlyReinsPrem, ReinsMonthlyPrem
+				ReinsMonthlyPrem = ReinsRecPrem/12
+				VatFreeMonthlyReinsPrem = SafecDbl(ReinsMonthlyPrem/1.15)
+				GenerateOutput 0, 0, VatFreeMonthlyReinsPrem, "TREXROR"
+			End If
+			
+			If EmergLegChk = True Then
+				Dim VatFreeMonthlyEmergPrem, EmergMonthlyPrem
+				EmergMonthlyPrem = EmergLegPrem/12
+				VatFreeMonthlyEmergPrem = SafecDbl(EmergMonthlyPrem/1.15)
+				GenerateOutput 0, 0, VatFreeMonthlyEmergPrem, "TREXELC"
+			End If
+			
+			If InvCostChk = True Then
+				Dim VatFreeMonthlyInvPrem, InvCostMonthlyPrem
+				InvCostMonthlyPrem = InvCostPrem/12
+				VatFreeMonthlyInvPrem = SafecDbl(InvCostMonthlyPrem/1.15)
+				GenerateOutput 0, 0, VatFreeMonthlyInvPrem, "TREXIC"
+			End If
+			
+			If TPartyChk = True Then
+				Dim VatFreeMonthlyTPartyPrem, TPartyMonthlyPrem
+				TPartyMonthlyPrem = TPartyPrem/12
+				VatFreeMonthlyTPartyPrem = SafecDbl(TPartyMonthlyPrem/1.15)
+				GenerateOutput 0, 0, VatFreeMonthlyTPartyPrem, "TREXTPLC"
+			End If
+			
+		Else
+			'If any other branch/Not ITOO Approved
+			
+			'Add the Extensions Premium to the risk premium
+			Dim VatFreeMonthlyPremEx, TotalMonthlyPrem
+			If TotalExtensionsPrem > 0 Then
+				TotalMonthlyPrem = Premium + (TotalExtensionsPrem/12)
+			Else
+				TotalMonthlyPrem = Premium
+			End If
+			
+			'Strip VAT of new Total Monthly Premium
+			VatFreeMonthlyPremEx = SafecDbl(TotalMonthlyPrem/1.15)
+			GenerateOutput vatFreeSumInsured, MonthlyRate, VatFreeMonthlyPremEx, "TRSTLIABEX"
+		End If
+	End If
+
+End Sub
+
+Function GenerateOutput(cSI, cRate, cPrem, cRatingSection)
+    
+	Dim iCount
+
+    Engine.NewObject("TRUSTLIAB_Output")
+    iCount = Engine.Count("TRUSTLIAB_Output")
+
+    Engine.Item("TRUSTLIAB_Output", iCount).Item("Sum_insured").Value = cSI
+    Engine.Item("TRUSTLIAB_Output", iCount).Item("Rate").Value = cRate
+    Engine.Item("TRUSTLIAB_Output", iCount).Item("Premium").Value = cPrem
+    Engine.Item("TRUSTLIAB_Output", iCount).Item("risk_rating_section").Value = cRatingSection
+
+End Function
+
+Function SafecDbl(value)
+	SafecDbl = 0
+	On Error Resume Next
+	SafecDbl = CDbl(value)
+	On Error GoTo 0
+End Function
+
+Function SafeInt(value)
+	SafeInt = 0
+	On Error Resume Next
+	SafeInt = CInt(value)
+	On Error GoTo 0
+End Function
+
+Function SafecStr(value)
+    SafecStr = ""
+    On Error Resume Next
+    SafecStr = CStr(value)
+    On Error GoTo 0
+End Function
+
+Function SafecDate(value)
+    SafecDate = 0
+    On Error Resume Next
+    SafecDate = CDate(value)
+    On Error GoTo 0
+End Function
+
+Function ConvertToBool(value)
+    ConvertToBool = 0
+    On Error Resume Next
+    ConvertToBool = CBool(value)
+    On Error GoTo 0
+End Function

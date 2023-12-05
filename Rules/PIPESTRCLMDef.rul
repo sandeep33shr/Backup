@@ -1,0 +1,519 @@
+        Dim iObjectInstanceCount
+        
+        Sub FindObjectInstanceCount(strScreenObjectName)
+        	iObjectInstanceCount = 1
+        
+        	' strScreenObjectName is the object that is associate with this screen (if a child), or "" if the root screen.
+        	If strScreenObjectName <> ""  Then
+        		Dim instanceCount
+        		
+        		' How many instance of this object exist?
+        		instanceCount = engine.count(strScreenObjectName)
+        		
+        		Dim i
+        		for i = 1 to instanceCount
+        			if engine.item(strScreenObjectName, i).item("OI").value = vAdditionalData(cAdditionalData_OIKey) then
+        				iObjectInstanceCount = i
+        			end if
+        		next
+        	End If
+        End Sub
+
+        Sub DefaultTextTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultCommentTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultIntegerTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CLng(strValue)
+        End Sub
+
+        
+        Sub DefaultCheckboxTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanListTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanRadioTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	If InStr(1, LCase(strValue), "code:", 1) = 1 Then
+        		' The default value has been specified as a code (code:<thecode>).
+        		Dim code
+        		Dim effectiveDate
+        		Dim version
+        		
+        		code = Mid(strValue, Len("code:")+1)
+        		effectiveDate = Now()
+        		version = 1
+        		
+        		Dim listItemId
+        		listItemId = Extras.GetField(strListCode, strListCode + "_Id", code, effectiveDate, version)
+        		
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(listItemId)
+        	Else
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        	End If
+        End Sub
+
+        
+        Sub DefaultRateListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	' TODO.
+        End Sub
+
+        
+        Sub DefaultDateTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	
+        	Dim location
+        	Dim Interval
+        	Dim Duration
+        	Dim DateValue
+        	
+        	'Upper case the input
+        	DateValue = UCase(strValue)
+        	'Check to see if we want data AND  Time
+        	location = InStr(1,DateValue,"DATETIME")
+        	if location > 0 then
+        		DateValue=  CDate(FormatDateTime(Now,0)) 'use the standard vb datetime
+        	End If
+        	'Check to see if TODAY is specified as a modifier
+        	location  = InStr(1,DateValue,"TODAY")
+        	If location > 0 Then
+        		'Determine if we are adding values
+        		location  = InStr(1,DateValue,"+")
+        		If location > 0 Then 
+        			Interval = Mid(DateValue,location + 1,1)
+        			
+        			If Interval = "Y" Then
+        				Interval = "YYYY"
+        			End If
+        			
+        			If Interval <> "" Then 
+        				Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        				DateValue = DateAdd(Interval,Duration,CDate(FormatDateTime(Now,2)))	
+        				
+        			Else
+        				'No Interval specified 
+        				'Need an error here!!!!
+        			End If	
+        		Else 
+        			'Check to see if we are subtracting values
+        			location  =InStr(1,DateValue,"-")
+        			If location > 0  Then 
+        				Interval = Mid(DateValue,location + 1,1)
+        				
+        				If Interval <> "" Then 
+        					Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        					DateValue = DateAdd(Interval, Duration * -1,CDate(FormatDateTime(Now,2)))	
+        				Else
+        					'No Interval specified 
+        					'Need an error here!!!!
+        				End If
+        			Else
+        				'No Function specified, so assume we are just using today's date as a shortdate
+        				DateValue = CDate(FormatDateTime(Now,2))
+        			End If
+        			
+        		End If
+        		
+        	End If	
+        	
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDate(DateValue)
+        End Sub
+
+        
+        Sub DefaultCurrencyTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+        
+        Sub DefaultPercentageTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+Sub WebRequired(bIsOnStart)
+	If bIsOnStart = True Then
+		Engine.NewObject("PIPESTRCLAIM")
+		Engine.NewObject("PIPESTRCLM")
+	End If
+End Sub
+
+Sub onScreenLogic(bIsOnStart)
+        If bIsOnStart = True Then
+        
+        		 'Instantiate Risk object(s)
+        		Extras.RiskDataEngine.NewObject("RISK_DETAILS")
+        		Extras.RiskDataEngine.NewObject("EMP_LIAB")
+        		Extras.RiskDataEngine.NewObject("PROD_LIAB")
+        		Extras.RiskDataEngine.NewObject("PUBLIC_LIAB")
+        		Extras.RiskDataEngine.NewObject("SLD")
+        		Extras.RiskDataEngine.NewObject("WARREST")
+        
+        		'Instantiate Claims object(s)
+        		Engine.NewObject("PIPESTRCLAIM")
+        
+        		'---------------------------------------------------
+        		'---START: Non-child screen properties population---	
+        		'---------------------------------------------------
+        
+        		Dim CovType, is_ITOO
+        		'Dim GLiab, Exten
+        		Dim RetDateExp, AggLim, RetroDateInc, RetroDate, isRetroDateInfo, RetroDateInfo
+        		'Dim EmpChk, EmpBasis, EmpLimit, EmpRate, EmpPrem, EmpBaseDeduct, EmpDeduct
+        		'Dim ProdChk, ProdBasis, ProdLimit, ProdRate, ProdPrem, ProdBaseDeduct, ProdDeduct
+        		'Dim PubChk, PubBasis, PubLimit, PubRate, PubPrem, PubBaseDeduct, PubDeduct
+        		'Dim SLDChk, SLDBasis, SLDLimit, SLDRate, SLDPrem, SLDBaseDeduct, SLDDeduct
+        		'Dim WArChk, WArBasis, WArLimit, WArRate, WArPrem, WArBaseDeduct, WArDeduct
+        		'Dim Eco, Emerg, FPart, LegalDC, LegalLiab, OffSite, Onsite, TPDam, TPWC, TPPropDam
+        		
+        		'Collect data from Policy risk
+        		CovType = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("TYPE_OF_COVER").Value
+        		is_ITOO = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("ITOOAPPROV").Value
+        
+        		'GLiab = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("IS_GENERAL_LIABILITIES").Value
+        		'Exten = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("IS_ADDITIONAL").Value
+        
+        		'RetDateExp = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("IS_RETRO_DATE_EXPIRY").Value
+        		AggLim = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("AGGREGATE_LIMIT").Value
+        		'RetroDateInc = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("IS_RETRO_DATE_INCEPTION").Value
+        		RetroDate = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("RETRO_DATE").Value
+        		isRetroDateInfo = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("ADD_RETRO_DATE_INFO").Value
+        		RetroDateInfo = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("RETRO_DATE_INFO").Value
+        
+        		'EmpChk = Extras.RiskDataEngine.Item("EMP_LIAB").Item("EMP_CHK").Value
+        		'EmpBasis = Extras.RiskDataEngine.Item("EMP_LIAB").Item("BASE_LIMIT").Value
+        		'EmpLimit = Extras.RiskDataEngine.Item("EMP_LIAB").Item("LIMIT_OF_INDEMNITY").Value
+        		'EmpRate = Extras.RiskDataEngine.Item("EMP_LIAB").Item("BASE_RATE").Value
+        		'EmpPrem = Extras.RiskDataEngine.Item("EMP_LIAB").Item("PREMIUM").Value
+        		'EmpBaseDeduct = Extras.RiskDataEngine.Item("EMP_LIAB").Item("BASE_DEDUCT").Value
+        		'EmpDeduct = Extras.RiskDataEngine.Item("EMP_LIAB").Item("DEDUCT").Value
+        		'ProdChk = Extras.RiskDataEngine.Item("PROD_LIAB").Item("PROD_CHK").Value
+        		'ProdBasis = Extras.RiskDataEngine.Item("PROD_LIAB").Item("BASE_LIMIT").Value
+        		'ProdLimit = Extras.RiskDataEngine.Item("PROD_LIAB").Item("LIMIT_OF_INDEMNITY").Value
+        		'ProdRate = Extras.RiskDataEngine.Item("PROD_LIAB").Item("BASE_RATE").Value
+        		'ProdPrem = Extras.RiskDataEngine.Item("PROD_LIAB").Item("PREMIUM").Value
+        		'ProdBaseDeduct = Extras.RiskDataEngine.Item("PROD_LIAB").Item("BASE_DEDUCT").Value
+        		'ProdDeduct = Extras.RiskDataEngine.Item("PROD_LIAB").Item("DEDUCT").Value
+        		'PubChk = Extras.RiskDataEngine.Item("PUBLIC_LIAB").Item("PUBLIC_CHK").Value
+        		'PubBasis = Extras.RiskDataEngine.Item("PUBLIC_LIAB").Item("BASE_LIMIT").Value
+        		'PubLimit = Extras.RiskDataEngine.Item("PUBLIC_LIAB").Item("LIMIT_OF_INDEMNITY").Value
+        		'PubRate = Extras.RiskDataEngine.Item("PUBLIC_LIAB").Item("BASE_RATE").Value
+        		'PubPrem = Extras.RiskDataEngine.Item("PUBLIC_LIAB").Item("PREMIUM").Value
+        		'PubBaseDeduct = Extras.RiskDataEngine.Item("PUBLIC_LIAB").Item("BASE_DEDUCT").Value
+        		'PubDeduct = Extras.RiskDataEngine.Item("PUBLIC_LIAB").Item("DEDUCT").Value
+        		'SLDChk = Extras.RiskDataEngine.Item("SLD").Item("SLDC_CHCK").Value
+        		'SLDBasis = Extras.RiskDataEngine.Item("SLD").Item("BASE_LIMIT").Value
+        		'SLDLimit = Extras.RiskDataEngine.Item("SLD").Item("LIMIT_OF_INDEMNITY").Value
+        		'SLDRate = Extras.RiskDataEngine.Item("SLD").Item("BASE_RATE").Value
+        		'SLDPrem = Extras.RiskDataEngine.Item("SLD").Item("PREMIUM").Value
+        		'SLDBaseDeduct = Extras.RiskDataEngine.Item("SLD").Item("BASE_DEDUCT").Value
+        		'SLDDeduct = Extras.RiskDataEngine.Item("SLD").Item("DEDUCT").Value
+        		'WArChk = Extras.RiskDataEngine.Item("WARREST").Item("WARREST_CHK").Value
+        		'WArBasis = Extras.RiskDataEngine.Item("WARREST").Item("BASE_LIMIT").Value
+        		'WArLimit = Extras.RiskDataEngine.Item("WARREST").Item("LIMIT_OF_INDEMNITY").Value
+        		'WArRate = Extras.RiskDataEngine.Item("WARREST").Item("BASE_RATE").Value
+        		'WArPrem = Extras.RiskDataEngine.Item("WARREST").Item("PREMIUM").Value
+        		'WArBaseDeduct = Extras.RiskDataEngine.Item("WARREST").Item("BASE_DEDUCT").Value
+        		'WArDeduct = Extras.RiskDataEngine.Item("WARREST").Item("DEDUCT").Value
+        		'Eco = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("ECOLOGY").Value
+        		'Emerg = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("EMERGENCY").Value
+        		'FPart = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("FIRSTPCLM").Value
+        		'LegalDC = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("LEGALDC").Value
+        		'LegalLiab = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("LEGALLIAB").Value
+        		'OffSite = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("OFFSITE").Value
+        		'Onsite = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("ONSITE").Value
+        		'TPDam = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("THIRDP").Value
+        		'TPWC = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("THIRDPINCR").Value
+        		'TPPropDam = Extras.RiskDataEngine.Item("RISK_DETAILS").Item("PROPDAM").Value
+        		
+        		'Send data to the claim screen
+        		
+        		Engine.Item("PIPESTRCLAIM").Item("TYPE_OF_COVER").Value = CovType
+        		Engine.Item("PIPESTRCLAIM").Item("ITOOAPPROV").Value = is_ITOO
+        		'Engine.Item("PIPESTRCLAIM").Item("IS_GENERAL_LIABILITIES").Value = GLiab
+        		'Engine.Item("PIPESTRCLAIM").Item("IS_ADDITIONAL").Value = Exten
+        		'Engine.Item("PIPESTRCLAIM").Item("RETROACTIVE_DATE_EXPIRY").Value = RetDateExp
+        		Engine.Item("PIPESTRCLAIM").Item("AGGREGATE_LIMIT").Value = AggLim
+        		'Engine.Item("PIPESTRCLAIM").Item("RETROACTIVE_DATE_INCEPTION").Value = RetroDateInc
+        		Engine.Item("PIPESTRCLAIM").Item("RETROACTIVE_DATE").Value = RetroDate
+        		Engine.Item("PIPESTRCLAIM").Item("ADD_RETRO_DATE_INFO").Value = isRetroDateInfo
+        		Engine.Item("PIPESTRCLAIM").Item("RETRO_DATE").Value = RetroDateInfo
+        
+        		'Engine.Item("PIPESTRCLAIM").Item("EMP_CHK").Value = EmpChk
+        		'Engine.Item("PIPESTRCLAIM").Item("EMP_BASISLMT").Value = EmpBasis
+        		'Engine.Item("PIPESTRCLAIM").Item("EMP_LMTINDEM").Value = EmpLimit
+        		'Engine.Item("PIPESTRCLAIM").Item("EMP_BASERATE").Value = EmpRate
+        		'Engine.Item("PIPESTRCLAIM").Item("EMP_PREM").Value = EmpPrem
+        		'Engine.Item("PIPESTRCLAIM").Item("EMP_BASEDED").Value = EmpBaseDeduct
+        		'Engine.Item("PIPESTRCLAIM").Item("EMP_DED").Value = EmpDeduct
+        		'Engine.Item("PIPESTRCLAIM").Item("PROD_CHK").Value = ProdChk
+        		'Engine.Item("PIPESTRCLAIM").Item("PROD_BASISLMT").Value = ProdBasis
+        		'Engine.Item("PIPESTRCLAIM").Item("PROD_LMTINDEM").Value = ProdLimit
+        		'Engine.Item("PIPESTRCLAIM").Item("PROD_BASERATE").Value = ProdRate
+        		'Engine.Item("PIPESTRCLAIM").Item("PROD_PREM").Value = ProdPrem
+        		'Engine.Item("PIPESTRCLAIM").Item("PROD_BASEDED").Value = ProdBaseDeduct
+        		'Engine.Item("PIPESTRCLAIM").Item("PROD_DED").Value = ProdDeduct
+        		'Engine.Item("PIPESTRCLAIM").Item("PUBLIC_CHK").Value = PubChk
+        		'Engine.Item("PIPESTRCLAIM").Item("PUBLIC_BASISLMT").Value = PubBasis
+        		'Engine.Item("PIPESTRCLAIM").Item("PUBLIC_LMTINDEM").Value = PubLimit
+        		'Engine.Item("PIPESTRCLAIM").Item("PUBLIC_BASERATE").Value = PubRate
+        		'Engine.Item("PIPESTRCLAIM").Item("PUBLIC_PREM").Value = PubPrem
+        		'Engine.Item("PIPESTRCLAIM").Item("PUBLIC_BASEDED").Value = PubBaseDeduct
+        		'Engine.Item("PIPESTRCLAIM").Item("PUBLIC_DED").Value = PubDeduct
+        		'Engine.Item("PIPESTRCLAIM").Item("SLDC_CHCK").Value = SLDChk
+        		'Engine.Item("PIPESTRCLAIM").Item("SLDC_BASISLMT").Value = SLDBasis
+        		'Engine.Item("PIPESTRCLAIM").Item("SLDC_LMTINDEM").Value = SLDLimit
+        		'Engine.Item("PIPESTRCLAIM").Item("SLDC_BASERATE").Value = SLDRate
+        		'Engine.Item("PIPESTRCLAIM").Item("SLDC_PREM").Value = SLDPrem
+        		'Engine.Item("PIPESTRCLAIM").Item("SLDC_BASEDED").Value = SLDBaseDeduct
+        		'Engine.Item("PIPESTRCLAIM").Item("SLDC_DED").Value = SLDDeduct
+        		'Engine.Item("PIPESTRCLAIM").Item("WARREST_CHK").Value = WArChk
+        		'Engine.Item("PIPESTRCLAIM").Item("WARREST_BASISLMT").Value = WArBasis
+        		'Engine.Item("PIPESTRCLAIM").Item("WARREST_LMTINDEM").Value = WArLimit
+        		'Engine.Item("PIPESTRCLAIM").Item("WARREST_BASERATE").Value = WArRate
+        		'Engine.Item("PIPESTRCLAIM").Item("WARREST_PREM").Value = WArPrem
+        		'Engine.Item("PIPESTRCLAIM").Item("WARREST_BASEDED").Value = WArBaseDeduct
+        		'Engine.Item("PIPESTRCLAIM").Item("WARREST_DED").Value = WArDeduct
+        		'Engine.Item("PIPESTRCLAIM").Item("ECOLOGY").Value = Eco
+        		'Engine.Item("PIPESTRCLAIM").Item("EMERGENCY").Value = Emerg
+        		'Engine.Item("PIPESTRCLAIM").Item("FIRSTPCLM").Value = FPart
+        		'Engine.Item("PIPESTRCLAIM").Item("LEGALDC").Value = LegalDC
+        		'Engine.Item("PIPESTRCLAIM").Item("LEGALLIAB").Value = LegalLiab
+        		'Engine.Item("PIPESTRCLAIM").Item("OFFSITE").Value = OffSite
+        		'Engine.Item("PIPESTRCLAIM").Item("ONSITE").Value = Onsite
+        		'Engine.Item("PIPESTRCLAIM").Item("THIRDP").Value = TPDam
+        		'Engine.Item("PIPESTRCLAIM").Item("THIRDPINCR").Value = TPWC
+        		'Engine.Item("PIPESTRCLAIM").Item("PROPDAM").Value = TPPropDam
+        '
+        
+        		'-----------------------------------------------
+        		'---START: Child screen properties population---
+        		'-----------------------------------------------
+        
+        		Dim x, cnt, nIndex
+        		Dim sNum, sName, Addr, Ln1, Burb, Town, PCode, Country
+        		Dim BasisLim, LimIndem, LimIndemClm, Rate, Prem, BasisDed, Deduct
+        
+        		cnt = Extras.RiskDataEngine.Count("SITECHLD")
+        
+        		x = 1
+        		For nIndex = x to cnt
+        			Engine.Item("PIPESTRCLAIM").NewObject("SITECLAIM")
+        			Engine.Item("PIPESTRCLAIM").NewObject("SITEADDR")
+        
+        			'Collect data from policy risk
+        			sNum = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Item("SITE_NUMBER").Value
+        			sName = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Item("SITE_NAME").Value
+        			BasisLim = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Item("BASIS_OF_LIMIT").Value
+        			LimIndem = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Item("LIMIT_OF_INDEMNITY").Value
+        			LimIndemClm = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Item("LIMIT_OF_INDEMNITY_CLAIMS").Value
+        			Rate = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Item("RATE").Value
+        			Prem = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Item("PREMIUM").Value
+        			BasisDed = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Item("BASIS_OF_DEDU").Value
+        			Deduct = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Item("DEDUCTIBLE").Value
+        
+        			'Addr = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Item("ADDRESSLIST").Value
+        			Ln1 = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Item("LINE1").Value
+        			Burb = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Item("SUBURB").Value
+        			Town = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Item("TOWN").Value
+        			PCode = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Item("POSTCODE").Value
+        			Country = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Item("COUNTRY").Value
+        
+        			'Send data to the claim screen
+        			Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).Item("SITE_NUMBER").Value = sNum	
+        			Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).Item("SITE_NAME").Value = sName
+        			Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).Item("BASIS_OF_LIMIT").Value = BasisLim
+        			Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).Item("LIMIT_OF_INDEMNITY").Value = LimIndem
+        			Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).Item("LIMIT_OF_INDEMNITY_CLAIMS").Value = LimIndemClm
+        			Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).Item("RATE").Value = Rate
+        			Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).Item("PREMIUM").Value = Prem
+        			Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).Item("BASIS_OF_DEDU").Value = BasisDed
+        			Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).Item("DEDUCTIBLE").Value = Deduct
+        
+        			'Engine.Item("PIPESTRCLAIM").Item("SITEADDR",nIndex).Item("ADDRESSLIST").Value = Addr
+        			Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).Item("LINE1").Value = Ln1
+        			Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).Item("SUBURB").Value = Burb
+        			Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).Item("TOWN").Value = Town
+        			Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).Item("POSTCODE").Value = PCode
+        			Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).Item("COUNTRY").Value = Country
+        
+        			'-----------------------------------------------
+        			'---START: Child screen properties population---
+        			'-----------------------------------------------
+        
+        			Dim i, cIndex, chldCnt, chldCnt2, dIndex, j
+        
+        			chldCnt = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Count("TANKDET")
+        			chldCnt2 = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Count("PIPE")
+        
+        			Dim tLoc, tNum, Cap, CapU, Cont, Age, tDesign, tLDS 
+        			Dim pNum, pCon, pAge, pDiam, pDiamUnit, pPres, pPresUnit, pAvDep, pDepUnit, pLen, pLenUnit
+        
+        			i = 1
+        			For cIndex = i to chldCnt
+        				Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).NewObject("TANKDETSCLM")
+        
+        				tLoc = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Item("TANKDET",cIndex).Item("TANKLOC").Value
+        				tNum = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Item("TANKDET",cIndex).Item("TANKNO").Value
+        				Cap = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Item("TANKDET",cIndex).Item("CAPACITY").Value
+        				CapU = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Item("TANKDET",cIndex).Item("CAPAUNIT").Value
+        				Cont = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Item("TANKDET",cIndex).Item("CONTENT").Value
+        				Age = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Item("TANKDET",cIndex).Item("AGE").Value
+        				tDesign = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Item("TANKDET",cIndex).Item("TANKDES").Value
+        				tLDS = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Item("TANKDET",cIndex).Item("LEAKDSYS").Value
+        
+        				Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).Item("TANKDETSCLM",cIndex).Item("TANKLOC").Value = tLoc
+        				Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).Item("TANKDETSCLM",cIndex).Item("TANKNO").Value = tNum
+        				Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).Item("TANKDETSCLM",cIndex).Item("CAPACITY").Value = Cap
+        				Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).Item("TANKDETSCLM",cIndex).Item("CAPAUNIT").Value = CapU
+        				Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).Item("TANKDETSCLM",cIndex).Item("CONTENT").Value = Cont
+        				Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).Item("TANKDETSCLM",cIndex).Item("AGE").Value = Age
+        				Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).Item("TANKDETSCLM",cIndex).Item("TANKDES").Value = tDesign
+        				Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).Item("TANKDETSCLM",cIndex).Item("LEAKDSYS").Value = tLDS
+        
+        				'i = i + 1
+        			Next
+        
+        			j = 1
+        			For dIndex = j to chldCnt2
+        				Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).NewObject("PIPEDETSCLM")
+        
+        				pNum = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Item("PIPE",dIndex).Item("PIPENO").Value
+        				pCon = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Item("PIPE",dIndex).Item("CONTENTS").Value
+        				pAge = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Item("PIPE",dIndex).Item("AGE").Value
+        				pDiam = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Item("PIPE",dIndex).Item("DIAMETER").Value
+        				pDiamUnit = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Item("PIPE",dIndex).Item("DIAUNITS").Value
+        				pPres = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Item("PIPE",dIndex).Item("PRESSURE").Value
+        				pPresUnit = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Item("PIPE",dIndex).Item("PRESSUNITS").Value
+        				pAvDep = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Item("PIPE",dIndex).Item("AVEDEPTH").Value
+        				pDepUnit = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Item("PIPE",dIndex).Item("DEPTHUNIT").Value
+        				pLen = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Item("PIPE",dIndex).Item("LENGT").Value
+        				pLenUnit = Extras.RiskDataEngine.Item("SITECHLD",nIndex).Item("PIPE",dIndex).Item("LENGTHU").Value
+        
+        				Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).Item("PIPEDETSCLM",dIndex).Item("PIPENO").Value = pNum
+        				Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).Item("PIPEDETSCLM",dIndex).Item("CONTENTS").Value = pCon
+        				Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).Item("PIPEDETSCLM",dIndex).Item("AGE").Value = pAge
+        				Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).Item("PIPEDETSCLM",dIndex).Item("DIAMETER").Value = pDiam
+        				Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).Item("PIPEDETSCLM",dIndex).Item("DIAUNITS").Value = pDiamUnit
+        				Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).Item("PIPEDETSCLM",dIndex).Item("PRESSURE").Value = pPres
+        				Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).Item("PIPEDETSCLM",dIndex).Item("PRESSUNITS").Value = pPresUnit
+        				Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).Item("PIPEDETSCLM",dIndex).Item("AVEDEPTH").Value = pAvDep
+        				Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).Item("PIPEDETSCLM",dIndex).Item("DEPTHUNIT").Value = pDepUnit
+        				Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).Item("PIPEDETSCLM",dIndex).Item("LENGT").Value = pLen
+        				Engine.Item("PIPESTRCLAIM").Item("SITECLAIM",nIndex).Item("PIPEDETSCLM",dIndex).Item("LENGTHU").Value = pLenUnit
+        
+        				'i = i + 1
+        			Next
+        
+        
+        			'x = x + 1
+        		Next
+        		
+        
+        		Call DoInstanceCount
+         End If
+        End Sub
+
+        Sub DoInstanceCount
+        ' The ScreenMain rule is added to every screen automatically.
+        
+        
+        Call FindObjectInstanceCount("")
+End Sub
+
+Sub onValidate_PIPESTRCLAIM__THIRDPARTY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("PIPESTRCLAIM", "THIRDPARTY", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_PIPESTRCLAIM__RECOVERY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("PIPESTRCLAIM", "RECOVERY", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_PIPESTRCLAIM__SALVAGE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("PIPESTRCLAIM", "SALVAGE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_PIPESTRCLAIM__IS_THRDTLS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("PIPESTRCLAIM", "IS_THRDTLS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_PIPESTRCLAIM__IS_ASSESSDETAIL(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("PIPESTRCLAIM", "IS_ASSESSDETAIL", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_PIPESTRCLAIM__IS_NAMAPP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("PIPESTRCLAIM", "IS_NAMAPP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_PIPESTRCLAIM__IS_EXGRAT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("PIPESTRCLAIM", "IS_EXGRAT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_PIPESTRCLM__ASSESSOR(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("PIPESTRCLM", "ASSESSOR", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_PIPESTRCLM__LAWYRS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("PIPESTRCLM", "LAWYRS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_PIPESTRCLM__WITNESS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("PIPESTRCLM", "WITNESS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub DoDefaults(bIsOnStart)
+    Call WebRequired(bIsOnStart)
+    Call onScreenLogic(bIsOnStart)
+    Call onValidate_PIPESTRCLAIM__THIRDPARTY(bIsOnStart)
+    Call onValidate_PIPESTRCLAIM__RECOVERY(bIsOnStart)
+    Call onValidate_PIPESTRCLAIM__SALVAGE(bIsOnStart)
+    Call onValidate_PIPESTRCLAIM__IS_THRDTLS(bIsOnStart)
+    Call onValidate_PIPESTRCLAIM__IS_ASSESSDETAIL(bIsOnStart)
+    Call onValidate_PIPESTRCLAIM__IS_NAMAPP(bIsOnStart)
+    Call onValidate_PIPESTRCLAIM__IS_EXGRAT(bIsOnStart)
+    Call onValidate_PIPESTRCLM__ASSESSOR(bIsOnStart)
+    Call onValidate_PIPESTRCLM__LAWYRS(bIsOnStart)
+    Call onValidate_PIPESTRCLM__WITNESS(bIsOnStart)
+End Sub
+
+Sub Start()
+    Call DoDefaults(True)
+End Sub
+
+Sub Main()
+    Call DoDefaults(False)
+End Sub
+

@@ -1,0 +1,165 @@
+Sub Start()
+	Dim limitIndem, baseRate, vatFreeSumInsured, Premium, vatFreePremium
+	Dim prodCode, branchName, iTOOFlag
+		prodCode  = SafecStr(Engine.Item("GENERAL").Item("PRODCODE").value)
+		limitIndem = SafecDbl(Engine.Item("DNOLIAB").Item("LIMITINDEM").value)
+		baseRate = SafecDbl (Engine.Item("DNOLIAB").Item("BASERATE").value)
+		branchName = SafecStr(Engine.Item("GENERAL").Item("BRANCH").value)
+		iTOOFlag = ConvertToBool(Engine.Item("DNOLIAB").Item("ITOOAPPROV").value)
+		
+		'Added line for Premium
+		Premium = SafecDbl(Engine.Item("DNOLIAB").Item("LIMITPREM").value)
+		
+		If prodCode = "CLA" Then
+		
+			'Change made for rounding - Test
+			if Premium > 0 then
+				baseRate = Premium/limitIndem * 100
+			End If
+			
+			if (Premium = "" Or Premium = 0 Or Premium < 0) then
+				Premium = (limitIndem * (baseRate * 0.01))
+			End if
+			
+			vatFreePremium = SafecDbl(Premium / 1.15)
+			vatFreeSumInsured = SafecDbl(limitIndem / 1.15)
+			
+			If branchName = "ITOO" and iTOOFlag = True Then
+					GenerateOutput vatFreeSumInsured, baseRate, vatFreePremium, "DNOLIAB"
+				Else
+					GenerateOutput vatFreeSumInsured, baseRate, vatFreePremium, "DNOTRYEXC"
+			End If 
+		End If
+		
+		If prodCode = "CLM" Then
+			Dim monthlyRate, proRata
+			
+			'Change made for rounding - Test
+			if Premium > 0 then
+				baseRate = Premium/limitIndem * 100
+				monthlyRate = baseRate /12
+				Premium = Premium/12
+			End If
+			
+			if (Premium = "" Or Premium = 0 Or Premium < 0) then
+				monthlyRate = baseRate /12
+				Premium = (limitIndem * (monthlyRate * 0.01))
+			End if
+	
+			vatFreePremium = SafecDbl(Premium / 1.15)
+			vatFreeSumInsured = SafecDbl(limitIndem / 1.15)
+			If branchName = "ITOO" and iTOOFlag = True Then
+				GenerateOutput vatFreeSumInsured, monthlyRate, vatFreePremium, "DNOLIAB"
+			Else
+				GenerateOutput vatFreeSumInsured, monthlyRate, vatFreePremium, "DNOTRYEXC"
+			End If
+		 End If
+
+End Sub
+
+Function GenerateOutput(cSI, cRATE, cPREM, cRatingSection)
+	Dim counter
+	Engine.NewObject("DNOLIABRSK_Output")
+	counter= Engine.Count("DNOLIABRSK_Output")
+
+	Engine.Item("DNOLIABRSK_Output",counter).Item("Sum_insured").value = cSI
+	Engine.Item("DNOLIABRSK_Output",counter).Item("Rate").value = cRATE
+	Engine.Item("DNOLIABRSK_Output",counter).Item("Premium").value = cPREM
+	Engine.Item("DNOLIABRSK_Output",counter).Item("risk_rating_section").value = cRatingSection
+
+End Function
+
+
+Function GetProrataPrem(annPrem)
+	GetProrataPrem = 0
+	Dim dtStartDate, dtEndDate, prorataFactor, thisPrem
+	Dim vResults
+	Dim m_lReturn
+	Dim offset
+	
+	offset = 1
+	m_lReturn = Extras.GetBODetails(vResults)
+	
+	If IsArray(vResults) Then
+		dtStartDate = SafecDate(vResults(1,0))
+		dtEndDate = SafecDate(vResults(2,0))
+	End If
+	
+	prorataFactor = CalculateProrataFactor(dtStartDate, dtEndDate, offset)
+	
+	thisPrem = annPrem * prorataFactor
+	
+	GetProrataPrem = thisPrem
+	
+End Function
+
+'****************************************************************************************
+' returns propotion of dblValue based on number of days between dtStartDate and dtEndDate
+'****************************************************************************************
+
+Function CalculateProrataFactor(dtStartDate, dtEndDate, lOffsetValue)
+		dim lMaxDays, lPeriodDays
+		lMaxDays = 365
+		CalculateProrataFactor = 1
+
+		if IsLeapYear(Year(dtStartDate)) then
+			if DateDiff("d",dtStartDate,"29 Feb " & Year(dtStartDate)) >= 0  then
+				lMaxDays = 366
+			end if
+		elseif IsLeapYear(Year(dtEndDate)) then
+			if DateDiff("d","29 Feb " & Year(dtEndDate),dtEndDate) >= 0 then
+				lMaxDays = 366
+			end if                                    
+		end if
+		
+		lPeriodDays =  Abs(DateDiff("d",dtStartDate,dtEndDate))
+		
+		lPeriodDays = lPeriodDays + lOffsetValue
+		
+	    CalculateProrataFactor = (lPeriodDays/lMaxDays)
+End function
+
+Function IsLeapYear(lYear)
+		IsLeapYear = False
+		
+		If lYear > 0 Then
+			IsLeapYear = ((lYear Mod 4 = 0 And lYear Mod 100 <> 0) Or (lYear Mod 4 = 0 And lYear Mod 100 = 0 And lYear Mod 400 = 0))
+		End If               
+End Function
+
+Function SafecDbl(value)
+		SafecDbl = 0
+		On Error Resume Next
+		SafecDbl = CDbl(value)
+		On Error GoTo 0
+End Function
+
+
+Function SafeInt(value)
+	SafeInt = 0
+	On Error Resume Next
+	SafeInt = CInt(value)
+	On Error GoTo 0
+End Function
+
+Function SafecStr(value)
+    SafecStr = ""
+    On Error Resume Next
+    SafecStr = CStr(value)
+    On Error GoTo 0
+End Function
+
+Function ConvertToBool(value)
+    ConvertToBool = 0
+    On Error Resume Next
+    ConvertToBool = CBool(value)
+    On Error GoTo 0
+
+End Function
+
+Function SafecDate(value)
+    SafecDate = 0
+    On Error Resume Next
+    SafecDate = CDate(value)
+    On Error GoTo 0
+End Function

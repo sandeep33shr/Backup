@@ -1,0 +1,2276 @@
+        '**********************************************************************************************
+        'Load Defaults from UDLs
+        '**********************************************************************************************
+        Sub GetClaimUserLevel()
+         Dim vResult
+         Dim sSQL 
+         Dim iUserName
+         Dim UserAuthorityGroup
+         iUserName = Extras.Username
+        	
+        	sSQL = "SELECT usergroup FROM UDL_CLAIM_UGA WHERE code = '" & iUserName & "'" 	
+        	Call Extras.CallNamedStoredProcedure(4033, "RetrieveData", vResult, Array("sSQL", sSQL))
+        		
+        	If IsArray(vResult) Then
+        			UserAuthorityGroup = vResult(0, 0)
+        	End If
+        	
+        	'Assign Defaults Claim User Group Value
+        	With Engine.Item("GENERAL")
+        		'Extras.Username Extras.GetField("UDL_CLAIM_UGA", "usergroup", Extras.Username,Extras.CoverStartDate)
+        		.Item("UserGroup").Value = UserAuthorityGroup 
+        		
+        		If (.Item("SALVAGESTAT").Value ="") Or IsNull(.Item("SALVAGESTAT").Value) Then
+                    .Item("SALVAGESTAT").Value = 1
+                End If 
+        		
+        		If (.Item("LEGALSTAT").Value ="") Or IsNull(.Item("LEGALSTAT").Value) Then
+                    .Item("LEGALSTAT").Value = 15
+                End If
+        		
+        		If (.Item("CLMDECISION").Value ="") Or IsNull(.Item("CLMDECISION").Value) Then
+                    .Item("CLMDECISION").Value = 5
+                End If
+        		
+        		
+        	End With
+        	
+        End Sub
+        
+        Sub PullFromRiskGeneral()
+        		'Instantiate Risk object(s)
+        		Extras.RiskDataEngine.NewObject("GENERAL")
+        		Extras.RiskDataEngine.NewObject("ADDRESS")
+        
+        		'Instantiate Claims object(s)
+        		Engine.NewObject("GENERAL")
+        		Engine.NewObject("ADDRESS")
+        
+        		'---------------------------------------------------
+        		'---START: Non-child screen properties population---	
+        		'---------------------------------------------------
+        		Dim RiskObject, ClaimObject
+        
+        		RiskObject = "GENERAL"
+        		ClaimObject = "GENERAL"
+        
+                '---------------------------------------------'
+        		Call ToClaimDiff(RiskObject,ClaimObject,"IS_BAR","IS_BAR_CHECK")
+        		Call ToClaimDiff(RiskObject,ClaimObject,"IS_GLASS","IS_GLASS_CHECK")
+        		Call ToClaimDiff(RiskObject,ClaimObject,"IS_THEFT","IS_THEFT_CHECK")
+        		Call ToClaimDiff(RiskObject,ClaimObject,"IS_MONEY","IS_MONEY_CHECK")
+        		Call ToClaimDiff(RiskObject,ClaimObject,"IS_GIT","IS_GIT_CHECK")
+        		Call ToClaimDiff(RiskObject,ClaimObject,"IS_PA","IS_PA_CHECK")
+        		Call ToClaimDiff(RiskObject,ClaimObject,"IS_SB","IS_SB_CHECK")
+        		Call ToClaimDiff(RiskObject,ClaimObject,"IS_FIDELITY","IS_FIDELITY_CHECK")
+        		Call ToClaimDiff(RiskObject,ClaimObject,"IS_ELECEQUIP","IS_ELECEQUIP_CHECK")
+        		Call ToClaimDiff(RiskObject,ClaimObject,"IS_MACHINERY","IS_MACHINERY_CHECK")
+        		'---------------Industry---------------'
+        		Call ToClaim(RiskObject,ClaimObject,"PRIMARY_INDUSTRY")
+        		Call ToClaim(RiskObject,ClaimObject,"SECOND_INDUSTRY")
+        		Call ToClaim(RiskObject,ClaimObject,"TERTIARY_INDUSTRY")
+        		Call ToClaim(RiskObject,ClaimObject,"INDUSTRY")
+        		
+        		'---------------Address---------------'
+        		RiskObject = "ADDRESS"
+        		ClaimObject = "ADDRESS"
+        		Call ToClaim(RiskObject,ClaimObject,"ADDRESSLIST")
+        		Call ToClaim(RiskObject,ClaimObject,"LINE1")
+        		Call ToClaim(RiskObject,ClaimObject,"SUBURB")
+        		Call ToClaim(RiskObject,ClaimObject,"TOWN")
+        		Call ToClaim(RiskObject,ClaimObject,"POSTCODE")
+        		Call ToClaim(RiskObject,ClaimObject,"REGION")
+        		Call ToClaim(RiskObject,ClaimObject,"COUNTRY")
+        End Sub
+
+        
+        Function ToClaim(RObject, CObject, PropName)
+        	Dim Val	
+        	Val = Extras.RiskDataEngine.Item(RObject).Item(PropName).Value
+        	Engine.Item(CObject).Item(PropName).Value = Val
+        End Function
+        
+        Function ToClaimDiff(RObject, CObject, PropNameRisk, PropNameClaim)
+        	Dim Val	
+        	Val = Extras.RiskDataEngine.Item(RObject).Item(PropNameRisk).Value
+        	Engine.Item(CObject).Item(PropNameClaim).Value = Val
+        End Function
+        
+        Function ToChildClaim(RChild, CParent, Cobject, Index, PropName)
+        	Dim Val
+        	Val = Extras.RiskDataEngine.Item(RChild,Index).Item(PropName).Value
+        	Engine.Item(CParent).Item(CObject, Index).Item(PropName).Value = Val
+        End Function
+        
+        Function ToGrandChildClaim(RChild, RGChild, CParent, CChild, Cobject, Index, ChildIndex, PropName)
+        	Dim Val
+        	Val = Extras.RiskDataEngine.Item(RChild,Index).Item(RGChild,ChildIndex).Item(PropName).Value
+        	Engine.Item(CParent).Item(CChild, Index).Item(CObject, ChildIndex).Item(PropName).Value = Val
+        End Function
+        '**********************************************************************************************
+        'Load Risk Data to Claim Screens
+        '**********************************************************************************************
+        Sub PullFromRiskEE()
+        	
+        	Dim iTotalCount
+        	Dim iCount
+        	
+        	Engine.Item("GENERAL").Item("IS_ELECEQUIP").Value = Extras.RiskDataEngine.Item("GENERAL").Item("IS_ELECEQUIP").Value 
+        	
+        	'Total Sum insured
+        	Engine.Item("ELECTEQUIP").Item("ATTACHMENTDATE").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("ATTACHMENTDATE").Value 
+        	Engine.Item("ELECTEQUIP").Item("EFFECTIVEDATE").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("EFFECTIVEDATE").Value 
+        	
+        	'Past claims count
+        	Engine.Item("ELECTEQUIP").Item("EE0_12_MONTHS").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("EE0_12_MONTHS").Value 
+        	Engine.Item("ELECTEQUIP").Item("EE0_12_AMOUNT").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("EE0_12_AMOUNT").Value 
+        	Engine.Item("ELECTEQUIP").Item("EE13_24_MONTHS").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("EE13_24_MONTHS").Value 
+        	Engine.Item("ELECTEQUIP").Item("EE13_24_AMOUNT").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("EE13_24_AMOUNT").Value 
+        	Engine.Item("ELECTEQUIP").Item("EE25_36_MONTHS").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("EE25_36_MONTHS").Value 
+        	Engine.Item("ELECTEQUIP").Item("EE25_36_AMOUNT").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("EE25_36_AMOUNT").Value 
+        	
+        	'first amount payable
+        	Engine.Item("ELECTEQUIP").Item("FAP_PERC").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("FAP_PERC").Value 
+        	Engine.Item("ELECTEQUIP").Item("FAP_MIN_AMT").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("FAP_MIN_AMT").Value 
+        	Engine.Item("ELECTEQUIP").Item("FAP_MAX_AMT").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("FAP_MAX_AMT").Value 
+        	Engine.Item("ELECTEQUIP").Item("THEFT_PERC").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("THEFT_PERC").Value 
+        	Engine.Item("ELECTEQUIP").Item("THEFT_MIN_AMT").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("THEFT_MIN_AMT").Value 
+        	Engine.Item("ELECTEQUIP").Item("THEFT_MAX_AMT").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("THEFT_MAX_AMT").Value 
+        	
+        	Engine.Item("ELECTEQUIP").Item("TOTALSI").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("TOTALSI").Value 
+        	
+        	'extension
+        	Engine.Item("EE_EXTENSIONS").Item("IS_ADD").Value = Extras.RiskDataEngine.Item("EE_EXTENSIONS").Item("IS_ADD").Value 
+        	Engine.Item("EE_EXTENSIONS").Item("ADD_LOI").Value = Extras.RiskDataEngine.Item("EE_EXTENSIONS").Item("ADD_LOI").Value 
+        	
+        	Engine.Item("EE_EXTENSIONS").Item("IS_COW").Value = Extras.RiskDataEngine.Item("EE_EXTENSIONS").Item("IS_COW").Value 
+        	Engine.Item("EE_EXTENSIONS").Item("COW_LOI").Value = Extras.RiskDataEngine.Item("EE_EXTENSIONS").Item("COW_LOI").Value 
+        	Engine.Item("EE_EXTENSIONS").Item("COW_FAP_PERC").Value = Extras.RiskDataEngine.Item("EE_EXTENSIONS").Item("COW_FAP_PERC").Value
+        	Engine.Item("EE_EXTENSIONS").Item("COW_MINAMNT").Value = Extras.RiskDataEngine.Item("EE_EXTENSIONS").Item("COW_MINAMNT").Value 
+        	Engine.Item("EE_EXTENSIONS").Item("COW_IND_PERIOD").Value = Extras.RiskDataEngine.Item("EE_EXTENSIONS").Item("COW_IND_PERIOD").Value 
+        	Engine.Item("EE_EXTENSIONS").Item("COW_TIME").Value = Extras.RiskDataEngine.Item("EE_EXTENSIONS").Item("COW_TIME").Value 
+        	
+        	Engine.Item("EE_EXTENSIONS").Item("IS_REINS").Value = Extras.RiskDataEngine.Item("EE_EXTENSIONS").Item("IS_REINS").Value
+        	Engine.Item("EE_EXTENSIONS").Item("REINS_LOI").Value = Extras.RiskDataEngine.Item("EE_EXTENSIONS").Item("REINS_LOI").Value 
+        	Engine.Item("EE_EXTENSIONS").Item("REINS_FAP_PERC").Value = Extras.RiskDataEngine.Item("EE_EXTENSIONS").Item("REINS_FAP_PERC").Value 
+        	Engine.Item("EE_EXTENSIONS").Item("REINS_MIN_AMNT").Value = Extras.RiskDataEngine.Item("EE_EXTENSIONS").Item("REINS_MIN_AMNT").Value 
+        	
+        	Engine.Item("EE_EXTENSIONS").Item("IS_INCOMP").Value = Extras.RiskDataEngine.Item("EE_EXTENSIONS").Item("IS_INCOMP").Value 
+        	
+        	Engine.Item("EE_EXTENSIONS").Item("IS_LOP").Value = Extras.RiskDataEngine.Item("EE_EXTENSIONS").Item("IS_LOP").Value 
+        	Engine.Item("EE_EXTENSIONS").Item("LOP_LOI").Value = Extras.RiskDataEngine.Item("EE_EXTENSIONS").Item("LOP_LOI").Value
+        	Engine.Item("EE_EXTENSIONS").Item("LOP_FAP_PERC").Value = Extras.RiskDataEngine.Item("EE_EXTENSIONS").Item("LOP_FAP_PERC").Value 
+        	Engine.Item("EE_EXTENSIONS").Item("LOP_MINAMNT").Value = Extras.RiskDataEngine.Item("EE_EXTENSIONS").Item("LOP_MINAMNT").Value 
+        	Engine.Item("EE_EXTENSIONS").Item("LOP_IND_PERIOD").Value = Extras.RiskDataEngine.Item("EE_EXTENSIONS").Item("LOP_IND_PERIOD").Value
+        	
+        	Engine.Item("EE_EXTENSIONS").Item("IS_RIOT").Value = Extras.RiskDataEngine.Item("EE_EXTENSIONS").Item("IS_RIOT").Value 
+        	Engine.Item("EE_EXTENSIONS").Item("RIOT_FAP_PERC").Value = Extras.RiskDataEngine.Item("EE_EXTENSIONS").Item("RIOT_FAP_PERC").Value 
+        	Engine.Item("EE_EXTENSIONS").Item("RIOT_MIN_AMNT").Value = Extras.RiskDataEngine.Item("EE_EXTENSIONS").Item("RIOT_MIN_AMNT").Value
+        	
+        	Engine.Item("EE_EXTENSIONS").Item("IS_TAL").Value = Extras.RiskDataEngine.Item("EE_EXTENSIONS").Item("IS_TAL").Value
+        	Engine.Item("EE_EXTENSIONS").Item("TAL_LOI").Value = Extras.RiskDataEngine.Item("EE_EXTENSIONS").Item("TAL_LOI").Value 
+        	Engine.Item("EE_EXTENSIONS").Item("TAL_FAP_PERC").Value = Extras.RiskDataEngine.Item("EE_EXTENSIONS").Item("TAL_FAP_PERC").Value 
+        	Engine.Item("EE_EXTENSIONS").Item("TAL_MINAMNT").Value = Extras.RiskDataEngine.Item("EE_EXTENSIONS").Item("TAL_MINAMNT").Value
+        	
+        	Engine.Item("EE_EXTENSIONS").Item("IS_FOE").Value = Extras.RiskDataEngine.Item("EE_EXTENSIONS").Item("IS_FOE").Value
+        	Engine.Item("EE_EXTENSIONS").Item("FOE_LOI").Value = Extras.RiskDataEngine.Item("EE_EXTENSIONS").Item("FOE_LOI").Value 
+        	Engine.Item("EE_EXTENSIONS").Item("FOE_FAP_PERC").Value = Extras.RiskDataEngine.Item("EE_EXTENSIONS").Item("FOE_FAP_PERC").Value 
+        	Engine.Item("EE_EXTENSIONS").Item("FOE_MINAMNT").Value = Extras.RiskDataEngine.Item("EE_EXTENSIONS").Item("FOE_MINAMNT").Value
+        	
+        	Engine.Item("EE_EXTENSIONS").Item("IS_NASRIA").Value = Extras.RiskDataEngine.Item("EE_EXTENSIONS").Item("IS_NASRIA").Value 
+        	Engine.Item("EE_EXTENSIONS").Item("NASRIA_LOI").Value = Extras.RiskDataEngine.Item("EE_EXTENSIONS").Item("NASRIA_LOI").Value
+        	
+        	Engine.Item("ELECTEQUIP").Item("ALARM").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("ALARM").Value
+        	'Type of Exposure
+        	Engine.Item("ELECTEQUIP").Item("IS_MPL").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("IS_MPL").Value 
+        	Engine.Item("ELECTEQUIP").Item("SYS_MPL").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("SYS_MPL").Value 
+        	Engine.Item("ELECTEQUIP").Item("OVR_MPL").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("OVR_MPL").Value
+        	
+        	Engine.Item("ELECTEQUIP").Item("IS_RB").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("IS_RB").Value 
+        	Engine.Item("ELECTEQUIP").Item("RB_DATE").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("RB_DATE").Value
+        	
+        	Engine.Item("ELECTEQUIP").Item("IS_THEFT").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("IS_THEFT").Value 
+        	Engine.Item("ELECTEQUIP").Item("THEFT_LIMIT").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("THEFT_LIMIT").Value
+        	
+        	
+        	'Electronic Equipment Items
+        	iTotalCount = Extras.RiskDataEngine.Count("ELECTEQ")
+        	For iCount = 1 To iTotalCount
+        		Engine.Item("ELECTEQUIP").NewObject("ELECTEQ")			
+        		Engine.Item("ELECTEQUIP").Item("ELECTEQ", iCount).Item("DATEADDED").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("ELECTEQ", iCount).Item("DATEADDED").Value
+        		Engine.Item("ELECTEQUIP").Item("ELECTEQ", iCount).Item("CATEG").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("ELECTEQ", iCount).Item("CATEG").Value
+        		Engine.Item("ELECTEQUIP").Item("ELECTEQ", iCount).Item("DESCRIPTN").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("ELECTEQ", iCount).Item("DESCRIPTN").Value
+        		
+        		Engine.Item("ELECTEQUIP").Item("ELECTEQ", iCount).Item("S_NUM").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("ELECTEQ", iCount).Item("S_NUM").Value
+        		Engine.Item("ELECTEQUIP").Item("ELECTEQ", iCount).Item("NO_ITEMS").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("ELECTEQ", iCount).Item("NO_ITEMS").Value
+        		Engine.Item("ELECTEQUIP").Item("ELECTEQ", iCount).Item("SUMINSURED").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("ELECTEQ", iCount).Item("SUMINSURED").Value
+        		
+        		Engine.Item("ELECTEQUIP").Item("ELECTEQ", iCount).Item("IP_NAME").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("ELECTEQ", iCount).Item("IP_NAME").Value
+        		Engine.Item("ELECTEQUIP").Item("ELECTEQ", iCount).Item("IP_AMOUNT").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("ELECTEQ", iCount).Item("IP_AMOUNT").Value
+        		Engine.Item("ELECTEQUIP").Item("ELECTEQ", iCount).Item("MINPERCENT").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("ELECTEQ", iCount).Item("MINPERCENT").Value
+        		Engine.Item("ELECTEQUIP").Item("ELECTEQ", iCount).Item("MINAMOUNT").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("ELECTEQ", iCount).Item("MINAMOUNT").Value
+        		Engine.Item("ELECTEQUIP").Item("ELECTEQ", iCount).Item("MAXAMOUNT").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("ELECTEQ", iCount).Item("MAXAMOUNT").Value
+        		
+        		'---------------Business All Risk Grand Child---------------'
+        		Dim ClaimGrandChild, RiskGrandChild, GCnt, gIndex
+        		Dim RiskObject, ClaimObject, ClaimChild
+        		
+        		RiskObject = "ELECTEQ"
+        		ClaimObject = "ELECTEQUIP"
+        		ClaimChild = "ELECTEQ"
+        		
+        		RiskGrandChild = "EE_CLAUSEPREM"
+        		ClaimGrandChild = "EE_CLAUSEPREM"
+        		GCnt = Extras.RiskDataEngine.Item(RiskObject,iCount).Count(RiskGrandChild)
+        		For gIndex = 1 to GCnt
+        			Engine.Item(ClaimObject).Item(ClaimChild,iCount).NewObject(ClaimGrandChild)
+        			
+        			Call ToGrandChildClaim(RiskObject,RiskGrandChild,ClaimObject,ClaimChild,ClaimGrandChild,iCount,gIndex,"ENDORSE_CAP")
+        		Next
+        		
+        		RiskGrandChild = "EE_CNOTE_DETAILS"
+        		ClaimGrandChild = "EE_CNOTE_DETAILS"
+        		GCnt = Extras.RiskDataEngine.Item(RiskObject,iCount).Count(RiskGrandChild)
+        		For gIndex = 1 to GCnt
+        			Engine.Item(ClaimObject).Item(ClaimChild,iCount).NewObject(ClaimGrandChild)
+        			
+        			Call ToGrandChildClaim(RiskObject,RiskGrandChild,ClaimObject,ClaimChild,ClaimGrandChild,iCount,gIndex,"DATE_CREATED")
+        			Call ToGrandChildClaim(RiskObject,RiskGrandChild,ClaimObject,ClaimChild,ClaimGrandChild,iCount,gIndex,"CREATED_BY")
+        			Call ToGrandChildClaim(RiskObject,RiskGrandChild,ClaimObject,ClaimChild,ClaimGrandChild,iCount,gIndex,"COVER_TYPE")
+        			Call ToGrandChildClaim(RiskObject,RiskGrandChild,ClaimObject,ClaimChild,ClaimGrandChild,iCount,gIndex,"NOTE_DESCRIPTION")
+        			Call ToGrandChildClaim(RiskObject,RiskGrandChild,ClaimObject,ClaimChild,ClaimGrandChild,iCount,gIndex,"NOTE_DETAILS")
+        		Next
+        		
+        		RiskGrandChild = "EE_SCNOTE_DETAILS"
+        		ClaimGrandChild = "EE_SCNOTE_DETAILS"
+        		GCnt = Extras.RiskDataEngine.Item(RiskObject,iCount).Count(RiskGrandChild)
+        		For gIndex = 1 to GCnt
+        			Engine.Item(ClaimObject).Item(ClaimChild,iCount).NewObject(ClaimGrandChild)
+        			
+        			Call ToGrandChildClaim(RiskObject,RiskGrandChild,ClaimObject,ClaimChild,ClaimGrandChild,iCount,gIndex,"DATE_CREATED")
+        			Call ToGrandChildClaim(RiskObject,RiskGrandChild,ClaimObject,ClaimChild,ClaimGrandChild,iCount,gIndex,"CREATED_BY")
+        			Call ToGrandChildClaim(RiskObject,RiskGrandChild,ClaimObject,ClaimChild,ClaimGrandChild,iCount,gIndex,"COVER_TYPE")
+        			Call ToGrandChildClaim(RiskObject,RiskGrandChild,ClaimObject,ClaimChild,ClaimGrandChild,iCount,gIndex,"NOTE_DESCRIPTION")
+        			Call ToGrandChildClaim(RiskObject,RiskGrandChild,ClaimObject,ClaimChild,ClaimGrandChild,iCount,gIndex,"NOTE_DETAILS")
+        		Next
+        	Next
+        	
+        	'Multiple Premises
+        	iTotalCount = Extras.RiskDataEngine.Count("EE_MULTIPLE_PREMISES")
+        	For iCount = 1 To iTotalCount
+        		Engine.Item("ELECTEQUIP").NewObject("EE_MULTIPLE_PREMISES")			
+        		Engine.Item("ELECTEQUIP").Item("EE_MULTIPLE_PREMISES", iCount).Item("LINE1").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("EE_MULTIPLE_PREMISES", iCount).Item("LINE1").Value		
+        		Engine.Item("ELECTEQUIP").Item("EE_MULTIPLE_PREMISES", iCount).Item("LINE2").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("EE_MULTIPLE_PREMISES", iCount).Item("LINE2").Value		
+        		Engine.Item("ELECTEQUIP").Item("EE_MULTIPLE_PREMISES", iCount).Item("LINE3").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("EE_MULTIPLE_PREMISES", iCount).Item("LINE3").Value		
+        		Engine.Item("ELECTEQUIP").Item("EE_MULTIPLE_PREMISES", iCount).Item("LINE4").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("EE_MULTIPLE_PREMISES", iCount).Item("LINE4").Value		
+        		Engine.Item("ELECTEQUIP").Item("EE_MULTIPLE_PREMISES", iCount).Item("POSTCODE").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("EE_MULTIPLE_PREMISES", iCount).Item("POSTCODE").Value		
+        		Engine.Item("ELECTEQUIP").Item("EE_MULTIPLE_PREMISES", iCount).Item("COUNTRY").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("EE_MULTIPLE_PREMISES", iCount).Item("COUNTRY").Value		
+        		Engine.Item("ELECTEQUIP").Item("EE_MULTIPLE_PREMISES", iCount).Item("SUMINSURED").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("EE_MULTIPLE_PREMISES", iCount).Item("SUMINSURED").Value		
+        		'Engine.Item("ELECTEQUIP").Item("SASNOTE_DETAILS", iCount).Item("NOTE_DETAILS").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("SASNOTE_DETAILS", iCount).Item("NOTE_DETAILS").Value		
+        	
+        	Next
+        	
+        	'Endorsements
+        	iTotalCount = Extras.RiskDataEngine.Count("EE_CLAUSE")
+        	For iCount = 1 To iTotalCount
+        		Engine.Item("ELECTEQUIP").NewObject("EE_CLAUSE")			
+        		Engine.Item("ELECTEQUIP").Item("EE_CLAUSE", iCount).Item("ENDORSE_CAP").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("EE_CLAUSE", iCount).Item("ENDORSE_CAP").Value				
+        	Next
+        	
+        	'Electronic Equipment notes (not printed)
+        	iTotalCount = Extras.RiskDataEngine.Count("EENOTE_DETAILS")
+        	For iCount = 1 To iTotalCount
+        		Engine.Item("ELECTEQUIP").NewObject("EENOTE_DETAILS")	
+        		Engine.Item("ELECTEQUIP").Item("EENOTE_DETAILS", iCount).Item("DATE_CREATED").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("EENOTE_DETAILS", iCount).Item("DATE_CREATED").Value		
+        		Engine.Item("ELECTEQUIP").Item("EENOTE_DETAILS", iCount).Item("CREATED_BY").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("EENOTE_DETAILS", iCount).Item("CREATED_BY").Value	
+        		Engine.Item("ELECTEQUIP").Item("EENOTE_DETAILS", iCount).Item("Risk_Cover").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("EENOTE_DETAILS", iCount).Item("Risk_Cover").Value
+        		Engine.Item("ELECTEQUIP").Item("EENOTE_DETAILS", iCount).Item("Note_Subject").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("EENOTE_DETAILS", iCount).Item("Note_Subject").Value		
+        		Engine.Item("ELECTEQUIP").Item("EENOTE_DETAILS", iCount).Item("NOTE_DETAILS").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("EENOTE_DETAILS", iCount).Item("NOTE_DETAILS").Value		
+        	Next
+        	
+        	'Electronic Equipment notes (printed)
+        	iTotalCount = Extras.RiskDataEngine.Count("EESNOTE_DETAILS")
+        	For iCount = 1 To iTotalCount
+        		Engine.Item("ELECTEQUIP").NewObject("EESNOTE_DETAILS")
+        		Engine.Item("ELECTEQUIP").Item("EESNOTE_DETAILS", iCount).Item("DATE_CREATED").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("EESNOTE_DETAILS", iCount).Item("DATE_CREATED").Value		
+        		Engine.Item("ELECTEQUIP").Item("EESNOTE_DETAILS", iCount).Item("CREATED_BY").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("EESNOTE_DETAILS", iCount).Item("CREATED_BY").Value	
+        		Engine.Item("ELECTEQUIP").Item("EESNOTE_DETAILS", iCount).Item("Risk_Cover").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("EESNOTE_DETAILS", iCount).Item("Risk_Cover").Value
+        		Engine.Item("ELECTEQUIP").Item("EESNOTE_DETAILS", iCount).Item("Note_Subject").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("EESNOTE_DETAILS", iCount).Item("Note_Subject").Value		
+        		Engine.Item("ELECTEQUIP").Item("EESNOTE_DETAILS", iCount).Item("NOTE_DETAILS").Value = Extras.RiskDataEngine.Item("ELECTEQUIP").Item("EESNOTE_DETAILS", iCount).Item("NOTE_DETAILS").Value		
+        	Next
+        	
+        		
+        End Sub
+
+        Sub PullFromRiskMachBreakdown()
+		
+        'Machinery Breakdown
+        
+        	'Instantiate Risk object(s)
+        	
+        	Extras.RiskDataEngine.NewObject("MBREAK")
+        	
+        	Extras.RiskDataEngine.NewObject("CLOSS")
+        
+        	Extras.RiskDataEngine.NewObject("DSTOCK")
+        	
+        	Extras.RiskDataEngine.NewObject("EXPOSURE_SUMMARY")
+        		
+        		
+        	'Instantiate Claims object(s)
+        	
+        	Engine.NewObject("MBREAK")
+        	
+        	Engine.NewObject("CLOSS")
+        	
+        	Engine.NewObject("DSTOCK")
+        	
+        	Engine.NewObject("EXPOSURE_SUMMARY")
+        
+        		Dim is_MB,is_CL, is_DS
+        		Dim att_date_MB, eff_date_MB
+        		Dim is_Acpc_MB, acpc_SumInsured_MB, acpc_Rate_MB
+        		Dim is_Edo_MB, edo_SumInsured_MB, edo_Rate_MB, edo_Fap_MB, edo_min_amt_MB
+        		Dim is_Fmr_MB, fmr_SumInsured_MB, fmr_Rate_MB, fmr_Fap_MB, fmr_min_amt_MB
+        		Dim is_rs_MB, rs_Fap_MB, rs_min_amt_MB				
+        						
+        						
+        		Dim iTotalCount, iCount, tTotalCount, tCount, vTotalCount, vCount, cTotalCount,cCount,bTotalCount,bCount, aTotalCount,aCount, kTotalCount, jCount, xTotalCount,xCount
+        		Dim iiTotalCount, iiCount, jTotalCount, vvTotalCount,vvCount, ttTotalCount, ttCount,stCount, stTotalCount, aaTotalCount, aaCount, uCount, uTotalCount, xxTotalCount, xxCount
+        		Dim oTotalCount, oCount, rTotalCount, rCount , yCount, yTotalCount, qTotalCount,qCount
+        
+        						
+        		
+        				
+        		'Collect data from Policy risk Machinery Breakdown Selection
+        		is_MB = Extras.RiskDataEngine.Item("MBREAK").Item("IS_MACH").Value
+        		is_CL = Extras.RiskDataEngine.Item("MBREAK").Item("IS_CL_BI").Value
+        		is_DS = Extras.RiskDataEngine.Item("MBREAK").Item("IS_DOS").Value
+        		
+        		
+        		
+        		'Collect data from Machinery Breakdown 
+        		att_date_MB = Extras.RiskDataEngine.Item("MBREAK").Item("ATTACHMENTDATE").Value
+        		eff_date_MB = Extras.RiskDataEngine.Item("MBREAK").Item("EFFECTIVEDATE").Value
+        		
+        		Engine.Item("MBREAK").Item("MB_TOTSUMIN").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_TOTSUMIN").Value
+        		
+        		'Collect data from Machinery Breakdown Extensions
+        		'Additional Claims Preparation Costs
+        		
+        		is_Acpc_MB = Extras.RiskDataEngine.Item("MBREAK").Item("IS_ACPC").Value		
+        		acpc_SumInsured_MB = Extras.RiskDataEngine.Item("MBREAK").Item("ACPC_SUMINSURED").Value
+        		
+        		'Express Delivery and Overtime
+        		
+        		is_Edo_MB = Extras.RiskDataEngine.Item("MBREAK").Item("IS_EDO").Value		
+        		edo_SumInsured_MB = Extras.RiskDataEngine.Item("MBREAK").Item("EDO_SUMINSURED").Value
+        		edo_Fap_MB = Extras.RiskDataEngine.Item("MBREAK").Item("EDO_FAP").Value
+        		edo_min_amt_MB = Extras.RiskDataEngine.Item("MBREAK").Item("EDO_MIN_AMOUNT").Value
+        
+        		'Foundations and Masonry Refractories
+        		is_Fmr_MB = Extras.RiskDataEngine.Item("MBREAK").Item("IS_FMR").Value		
+        		fmr_SumInsured_MB = Extras.RiskDataEngine.Item("MBREAK").Item("FMR_SUMINSURED").Value	
+        		fmr_Fap_MB = Extras.RiskDataEngine.Item("MBREAK").Item("FMR_FAP").Value
+        		fmr_min_amt_MB = Extras.RiskDataEngine.Item("MBREAK").Item("FMR_MIN_AMOUNT").Value
+        		
+        		'Riot and strike
+        		is_rs_MB = Extras.RiskDataEngine.Item("MBREAK").Item("IS_RIOT").Value			
+        		rs_Fap_MB = Extras.RiskDataEngine.Item("MBREAK").Item("RIOT_FAP").Value
+        		rs_min_amt_MB = Extras.RiskDataEngine.Item("MBREAK").Item("RIOT_MIN_AMOUNT").Value
+        		
+        		'---------------Endorsement---------------'
+        		Dim ClaimChild, Cnt, nIndex, RiskObject,ClaimObject
+        		Dim ClaimGrandChild, RiskGrandChild, GCnt, gIndex
+        		RiskObject = "MB_CLAUSEPREM"
+        		ClaimObject = "MBREAK"
+        		ClaimChild = "MB_CLAUSEPREM"
+        		Cnt = Extras.RiskDataEngine.Count(RiskObject)
+        
+        		For nIndex = 1 to Cnt
+        			Engine.Item(ClaimObject).NewObject(ClaimChild)
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"ENDORSE_CAP")
+        		Next
+        		
+        		'Recieve from risk directly to the claim screen
+        		
+        		'Machinery Breakdown Items
+        		iTotalCount = Extras.RiskDataEngine.Item("MBREAK").Count("MB_ITEM")
+        		For iCount = 1 To iTotalCount
+        			Engine.Item("MBREAK").NewObject("MB_ITEM")			
+        			Engine.Item("MBREAK").Item("MB_ITEM", iCount).Item("DATEADDED").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_ITEM", iCount).Item("DATEADDED").Value		
+        			Engine.Item("MBREAK").Item("MB_ITEM", iCount).Item("CATEG").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_ITEM", iCount).Item("CATEG").Value	
+        			Engine.Item("MBREAK").Item("MB_ITEM", iCount).Item("SUB_CATEG").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_ITEM", iCount).Item("SUB_CATEG").Value		
+        			Engine.Item("MBREAK").Item("MB_ITEM", iCount).Item("AGE").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_ITEM", iCount).Item("AGE").Value	
+        			Engine.Item("MBREAK").Item("MB_ITEM", iCount).Item("DESCRIPTN").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_ITEM", iCount).Item("DESCRIPTN").Value		
+        			Engine.Item("MBREAK").Item("MB_ITEM", iCount).Item("SUMINSURED").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_ITEM", iCount).Item("SUMINSURED").Value	
+        			Engine.Item("MBREAK").Item("MB_ITEM", iCount).Item("BOI").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_ITEM", iCount).Item("BOI").Value		
+        			Engine.Item("MBREAK").Item("MB_ITEM", iCount).Item("FAP").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_ITEM", iCount).Item("FAP").Value		
+        			Engine.Item("MBREAK").Item("MB_ITEM", iCount).Item("MINAMOUNT").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_ITEM", iCount).Item("MINAMOUNT").Value	
+        			Engine.Item("MBREAK").Item("MB_ITEM", iCount).Item("MAXAMOUNT").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_ITEM", iCount).Item("MAXAMOUNT").Value		
+        			Engine.Item("MBREAK").Item("MB_ITEM", iCount).Item("BASEDEDUCT").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_ITEM", iCount).Item("BASEDEDUCT").Value	
+        			
+        			
+        			'---------------Business All Risk Grand Child---------------'
+        			
+        			RiskObject = "MB_ITEM"
+        			ClaimObject = "MBREAK"
+        			ClaimChild = "MB_ITEM"
+        			nIndex = iCount
+        			RiskGrandChild = "MBITEM_CLAUSEPREM"
+        			ClaimGrandChild = "MBITEM_CLAUSEPREM"
+        			GCnt = Extras.RiskDataEngine.Item(RiskObject,nIndex).Count(RiskGrandChild)
+        			For gIndex = 1 to GCnt
+        				Engine.Item(ClaimObject).Item(ClaimChild,nIndex).NewObject(ClaimGrandChild)
+        				
+        				Call ToGrandChildClaim(RiskObject,RiskGrandChild,ClaimObject,ClaimChild,ClaimGrandChild,nIndex,gIndex,"ENDORSE_CAP")
+        			Next
+        			
+        			'Machinery Breakdown Items Note(Not printed)
+        			xTotalCount = Extras.RiskDataEngine.Item("MBREAK").Item("MB_ITEM", iCount).Count("MBITEM_CNOTE")
+        			
+        			For xCount = 1 To xTotalCount
+        				Engine.Item("MBREAK").Item("MB_ITEM", iCount).NewObject("MBITEM_CNOTE")
+        				Engine.Item("MBREAK").Item("MB_ITEM", iCount).Item("MBITEM_CNOTE", xCount).Item("DATE_CREATED").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_ITEM", iCount).Item("MBITEM_CNOTE", xCount).Item("DATE_CREATED").Value
+        				Engine.Item("MBREAK").Item("MB_ITEM", iCount).Item("MBITEM_CNOTE", xCount).Item("CREATED_BY").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_ITEM", iCount).Item("MBITEM_CNOTE", xCount).Item("CREATED_BY").Value
+        				Engine.Item("MBREAK").Item("MB_ITEM", iCount).Item("MBITEM_CNOTE", xCount).Item("COVER_TYPE").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_ITEM", iCount).Item("MBITEM_CNOTE", xCount).Item("COVER_TYPE").Value	
+        
+        				
+        				Engine.Item("MBREAK").Item("MB_ITEM", iCount).Item("MBITEM_CNOTE", xCount).Item("NOTE_DESCRIPTION").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_ITEM", iCount).Item("MBITEM_CNOTE", xCount).Item("NOTE_DESCRIPTION").Value
+        				
+        				Engine.Item("MBREAK").Item("MB_ITEM", iCount).Item("MBITEM_CNOTE", xCount).Item("NOTE_DETAILS").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_ITEM", iCount).Item("MBITEM_CNOTE", xCount).Item("NOTE_DETAILS").Value
+        			next 
+        			 
+        			
+        			'Machinery Breakdown Items Note(printed)
+        			jTotalCount = Extras.RiskDataEngine.Item("MBREAK").Item("MB_ITEM", iCount).Count("MBITEM_SCNOTE")
+        			
+        			For jCount = 1 To jTotalCount
+        				Engine.Item("MBREAK").Item("MB_ITEM", iCount).NewObject("MBITEM_SCNOTE")
+        				
+        				Engine.Item("MBREAK").Item("MB_ITEM", iCount).Item("MBITEM_SCNOTE", jCount).Item("DATE_CREATED").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_ITEM", iCount).Item("MBITEM_SCNOTE", jCount).Item("DATE_CREATED").Value	
+        			
+        				Engine.Item("MBREAK").Item("MB_ITEM", iCount).Item("MBITEM_SCNOTE", jCount).Item("CREATED_BY").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_ITEM", iCount).Item("MBITEM_SCNOTE", jCount).Item("CREATED_BY").Value	
+        				
+        				Engine.Item("MBREAK").Item("MB_ITEM", iCount).Item("MBITEM_SCNOTE", jCount).Item("COVER_TYPE").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_ITEM", iCount).Item("MBITEM_SCNOTE", jCount).Item("COVER_TYPE").Value	
+        	
+        				Engine.Item("MBREAK").Item("MB_ITEM", iCount).Item("MBITEM_SCNOTE", jCount).Item("NOTE_DESCRIPTION").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_ITEM", iCount).Item("MBITEM_SCNOTE", jCount).Item("NOTE_DESCRIPTION").Value	
+        				
+        				Engine.Item("MBREAK").Item("MB_ITEM", iCount).Item("MBITEM_SCNOTE", jCount).Item("NOTE_DETAILS").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_ITEM", iCount).Item("MBITEM_SCNOTE", jCount).Item("NOTE_DETAILS").Value	
+        			next
+        			
+        
+        		Next
+        		
+        		
+        		'Machinery Breakdown Other Extensions
+        		bTotalCount = Extras.RiskDataEngine.Item("MBREAK").Count("MB_OEXTENSIONS")
+        		
+        		For bCount = 1 To bTotalCount
+        			Engine.Item("MBREAK").NewObject("MB_OEXTENSIONS")		
+        			Engine.Item("MBREAK").Item("MB_OEXTENSIONS", bCount).Item("DESCRIPTION").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_OEXTENSIONS", bCount).Item("DESCRIPTION").Value		
+        			Engine.Item("MBREAK").Item("MB_OEXTENSIONS", bCount).Item("SUMINSURED").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_OEXTENSIONS", bCount).Item("SUMINSURED").Value		
+        			Engine.Item("MBREAK").Item("MB_OEXTENSIONS", bCount).Item("FAP").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_OEXTENSIONS", bCount).Item("FAP").Value		
+        			Engine.Item("MBREAK").Item("MB_OEXTENSIONS", bCount).Item("MIN_AMOUNT").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_OEXTENSIONS", bCount).Item("MIN_AMOUNT").Value
+        		Next
+        		
+        		 
+        		
+        		'Machinery Breakdown First Amount Payable
+        		cTotalCount = Extras.RiskDataEngine.Item("MBREAK").Count("MB_FAP")
+        		
+        		For cCount = 1 To cTotalCount
+        			Engine.Item("MBREAK").NewObject("MB_FAP")		
+        			Engine.Item("MBREAK").Item("MB_FAP", cCount).Item("FAPDESCRIPTION").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_FAP", cCount).Item("FAPDESCRIPTION").Value
+        			Engine.Item("MBREAK").Item("MB_FAP", cCount).Item("FAPCHILD_PERC").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_FAP", cCount).Item("FAPCHILD_PERC").Value		
+        			Engine.Item("MBREAK").Item("MB_FAP", cCount).Item("FAPCHILD_MIN_AMOUNT").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_FAP", cCount).Item("FAPCHILD_MIN_AMOUNT").Value		
+        		Next
+        		
+        		
+        	
+        		
+        		'Machinery Breakdown notes (not printed)
+        		tTotalCount = Extras.RiskDataEngine.Item("MBREAK").Count("MB_NOTES")
+        		For tCount = 1 To tTotalCount
+        			Engine.Item("MBREAK").NewObject("MB_NOTES")	
+        			Engine.Item("MBREAK").Item("MB_NOTES", iiCount).Item("DATE_CREATED").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_NOTES", iiCount).Item("DATE_CREATED").Value		
+        			Engine.Item("MBREAK").Item("MB_NOTES", iiCount).Item("CREATED_BY").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_NOTES", iiCount).Item("CREATED_BY").Value		
+        			Engine.Item("MBREAK").Item("MB_NOTES", iiCount).Item("COVER_TYPE").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_NOTES", iiCount).Item("COVER_TYPE").Value		
+        			Engine.Item("MBREAK").Item("MB_NOTES", tCount).Item("NOTE_DESCRIPTION").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_NOTES", tCount).Item("NOTE_DESCRIPTION").Value		
+        			Engine.Item("MBREAK").Item("MB_NOTES", tCount).Item("NOTE_DETAILS").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_NOTES", tCount).Item("NOTE_DETAILS").Value		
+        		Next
+        		
+        		
+        		
+        		'Machinery Breakdown notes ( printed)
+        		iiTotalCount = Extras.RiskDataEngine.Item("MBREAK").Count("MB_SNOTES")
+        		For iiCount = 1 To iiTotalCount
+        			Engine.Item("MBREAK").NewObject("MB_SNOTES")	
+        			
+        			Engine.Item("MBREAK").Item("MB_SNOTES", iiCount).Item("DATE_CREATED").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_SNOTES", iiCount).Item("DATE_CREATED").Value		
+        			Engine.Item("MBREAK").Item("MB_SNOTES", iiCount).Item("CREATED_BY").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_SNOTES", iiCount).Item("CREATED_BY").Value		
+        			Engine.Item("MBREAK").Item("MB_SNOTES", iiCount).Item("COVER_TYPE").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_SNOTES", iiCount).Item("COVER_TYPE").Value		
+        			Engine.Item("MBREAK").Item("MB_SNOTES", iiCount).Item("NOTE_DESCRIPTION").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_SNOTES", iiCount).Item("NOTE_DESCRIPTION").Value		
+        			Engine.Item("MBREAK").Item("MB_SNOTES", iiCount).Item("NOTE_DETAILS").Value = Extras.RiskDataEngine.Item("MBREAK").Item("MB_SNOTES", iiCount).Item("NOTE_DETAILS").Value		
+        		Next
+        		
+        		
+        		'Send data to the claim screen
+        		'Collect data from Policy risk Machinery Breakdown Selection
+        		Engine.Item("MBREAK").Item("IS_MACH").Value = is_MB
+        		Engine.Item("MBREAK").Item("IS_CL_BI").Value = is_CL
+        		Engine.Item("MBREAK").Item("IS_DOS").Value = is_DS
+        		
+        
+        		'Collect data from Machinery Breakdown 
+        		Engine.Item("MBREAK").Item("ATTACHMENTDATE").Value = att_date_MB
+        		Engine.Item("MBREAK").Item("EFFECTIVEDATE").Value = eff_date_MB
+        		
+        		'Collect data from Machinery Breakdown Extensions
+        		'Additional Claims Preparation Costs
+        		
+        		Engine.Item("MBREAK").Item("IS_ACPC").Value = is_Acpc_MB
+        		Engine.Item("MBREAK").Item("ACPC_SUMINSURED").Value = acpc_SumInsured_MB
+        		
+        		'Express Delivery and Overtime
+        		
+        		 Engine.Item("MBREAK").Item("IS_EDO").Value = is_Edo_MB	
+        		 Engine.Item("MBREAK").Item("EDO_SUMINSURED").Value = edo_SumInsured_MB
+        		 Engine.Item("MBREAK").Item("EDO_FAP").Value = edo_Fap_MB
+        		 Engine.Item("MBREAK").Item("EDO_MIN_AMOUNT").Value = edo_min_amt_MB
+        
+        		'Foundations and Masonry Refractories
+        		 Engine.Item("MBREAK").Item("IS_FMR").Value = is_Fmr_MB	
+        		 Engine.Item("MBREAK").Item("FMR_SUMINSURED").Value = fmr_SumInsured_MB
+        		 Engine.Item("MBREAK").Item("FMR_FAP").Value = fmr_Fap_MB
+        		 Engine.Item("MBREAK").Item("FMR_MIN_AMOUNT").Value = fmr_min_amt_MB
+        		
+        		'Riot and strike
+        		 Engine.Item("MBREAK").Item("IS_RIOT").Value = is_rs_MB		
+        		 Engine.Item("MBREAK").Item("RIOT_FAP").Value = rs_Fap_MB
+        		 Engine.Item("MBREAK").Item("RIOT_MIN_AMOUNT").Value = rs_min_amt_MB
+        		 
+        		
+        		 
+        'Consequential Loss 
+        
+        	'Collect and send data from Machinery Breakdown to claim
+        		Engine.Item("CLOSS").Item("ATTACHMENTDATE").Value = Extras.RiskDataEngine.Item("CLOSS").Item("ATTACHMENTDATE").Value
+        		Engine.Item("CLOSS").Item("EFFECTIVEDATE").Value = Extras.RiskDataEngine.Item("CLOSS").Item("EFFECTIVEDATE").Value
+        		
+        		Engine.Item("CLOSS").Item("CL_TOTSUMIN").Value = Extras.RiskDataEngine.Item("CLOSS").Item("CL_TOTSUMIN").Value
+        		
+        		Engine.Item("CLOSS").Item("DATEADDED").Value = Extras.RiskDataEngine.Item("CLOSS").Item("DATEADDED").Value
+        		Engine.Item("CLOSS").Item("TYPE").Value = Extras.RiskDataEngine.Item("CLOSS").Item("TYPE").Value
+        		Engine.Item("CLOSS").Item("BASIS").Value = Extras.RiskDataEngine.Item("CLOSS").Item("BASIS").Value
+        		Engine.Item("CLOSS").Item("IND_PER_UNIT").Value = Extras.RiskDataEngine.Item("CLOSS").Item("IND_PER_UNIT").Value
+        		Engine.Item("CLOSS").Item("IND_PER").Value = Extras.RiskDataEngine.Item("CLOSS").Item("IND_PER").Value
+        		Engine.Item("CLOSS").Item("SUM_INSURED").Value = Extras.RiskDataEngine.Item("CLOSS").Item("SUM_INSURED").Value
+        		Engine.Item("CLOSS").Item("TIME_EX_UNIT").Value = Extras.RiskDataEngine.Item("CLOSS").Item("TIME_EX_UNIT").Value
+        		Engine.Item("CLOSS").Item("TIME_EXC").Value = Extras.RiskDataEngine.Item("CLOSS").Item("TIME_EXC").Value
+        		Engine.Item("CLOSS").Item("FAP").Value = Extras.RiskDataEngine.Item("CLOSS").Item("FAP").Value
+        		Engine.Item("CLOSS").Item("MINAMOUNT").Value = Extras.RiskDataEngine.Item("CLOSS").Item("MINAMOUNT").Value
+        		
+        		'CLOSS - Additional Claims Preparation Costs
+        		
+        		Engine.Item("CLOSS").Item("IS_ACPC").Value = Extras.RiskDataEngine.Item("CLOSS").Item("IS_ACPC").Value		
+        		Engine.Item("CLOSS").Item("ACPC_SUMINSURED").Value = Extras.RiskDataEngine.Item("CLOSS").Item("ACPC_SUMINSURED").Value
+        		
+        		'CLOSS - Additional Increase Cost of Working
+        		
+        		Engine.Item("CLOSS").Item("IS_AICOW").Value = Extras.RiskDataEngine.Item("CLOSS").Item("IS_AICOW").Value		
+        		Engine.Item("CLOSS").Item("AICOW_SUMINSURED").Value = Extras.RiskDataEngine.Item("CLOSS").Item("AICOW_SUMINSURED").Value
+        		Engine.Item("CLOSS").Item("AICOW_FAP").Value = Extras.RiskDataEngine.Item("CLOSS").Item("AICOW_FAP").Value
+        		Engine.Item("CLOSS").Item("AICOW_MIN_AMOUNT").Value = Extras.RiskDataEngine.Item("CLOSS").Item("AICOW_MIN_AMOUNT").Value
+        		
+        		'CLOSS - Increase Cost of Workingng
+        		
+        		Engine.Item("CLOSS").Item("IS_ICOW").Value = Extras.RiskDataEngine.Item("CLOSS").Item("IS_ICOW").Value		
+        		Engine.Item("CLOSS").Item("ICOW_SUMINSURED").Value = Extras.RiskDataEngine.Item("CLOSS").Item("ICOW_SUMINSURED").Value
+        		Engine.Item("CLOSS").Item("ICOW_FAP").Value = Extras.RiskDataEngine.Item("CLOSS").Item("ICOW_FAP").Value
+        		Engine.Item("CLOSS").Item("ICOW_MIN_AMOUNT").Value = Extras.RiskDataEngine.Item("CLOSS").Item("ICOW_MIN_AMOUNT").Value
+        		
+        		RiskObject = "CL_CLAUSEPREM"
+        		ClaimObject = "CLOSS"
+        		ClaimChild = "CL_CLAUSEPREM"
+        		Cnt = Extras.RiskDataEngine.Count(RiskObject)
+        
+        		For nIndex = 1 to Cnt
+        			Engine.Item(ClaimObject).NewObject(ClaimChild)
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"ENDORSE_CAP")
+        		Next
+        	
+        		'CLOSS Notes(Not printed)
+        		
+        		ttTotalCount = Extras.RiskDataEngine.Item("CLOSS").Count("CL_NOTES")
+        		
+        		For ttCount = 1 To ttTotalCount
+        			Engine.Item("CLOSS").NewObject("CL_NOTES")		
+        			
+        			Engine.Item("CLOSS").Item("CL_NOTES", ttCount).Item("DATE_CREATED").Value = Extras.RiskDataEngine.Item("CLOSS").Item("CL_NOTES", ttCount).Item("DATE_CREATED").Value
+        			
+        			Engine.Item("CLOSS").Item("CL_NOTES", ttCount).Item("CREATED_BY").Value = Extras.RiskDataEngine.Item("CLOSS").Item("CL_NOTES", ttCount).Item("CREATED_BY").Value		
+        
+        			Engine.Item("CLOSS").Item("CL_NOTES", ttCount).Item("COVER_TYPE").Value = Extras.RiskDataEngine.Item("CLOSS").Item("CL_NOTES", ttCount).Item("COVER_TYPE").Value		
+        		
+        			Engine.Item("CLOSS").Item("CL_NOTES", ttCount).Item("NOTE_DESCRIPTION").Value = Extras.RiskDataEngine.Item("CLOSS").Item("CL_NOTES", ttCount).Item("NOTE_DESCRIPTION").Value
+        			
+        			Engine.Item("CLOSS").Item("CL_NOTES", ttCount).Item("NOTE_DETAILS").Value = Extras.RiskDataEngine.Item("CLOSS").Item("CL_NOTES", ttCount).Item("NOTE_DETAILS").Value		
+        		Next
+        		
+        		'CLOSS Notes(printed)
+        		
+        		stTotalCount = Extras.RiskDataEngine.Item("CLOSS").Count("CL_SNOTES")
+        		
+        		For stCount = 1 To stTotalCount
+        			Engine.Item("CLOSS").NewObject("CL_SNOTES")		
+        			
+        			Engine.Item("CLOSS").Item("CL_SNOTES", stCount).Item("DATE_CREATED").Value = Extras.RiskDataEngine.Item("CLOSS").Item("CL_SNOTES", stCount).Item("DATE_CREATED").Value
+        			
+        			Engine.Item("CLOSS").Item("CL_SNOTES", stCount).Item("CREATED_BY").Value = Extras.RiskDataEngine.Item("CLOSS").Item("CL_SNOTES", stCount).Item("CREATED_BY").Value		
+        
+        			Engine.Item("CLOSS").Item("CL_SNOTES", stCount).Item("COVER_TYPE").Value = Extras.RiskDataEngine.Item("CLOSS").Item("CL_SNOTES", stCount).Item("COVER_TYPE").Value		
+        
+        			Engine.Item("CLOSS").Item("CL_SNOTES", stCount).Item("NOTE_DESCRIPTION").Value = Extras.RiskDataEngine.Item("CLOSS").Item("CL_SNOTES", stCount).Item("NOTE_DESCRIPTION").Value
+        			
+        			Engine.Item("CLOSS").Item("CL_SNOTES", stCount).Item("NOTE_DETAILS").Value = Extras.RiskDataEngine.Item("CLOSS").Item("CL_SNOTES", stCount).Item("NOTE_DETAILS").Value		
+        		Next
+        		
+        			
+        		 
+        		
+        	
+        	'Deterioration of Stock
+        
+        		'Collect and send data from Machinery Breakdown to claim
+        			Engine.Item("DSTOCK").Item("ATTACHMENTDATE").Value = Extras.RiskDataEngine.Item("DSTOCK").Item("ATTACHMENTDATE").Value
+        			Engine.Item("DSTOCK").Item("EFFECTIVEDATE").Value = Extras.RiskDataEngine.Item("DSTOCK").Item("EFFECTIVEDATE").Value
+        			
+        			Engine.Item("DSTOCK").Item("DET_TOTSUMIN").Value = Extras.RiskDataEngine.Item("DSTOCK").Item("DET_TOTSUMIN").Value
+        			
+        		RiskObject = "DS_CLAUSEPREM"
+        		ClaimObject = "DSTOCK"
+        		ClaimChild = "DS_CLAUSEPREM"
+        		Cnt = Extras.RiskDataEngine.Count(RiskObject)
+        
+        		For nIndex = 1 to Cnt
+        			Engine.Item(ClaimObject).NewObject(ClaimChild)
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"ENDORSE_CAP")
+        		Next
+        			
+        		'Deterioration of Stock Items
+        		aaTotalCount = Extras.RiskDataEngine.Item("DSTOCK").Count("DS_ITEM")
+        		For aaCount = 1 To aaTotalCount
+        			Engine.Item("DSTOCK").NewObject("DS_ITEM")			
+        			Engine.Item("DSTOCK").Item("DS_ITEM", aaCount).Item("DATEADDED").Value = Extras.RiskDataEngine.Item("DSTOCK").Item("DS_ITEM", aaCount).Item("DATEADDED").Value		
+        			Engine.Item("DSTOCK").Item("DS_ITEM", aaCount).Item("DESCRIPTN").Value = Extras.RiskDataEngine.Item("DSTOCK").Item("DS_ITEM", aaCount).Item("DESCRIPTN").Value		
+        			Engine.Item("DSTOCK").Item("DS_ITEM", aaCount).Item("SUMINSURED").Value = Extras.RiskDataEngine.Item("DSTOCK").Item("DS_ITEM", aaCount).Item("SUMINSURED").Value	
+        			Engine.Item("DSTOCK").Item("DS_ITEM", aaCount).Item("FAP").Value = Extras.RiskDataEngine.Item("DSTOCK").Item("DS_ITEM", aaCount).Item("FAP").Value		
+        			Engine.Item("DSTOCK").Item("DS_ITEM", aaCount).Item("MINAMOUNT").Value = Extras.RiskDataEngine.Item("DSTOCK").Item("DS_ITEM", aaCount).Item("MINAMOUNT").Value	
+        			Engine.Item("DSTOCK").Item("DS_ITEM", aaCount).Item("MAXAMOUNT").Value = Extras.RiskDataEngine.Item("DSTOCK").Item("DS_ITEM", aaCount).Item("MAXAMOUNT").Value		
+        			Engine.Item("DSTOCK").Item("DS_ITEM", aaCount).Item("TIME_EXCESS").Value = Extras.RiskDataEngine.Item("DSTOCK").Item("DS_ITEM", aaCount).Item("TIME_EXCESS").Value	
+        			
+        			
+        			'---------------Business All Risk Grand Child---------------'
+        			
+        			RiskObject = "DS_ITEM"
+        			ClaimObject = "DSTOCK"
+        			ClaimChild = "DS_ITEM"
+        			nIndex = aaCount
+        			RiskGrandChild = "DSITEM_CLAUSEPREM"
+        			ClaimGrandChild = "DSITEM_CLAUSEPREM"
+        			GCnt = Extras.RiskDataEngine.Item(RiskObject,nIndex).Count(RiskGrandChild)
+        			For gIndex = 1 to GCnt
+        				Engine.Item(ClaimObject).Item(ClaimChild,nIndex).NewObject(ClaimGrandChild)
+        				
+        				Call ToGrandChildClaim(RiskObject,RiskGrandChild,ClaimObject,ClaimChild,ClaimGrandChild,nIndex,gIndex,"ENDORSE_CAP")
+        			Next
+        	
+        			'Deterioration of Stock Items Note(Not printed)
+        			xxTotalCount = Extras.RiskDataEngine.Item("DSTOCK").Item("DS_ITEM",aaCount).Count("DSITEM_NOTES")
+        			
+        			For xxCount = 1 To xxTotalCount
+        				Engine.Item("DSTOCK").Item("DS_ITEM",aaCount).NewObject("DSITEM_NOTES")
+        				
+        					
+        				Engine.Item("DSTOCK").Item("DS_ITEM",aaCount).Item("DSITEM_NOTES", xxCount).Item("DATE_CREATED").Value = Extras.RiskDataEngine.Item("DSTOCK").Item("DS_ITEM",aaCount).Item("DSITEM_NOTES", xxCount).Item("DATE_CREATED").Value
+        				
+        				Engine.Item("DSTOCK").Item("DS_ITEM",aaCount).Item("DSITEM_NOTES", xxCount).Item("CREATED_BY").Value = Extras.RiskDataEngine.Item("DSTOCK").Item("DS_ITEM",aaCount).Item("DSITEM_NOTES", xxCount).Item("CREATED_BY").Value	
+        							
+        				Engine.Item("DSTOCK").Item("DS_ITEM",aaCount).Item("DSITEM_NOTES", xxCount).Item("COVER_TYPE").Value = Extras.RiskDataEngine.Item("DSTOCK").Item("DS_ITEM",aaCount).Item("DSITEM_NOTES", xxCount).Item("COVER_TYPE").Value			
+        				
+        				Engine.Item("DSTOCK").Item("DS_ITEM",aaCount).Item("DSITEM_NOTES", xxCount).Item("NOTE_DESCRIPTION").Value = Extras.RiskDataEngine.Item("DSTOCK").Item("DS_ITEM",aaCount).Item("DSITEM_NOTES", xxCount).Item("NOTE_DESCRIPTION").Value
+        				
+        				Engine.Item("DSTOCK").Item("DS_ITEM",aaCount).Item("DSITEM_NOTES", xxCount).Item("NOTE_DETAILS").Value = Extras.RiskDataEngine.Item("DSTOCK").Item("DS_ITEM",aaCount).Item("DSITEM_NOTES", xxCount).Item("NOTE_DETAILS").Value	
+        			
+        			next 
+        			 
+        			
+        			'Deterioration of Stock Items Note(printed)
+        			yTotalCount = Extras.RiskDataEngine.Item("DSTOCK").Item("DS_ITEM",aaCount).Count("DSITEM_SNOTES")
+        			
+        			For yCount = 1 To yTotalCount
+        				Engine.Item("DSTOCK").Item("DS_ITEM",aaCount).NewObject("DSITEM_SNOTES")
+        				
+        				Engine.Item("DSTOCK").Item("DS_ITEM",aaCount).Item("DSITEM_SNOTES", yCount).Item("DATE_CREATED").Value = Extras.RiskDataEngine.Item("DSTOCK").Item("DS_ITEM",aaCount).Item("DSITEM_SNOTES", yCount).Item("DATE_CREATED").Value	
+        				
+        				Engine.Item("DSTOCK").Item("DS_ITEM",aaCount).Item("DSITEM_SNOTES", yCount).Item("CREATED_BY").Value = Extras.RiskDataEngine.Item("DSTOCK").Item("DS_ITEM",aaCount).Item("DSITEM_SNOTES", yCount).Item("CREATED_BY").Value	
+        			
+        				Engine.Item("DSTOCK").Item("DS_ITEM",aaCount).Item("DSITEM_SNOTES", yCount).Item("COVER_TYPE").Value = Extras.RiskDataEngine.Item("DSTOCK").Item("DS_ITEM",aaCount).Item("DSITEM_SNOTES", yCount).Item("COVER_TYPE").Value	
+        
+        				Engine.Item("DSTOCK").Item("DS_ITEM",aaCount).Item("DSITEM_SNOTES", yCount).Item("NOTE_DESCRIPTION").Value = Extras.RiskDataEngine.Item("DSTOCK").Item("DS_ITEM",aaCount).Item("DSITEM_SNOTES", yCount).Item("NOTE_DESCRIPTION").Value	
+        				
+        				Engine.Item("DSTOCK").Item("DS_ITEM",aaCount).Item("DSITEM_SNOTES", yCount).Item("NOTE_DETAILS").Value = Extras.RiskDataEngine.Item("DSTOCK").Item("DS_ITEM",aaCount).Item("DSITEM_SNOTES", yCount).Item("NOTE_DETAILS").Value	
+        			
+        			next
+        			
+        		Next
+        		
+        	
+        	
+        		'Deterioration of Stock Notes(Not printed)
+        		
+        		oTotalCount = Extras.RiskDataEngine.Item("DSTOCK").Count("DS_NOTES")
+        		
+        		For oCount = 1 To oTotalCount
+        			Engine.Item("DSTOCK").NewObject("DS_NOTES")		
+        			
+        			Engine.Item("DSTOCK").Item("DS_NOTES", oCount).Item("DATE_CREATED").Value = Extras.RiskDataEngine.Item("DSTOCK").Item("DS_NOTES", oCount).Item("DATE_CREATED").Value
+        			
+        			Engine.Item("DSTOCK").Item("DS_NOTES", oCount).Item("CREATED_BY").Value = Extras.RiskDataEngine.Item("DSTOCK").Item("DS_NOTES", oCount).Item("CREATED_BY").Value		
+        		
+        			Engine.Item("DSTOCK").Item("DS_NOTES", oCount).Item("COVER_TYPE").Value = Extras.RiskDataEngine.Item("DSTOCK").Item("DS_NOTES", oCount).Item("COVER_TYPE").Value	
+        			
+        			Engine.Item("DSTOCK").Item("DS_NOTES", oCount).Item("NOTE_DESCRIPTION").Value = Extras.RiskDataEngine.Item("DSTOCK").Item("DS_NOTES", oCount).Item("NOTE_DESCRIPTION").Value
+        			
+        			Engine.Item("DSTOCK").Item("DS_NOTES", oCount).Item("NOTE_DETAILS").Value = Extras.RiskDataEngine.Item("DSTOCK").Item("DS_NOTES", oCount).Item("NOTE_DETAILS").Value		
+        		Next
+        		
+        		'Deterioration of Stock Notes(printed)
+        		
+        		rTotalCount = Extras.RiskDataEngine.Item("DSTOCK").Count("DS_SNOTES")
+        		
+        		For rCount = 1 To rTotalCount
+        			Engine.Item("DSTOCK").NewObject("DS_SNOTES")	
+        
+        			
+        			Engine.Item("DSTOCK").Item("DS_SNOTES", rCount).Item("DATE_CREATED").Value = Extras.RiskDataEngine.Item("DSTOCK").Item("DS_SNOTES", rCount).Item("DATE_CREATED").Value
+        			
+        			Engine.Item("DSTOCK").Item("DS_SNOTES", rCount).Item("CREATED_BY").Value = Extras.RiskDataEngine.Item("DSTOCK").Item("DS_SNOTES", rCount).Item("CREATED_BY").Value		
+        		
+        			Engine.Item("DSTOCK").Item("DS_SNOTES", rCount).Item("COVER_TYPE").Value = Extras.RiskDataEngine.Item("DSTOCK").Item("DS_SNOTES", rCount).Item("COVER_TYPE").Value	
+        			
+        			Engine.Item("DSTOCK").Item("DS_SNOTES", rCount).Item("NOTE_DESCRIPTION").Value = Extras.RiskDataEngine.Item("DSTOCK").Item("DS_SNOTES", rCount).Item("NOTE_DESCRIPTION").Value
+        			
+        			Engine.Item("DSTOCK").Item("DS_SNOTES", rCount).Item("NOTE_DETAILS").Value = Extras.RiskDataEngine.Item("DSTOCK").Item("DS_SNOTES", rCount).Item("NOTE_DETAILS").Value
+        			
+        		Next
+        		
+        
+        			
+        		'Overview
+        		
+        		'Machinery Breakdown 
+        		
+        		Engine.Item("EXPOSURE_SUMMARY").Item("MB_TOTAL_SI").Value = Extras.RiskDataEngine.Item("EXPOSURE_SUMMARY").Item("MB_TOTAL_SI").Value		
+        		Engine.Item("EXPOSURE_SUMMARY").Item("MB_EML").Value = Extras.RiskDataEngine.Item("EXPOSURE_SUMMARY").Item("MB_EML").Value
+        		Engine.Item("EXPOSURE_SUMMARY").Item("MB_RI_EXP").Value = Extras.RiskDataEngine.Item("EXPOSURE_SUMMARY").Item("MB_RI_EXP").Value
+        		Engine.Item("EXPOSURE_SUMMARY").Item("MB_RI_EXPVAT").Value = Extras.RiskDataEngine.Item("EXPOSURE_SUMMARY").Item("MB_RI_EXPVAT").Value
+        		
+        		'Machinery Breakdown Additional Claims Preparations Costs 
+        						
+        		Engine.Item("EXPOSURE_SUMMARY").Item("MBACPC_TOTAL_SI").Value = Extras.RiskDataEngine.Item("EXPOSURE_SUMMARY").Item("MBACPC_TOTAL_SI").Value		
+        		Engine.Item("EXPOSURE_SUMMARY").Item("MBACPC_EML").Value = Extras.RiskDataEngine.Item("EXPOSURE_SUMMARY").Item("MBACPC_EML").Value
+        		Engine.Item("EXPOSURE_SUMMARY").Item("MBACPC_RI_EXP").Value = Extras.RiskDataEngine.Item("EXPOSURE_SUMMARY").Item("MBACPC_RI_EXP").Value
+        		Engine.Item("EXPOSURE_SUMMARY").Item("MBACPC_RI_EXPVAT").Value = Extras.RiskDataEngine.Item("EXPOSURE_SUMMARY").Item("MBACPC_RI_EXPVAT").Value
+        			
+        		'Consequential Loss Gross Profit/Revenue	
+        										
+        		Engine.Item("EXPOSURE_SUMMARY").Item("CONSLGPR_TOTAL_SI").Value = Extras.RiskDataEngine.Item("EXPOSURE_SUMMARY").Item("CONSLGPR_TOTAL_SI").Value		
+        		Engine.Item("EXPOSURE_SUMMARY").Item("CONSLGPR_EML").Value = Extras.RiskDataEngine.Item("EXPOSURE_SUMMARY").Item("CONSLGPR_EML").Value
+        		Engine.Item("EXPOSURE_SUMMARY").Item("CONSLGPR_RI_EXP").Value = Extras.RiskDataEngine.Item("EXPOSURE_SUMMARY").Item("CONSLGPR_RI_EXP").Value
+        		Engine.Item("EXPOSURE_SUMMARY").Item("CONSLGPR_RI_EXPVAT").Value = Extras.RiskDataEngine.Item("EXPOSURE_SUMMARY").Item("CONSLGPR_RI_EXPVAT").Value
+        				
+        		'Consequential Loss Additional Claims Preparation Cost		
+        											
+        		Engine.Item("EXPOSURE_SUMMARY").Item("CONSLACPC_TOTAL_SI").Value = Extras.RiskDataEngine.Item("EXPOSURE_SUMMARY").Item("CONSLACPC_TOTAL_SI").Value		
+        		Engine.Item("EXPOSURE_SUMMARY").Item("CONSLACPC_EML").Value = Extras.RiskDataEngine.Item("EXPOSURE_SUMMARY").Item("CONSLACPC_EML").Value
+        		Engine.Item("EXPOSURE_SUMMARY").Item("CONSLACPC_RI_EXP").Value = Extras.RiskDataEngine.Item("EXPOSURE_SUMMARY").Item("CONSLACPC_RI_EXP").Value
+        		Engine.Item("EXPOSURE_SUMMARY").Item("CONSLACPC_RI_EXPVAT").Value = Extras.RiskDataEngine.Item("EXPOSURE_SUMMARY").Item("CONSLACPC_RI_EXPVAT").value
+        		
+        		'Deterioration of Stock
+        		
+        		Engine.Item("EXPOSURE_SUMMARY").Item("MBDETOST_TOTAL_SI").Value = Extras.RiskDataEngine.Item("EXPOSURE_SUMMARY").Item("MBDETOST_TOTAL_SI").Value		
+        		Engine.Item("EXPOSURE_SUMMARY").Item("MBDETOST_EML").Value = Extras.RiskDataEngine.Item("EXPOSURE_SUMMARY").Item("MBDETOST_EML").Value
+        		Engine.Item("EXPOSURE_SUMMARY").Item("MBDETOST_RI_EXP").Value = Extras.RiskDataEngine.Item("EXPOSURE_SUMMARY").Item("MBDETOST_RI_EXP").Value
+        		Engine.Item("EXPOSURE_SUMMARY").Item("MBDETOST_RI_EXPVAT").Value = Extras.RiskDataEngine.Item("EXPOSURE_SUMMARY").Item("MBDETOST_RI_EXPVAT").value
+        		
+        		'Totals
+        		
+        		Engine.Item("EXPOSURE_SUMMARY").Item("TOTAL_SI").Value = Extras.RiskDataEngine.Item("EXPOSURE_SUMMARY").Item("TOTAL_SI").Value		
+        		Engine.Item("EXPOSURE_SUMMARY").Item("TOTAL_RI_EXP").Value = Extras.RiskDataEngine.Item("EXPOSURE_SUMMARY").Item("TOTAL_RI_EXP").Value
+        		Engine.Item("EXPOSURE_SUMMARY").Item("TOTAL_RI_EXPVAT").Value = Extras.RiskDataEngine.Item("EXPOSURE_SUMMARY").Item("TOTAL_RI_EXPVAT").Value
+        		
+        End Sub
+        
+        '**********************************************************************************************
+        'Load Risk Data to Claim Screens
+        '**********************************************************************************************
+        Sub PullFromRiskFG()
+        	
+        	Dim iTotalCount
+        	Dim iCount
+          	
+        	'Total Sum insured
+        	Engine.Item("FIDGUAR").Item("RISK_ATTACH_DATE").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("RISK_ATTACH_DATE").Value 
+        	Engine.Item("FIDGUAR").Item("EFFECTIVEDATE").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("EFFECTIVEDATE").Value 
+        	Engine.Item("FIDGUAR").Item("FG0_12_MONTHS").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("FG0_12_MONTHS").Value 
+        	Engine.Item("FIDGUAR").Item("FG0_12_AMOUNT").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("FG0_12_AMOUNT").Value 
+        	
+        	Engine.Item("FIDGUAR").Item("FG13_24_MONTHS").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("FG13_24_MONTHS").Value 
+        	Engine.Item("FIDGUAR").Item("FG13_24_AMOUNT").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("FG13_24_AMOUNT").Value 
+        	Engine.Item("FIDGUAR").Item("FG25_36_MONTHS").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("FG25_36_MONTHS").Value 
+        	Engine.Item("FIDGUAR").Item("FG25_36_AMOUNT").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("FG25_36_AMOUNT").Value 
+        	Engine.Item("FIDGUAR").Item("NUMEMP").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("NUMEMP").Value 
+        	
+        	Engine.Item("FIDGUAR").Item("SUMINSURED").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("SUMINSURED").Value 
+        	Engine.Item("FIDGUAR").Item("BS_TOTSUMIN").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("BS_TOTSUMIN").Value 
+        	
+        	Engine.Item("FIDGUAR").Item("FMIMAMOUNT").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("FMIMAMOUNT").Value 
+        	Engine.Item("FIDGUAR").Item("FAPMIN").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("FAPMIN").Value 
+        	 
+        	Engine.Item("FIDGUAR").Item("ADDMIN").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("ADDMIN").Value
+        	Engine.Item("FIDGUAR").Item("ADDMINAMOUNT").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("ADDMINAMOUNT").Value 
+        	Engine.Item("FIDGUAR").Item("EXCESAMNT").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("EXCESAMNT").Value
+        
+        	Engine.Item("FIDGUAR").Item("IS_ACPC").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("IS_ACPC").Value
+        	Engine.Item("FIDGUAR").Item("ACPC_SUMINSURED").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("ACPC_SUMINSURED").Value
+        	Engine.Item("FIDGUAR").Item("IS_COML").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("IS_COML").Value
+        	
+        	Engine.Item("FIDGUAR").Item("COML_FAP").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("COML_FAP").Value
+        	Engine.Item("FIDGUAR").Item("COML_MIN_AMOUNT").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("COML_MIN_AMOUNT").Value
+        	
+        	Engine.Item("FIDGUAR").Item("IS_COR").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("IS_COR").Value
+        	Engine.Item("FIDGUAR").Item("COR_SUMINSURED").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("COR_SUMINSURED").Value
+        	Engine.Item("FIDGUAR").Item("COR_FAP").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("COR_FAP").Value
+        	
+        	Engine.Item("FIDGUAR").Item("COR_MIN_AMOUNT").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("COR_MIN_AMOUNT").Value
+        	Engine.Item("FIDGUAR").Item("IS_EXTORTION").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("IS_EXTORTION").Value
+        	
+        	Engine.Item("FIDGUAR").Item("IS_LOSS24").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("IS_LOSS24").Value
+        	Engine.Item("FIDGUAR").Item("LOSS24_FAP").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("LOSS24_FAP").Value
+        	Engine.Item("FIDGUAR").Item("LOSS24_MIN").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("LOSS24_MIN").Value
+        	
+        	Engine.Item("FIDGUAR").Item("IS_RED").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("IS_RED").Value
+        	Engine.Item("FIDGUAR").Item("RED_FAP").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("RED_FAP").Value
+        	Engine.Item("FIDGUAR").Item("RED_MIN").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("RED_MIN").Value
+        	Engine.Item("FIDGUAR").Item("IS_RET").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("IS_RET").Value
+        	Engine.Item("FIDGUAR").Item("RET_FAP").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("RET_FAP").Value
+        	Engine.Item("FIDGUAR").Item("RET_MIN").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("RET_MIN").Value
+        	Engine.Item("FIDGUAR").Item("RET_DATE").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("RET_DATE").Value
+        	
+        	Engine.Item("FIDGUAR").Item("IS_SUPERCEDE").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("IS_SUPERCEDE").Value
+        	Engine.Item("FIDGUAR").Item("SUP_SUMINSURED").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("SUP_SUMINSURED").Value
+        	Engine.Item("FIDGUAR").Item("SUP_FAP").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("SUP_FAP").Value
+        	Engine.Item("FIDGUAR").Item("SUP_MIN").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("SUP_MIN").Value
+        	Engine.Item("FIDGUAR").Item("COMMENT").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("COMMENT").Value
+        	
+        	
+        	Engine.Item("FIDGUAR").Item("POL_NUM").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("POL_NUM").Value
+        	Engine.Item("FIDGUAR").Item("EFF_DATE").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("EFF_DATE").Value
+        	Engine.Item("FIDGUAR").Item("NUM_YEARS").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("NUM_YEARS").Value
+        	Engine.Item("FIDGUAR").Item("INSURER").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("INSURER").Value
+        		
+        	'Section A notes (printed)
+        	iTotalCount = Extras.RiskDataEngine.Item("FIDGUAR").Count("FIDGNOTES")
+        	For iCount = 1 To iTotalCount
+        		Engine.Item("FIDGUAR").NewObject("FIDGNOTES")		
+        		Engine.Item("FIDGUAR").Item("FIDGNOTES", iCount).Item("DATE_CREATED").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("FIDGNOTES", iCount).Item("DATE_CREATED").Value		
+        		Engine.Item("FIDGUAR").Item("FIDGNOTES", iCount).Item("CREATED_BY").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("FIDGNOTES", iCount).Item("CREATED_BY").Value			
+        		Engine.Item("FIDGUAR").Item("FIDGNOTES", iCount).Item("COVER_TYPE").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("FIDGNOTES", iCount).Item("COVER_TYPE").Value			
+        		Engine.Item("FIDGUAR").Item("FIDGNOTES", iCount).Item("NOTE_DESCRIPTION").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("FIDGNOTES", iCount).Item("NOTE_DESCRIPTION").Value		
+        		Engine.Item("FIDGUAR").Item("FIDGNOTES", iCount).Item("NOTE_DETAILS").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("FIDGNOTES", iCount).Item("NOTE_DETAILS").Value		
+        	Next
+        	
+        	'Section A notes (not printed)
+        	iTotalCount = Extras.RiskDataEngine.Item("FIDGUAR").Count("FIDGCNOTES")
+        	For iCount = 1 To iTotalCount
+        		Engine.Item("FIDGUAR").NewObject("FIDGCNOTES")			
+        		Engine.Item("FIDGUAR").Item("FIDGCNOTES", iCount).Item("DATE_CREATED").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("FIDGCNOTES", iCount).Item("DATE_CREATED").Value		
+        		Engine.Item("FIDGUAR").Item("FIDGCNOTES", iCount).Item("CREATED_BY").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("FIDGCNOTES", iCount).Item("CREATED_BY").Value	
+        		Engine.Item("FIDGUAR").Item("FIDGCNOTES", iCount).Item("COVER_TYPE").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("FIDGCNOTES", iCount).Item("COVER_TYPE").Value
+        		Engine.Item("FIDGUAR").Item("FIDGCNOTES", iCount).Item("NOTE_DESCRIPTION").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("FIDGCNOTES", iCount).Item("NOTE_DESCRIPTION").Value		
+        		Engine.Item("FIDGUAR").Item("FIDGCNOTES", iCount).Item("NOTE_DETAILS").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("FIDGCNOTES", iCount).Item("NOTE_DETAILS").Value		
+        	Next
+        	
+        	'Section B notes (printed)
+        	iTotalCount = Extras.RiskDataEngine.Item("FIDGUAR").Count("GEN_CLAUSEPREM")
+        	For iCount = 1 To iTotalCount
+        		Engine.Item("FIDGUAR").NewObject("GEN_CLAUSEPREM")			
+        		Engine.Item("FIDGUAR").Item("GEN_CLAUSEPREM", iCount).Item("ENDORSE_CAP").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("GEN_CLAUSEPREM", iCount).Item("ENDORSE_CAP").Value				
+        	Next
+        	
+        	iTotalCount = Extras.RiskDataEngine.Item("FIDGUAR").Count("GUAR")
+        	For iCount = 1 To iTotalCount
+        		Engine.Item("FIDGUAR").NewObject("GUAR")			
+        		Engine.Item("FIDGUAR").Item("GUAR", iCount).Item("DATEADDED").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("GUAR", iCount).Item("DATEADDED").Value		
+        		Engine.Item("FIDGUAR").Item("GUAR", iCount).Item("NAME").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("GUAR", iCount).Item("NAME").Value		
+        		Engine.Item("FIDGUAR").Item("GUAR", iCount).Item("CAT_SUMINSURED").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("GUAR", iCount).Item("CAT_SUMINSURED").Value		
+        		Engine.Item("FIDGUAR").Item("GUAR", iCount).Item("CAT_NO_PERSONS").Value = Extras.RiskDataEngine.Item("FIDGUAR").Item("GUAR", iCount).Item("CAT_NO_PERSONS").Value		
+        	
+        	
+        	Next
+        	
+        	
+        End Sub
+
+        '**********************************************************************************************
+        'Load Risk Data to Claim Screens
+        '**********************************************************************************************
+        Sub PullFromRiskGPA()
+        	
+        	Dim iTotalCount
+        	Dim iCount
+          	
+        	
+        	Engine.Item("EMPDE").Item("RISK_ATTACH_DATE").Value = Extras.RiskDataEngine.Item("EMPDE").Item("RISK_ATTACH_DATE").Value 
+        	Engine.Item("EMPDE").Item("EFFECTIVEDATE").Value = Extras.RiskDataEngine.Item("EMPDE").Item("EFFECTIVEDATE").Value 
+        	'Total Sum insured
+        	Engine.Item("EMPDE").Item("BUSLIM").Value = Extras.RiskDataEngine.Item("EMPDE").Item("BUSLIM").Value 
+        	Engine.Item("EMPDE").Item("RLIMTLIAB").Value = Extras.RiskDataEngine.Item("EMPDE").Item("RLIMTLIAB").Value 
+        	Engine.Item("EMPDE").Item("ACCLIM").Value = Extras.RiskDataEngine.Item("EMPDE").Item("ACCLIM").Value 
+        	Engine.Item("EMPDE").Item("ANONLI").Value = Extras.RiskDataEngine.Item("EMPDE").Item("ANONLI").Value 
+        	
+        	Engine.Item("EMPDE").Item("NMOFEMP").Value = Extras.RiskDataEngine.Item("EMPDE").Item("NMOFEMP").Value 
+        	Engine.Item("EMPDE").Item("INDCOVER").Value = Extras.RiskDataEngine.Item("EMPDE").Item("INDCOVER").Value 
+        	Engine.Item("EMPDE").Item("NAME").Value = Extras.RiskDataEngine.Item("EMPDE").Item("NAME").Value 
+        	Engine.Item("EMPDE").Item("OCCUP").Value = Extras.RiskDataEngine.Item("EMPDE").Item("OCCUP").Value 
+        	Engine.Item("EMPDE").Item("OCC_DESC").Value = Extras.RiskDataEngine.Item("EMPDE").Item("OCC_DESC").Value 
+        	
+        	Engine.Item("EMPDE").Item("DEATH").Value = Extras.RiskDataEngine.Item("EMPDE").Item("DEATH").Value 
+        	Engine.Item("EMPDE").Item("SMINSLMT").Value = Extras.RiskDataEngine.Item("EMPDE").Item("SMINSLMT").Value 
+        	
+        	Engine.Item("EMPDE").Item("PDT").Value = Extras.RiskDataEngine.Item("EMPDE").Item("PDT").Value 
+        	Engine.Item("EMPDE").Item("PDTSMISLM").Value = Extras.RiskDataEngine.Item("EMPDE").Item("PDTSMISLM").Value 
+        	 
+        	Engine.Item("EMPDE").Item("TDPTDISB").Value = Extras.RiskDataEngine.Item("EMPDE").Item("TDPTDISB").Value
+        	Engine.Item("EMPDE").Item("TDSUINLI").Value = Extras.RiskDataEngine.Item("EMPDE").Item("TDSUINLI").Value 
+        	Engine.Item("EMPDE").Item("TDNOWEE").Value = Extras.RiskDataEngine.Item("EMPDE").Item("TDNOWEE").Value
+        
+        	Engine.Item("EMPDE").Item("TEMPPART").Value = Extras.RiskDataEngine.Item("EMPDE").Item("TEMPPART").Value
+        	Engine.Item("EMPDE").Item("TDNOWEEP").Value = Extras.RiskDataEngine.Item("EMPDE").Item("TDNOWEEP").Value
+        	Engine.Item("EMPDE").Item("TDSUINLIP").Value = Extras.RiskDataEngine.Item("EMPDE").Item("TDSUINLIP").Value
+        	
+        	Engine.Item("EMPDE").Item("MDCLEXPNS").Value = Extras.RiskDataEngine.Item("EMPDE").Item("MDCLEXPNS").Value
+        	Engine.Item("EMPDE").Item("MDCALEXPNS").Value = Extras.RiskDataEngine.Item("EMPDE").Item("MDCALEXPNS").Value
+        	
+        	Engine.Item("EMPDE").Item("MED_FAP").Value = Extras.RiskDataEngine.Item("EMPDE").Item("MED_FAP").Value
+        	Engine.Item("EMPDE").Item("MED_MINA").Value = Extras.RiskDataEngine.Item("EMPDE").Item("MED_MINA").Value
+        	Engine.Item("EMPDE").Item("TEMP_DAYS").Value = Extras.RiskDataEngine.Item("EMPDE").Item("TEMP_DAYS").Value
+        	
+        	Engine.Item("EMPDE").Item("HVACCEXP").Value = Extras.RiskDataEngine.Item("EMPDE").Item("HVACCEXP").Value
+        	Engine.Item("EMPDE").Item("HIVLIMT").Value = Extras.RiskDataEngine.Item("EMPDE").Item("HIVLIMT").Value
+        	
+        	Engine.Item("EMPDE").Item("HSPTL").Value = Extras.RiskDataEngine.Item("EMPDE").Item("HSPTL").Value
+        	Engine.Item("EMPDE").Item("HSPTMEX").Value = Extras.RiskDataEngine.Item("EMPDE").Item("HSPTMEX").Value
+        	Engine.Item("EMPDE").Item("HSPPERIOD").Value = Extras.RiskDataEngine.Item("EMPDE").Item("HSPPERIOD").Value
+        	
+        	Engine.Item("EMPDE").Item("LMTIND").Value = Extras.RiskDataEngine.Item("EMPDE").Item("LMTIND").Value
+        	Engine.Item("EMPDE").Item("SRSILL").Value = Extras.RiskDataEngine.Item("EMPDE").Item("SRSILL").Value
+        	Engine.Item("EMPDE").Item("SRSTMEX").Value = Extras.RiskDataEngine.Item("EMPDE").Item("SRSTMEX").Value
+        	Engine.Item("EMPDE").Item("SRSLMTIND").Value = Extras.RiskDataEngine.Item("EMPDE").Item("SRSLMTIND").Value
+        	Engine.Item("EMPDE").Item("SRSFAP").Value = Extras.RiskDataEngine.Item("EMPDE").Item("SRSFAP").Value
+        	Engine.Item("EMPDE").Item("SRSFAPAM").Value = Extras.RiskDataEngine.Item("EMPDE").Item("SRSFAPAM").Value
+        	Engine.Item("EMPDE").Item("TTDSCK").Value = Extras.RiskDataEngine.Item("EMPDE").Item("TTDSCK").Value
+        	
+        	Engine.Item("EMPDE").Item("TTDTMEX").Value = Extras.RiskDataEngine.Item("EMPDE").Item("TTDTMEX").Value
+        	Engine.Item("EMPDE").Item("TTDLIMT").Value = Extras.RiskDataEngine.Item("EMPDE").Item("TTDLIMT").Value
+        	Engine.Item("EMPDE").Item("TTDFAP").Value = Extras.RiskDataEngine.Item("EMPDE").Item("TTDFAP").Value
+        	Engine.Item("EMPDE").Item("TTDFAPP").Value = Extras.RiskDataEngine.Item("EMPDE").Item("TTDFAPP").Value
+        	Engine.Item("EMPDE").Item("WRRISK").Value = Extras.RiskDataEngine.Item("EMPDE").Item("WRRISK").Value
+        	
+        	
+        	Engine.Item("EMPDE").Item("HIVACCEXP").Value = Extras.RiskDataEngine.Item("EMPDE").Item("HIVACCEXP").Value
+        	Engine.Item("EMPDE").Item("HIVNEMP").Value = Extras.RiskDataEngine.Item("EMPDE").Item("HIVNEMP").Value
+        	Engine.Item("EMPDE").Item("HIVPREMP").Value = Extras.RiskDataEngine.Item("EMPDE").Item("HIVPREMP").Value
+        	Engine.Item("EMPDE").Item("ACCEXPASS").Value = Extras.RiskDataEngine.Item("EMPDE").Item("ACCEXPASS").Value
+        	Engine.Item("EMPDE").Item("ACCNEMPS").Value = Extras.RiskDataEngine.Item("EMPDE").Item("ACCNEMPS").Value
+        	Engine.Item("EMPDE").Item("ACCPREMPP").Value = Extras.RiskDataEngine.Item("EMPDE").Item("ACCPREMPP").Value
+        	
+        		
+        	'Section A notes (printed)
+                	iTotalCount = Extras.RiskDataEngine.Item("EMPDE").Count("GPASNOTES")
+                	For iCount = 1 To iTotalCount
+                		Engine.Item("EMPDE").NewObject("GPASNOTES")		
+                		Engine.Item("EMPDE").Item("GPASNOTES", iCount).Item("DATE_CREATED").Value = Extras.RiskDataEngine.Item("EMPDE").Item("GPASNOTES", iCount).Item("DATE_CREATED").Value
+        				Engine.Item("EMPDE").Item("GPASNOTES", iCount).Item("CREATED_BY").Value = Extras.RiskDataEngine.Item("EMPDE").Item("GPASNOTES", iCount).Item("CREATED_BY").Value		
+                		Engine.Item("EMPDE").Item("GPASNOTES", iCount).Item("COVER_TYPE").Value = Extras.RiskDataEngine.Item("EMPDE").Item("GPASNOTES", iCount).Item("COVER_TYPE").Value
+                		Engine.Item("EMPDE").Item("GPASNOTES", iCount).Item("NOTE_DESCRIPTION").Value = Extras.RiskDataEngine.Item("EMPDE").Item("GPASNOTES", iCount).Item("NOTE_DESCRIPTION").Value		
+                		Engine.Item("EMPDE").Item("GPASNOTES", iCount).Item("NOTE_DETAILS").Value = Extras.RiskDataEngine.Item("EMPDE").Item("GPASNOTES", iCount).Item("NOTE_DETAILS").Value		
+                	Next
+                	
+                	'Section A notes (not printed)
+                	iTotalCount = Extras.RiskDataEngine.Item("EMPDE").Count("GPANOTES")
+                	For iCount = 1 To iTotalCount
+                		Engine.Item("EMPDE").NewObject("GPANOTES")			
+        				Engine.Item("EMPDE").Item("GPANOTES", iCount).Item("DATE_CREATED").Value = Extras.RiskDataEngine.Item("EMPDE").Item("GPANOTES", iCount).Item("DATE_CREATED").Value		
+                		Engine.Item("EMPDE").Item("GPANOTES", iCount).Item("CREATED_BY").Value = Extras.RiskDataEngine.Item("EMPDE").Item("GPANOTES", iCount).Item("CREATED_BY").Value	
+        				Engine.Item("EMPDE").Item("GPANOTES", iCount).Item("COVER_TYPE").Value = Extras.RiskDataEngine.Item("EMPDE").Item("GPANOTES", iCount).Item("COVER_TYPE").Value		
+                		Engine.Item("EMPDE").Item("GPANOTES", iCount).Item("NOTE_DESCRIPTION").Value = Extras.RiskDataEngine.Item("EMPDE").Item("GPANOTES", iCount).Item("NOTE_DESCRIPTION").Value		
+                		Engine.Item("EMPDE").Item("GPANOTES", iCount).Item("NOTE_DETAILS").Value = Extras.RiskDataEngine.Item("EMPDE").Item("GPANOTES", iCount).Item("NOTE_DETAILS").Value		
+                	Next
+                	
+                	'Section B notes (printed)
+                	iTotalCount = Extras.RiskDataEngine.Item("EMPDE").Count("GPA_ENDOSE")
+                	For iCount = 1 To iTotalCount
+                		Engine.Item("EMPDE").NewObject("GPA_ENDOSE")			
+                		Engine.Item("EMPDE").Item("GPA_ENDOSE", iCount).Item("ENDORSE_CAP").Value = Extras.RiskDataEngine.Item("EMPDE").Item("GPA_ENDOSE", iCount).Item("ENDORSE_CAP").Value		
+                		'Engine.Item("EMPDE").Item("SBCNOTE_DETAILS", iCount).Item("NOTE_DETAILS").Value = Extras.RiskDataEngine.Item("EMPDE").Item("SBCNOTE_DETAILS", iCount).Item("NOTE_DETAILS").Value		
+                	Next
+        	
+        	
+        End Sub
+
+        Sub PullFromRiskGIT()
+        		'Instantiate Risk object(s)
+        		Extras.RiskDataEngine.NewObject("GIT")
+        		Extras.RiskDataEngine.NewObject("GIT_FAP")
+        		Extras.RiskDataEngine.NewObject("GIT_EXTENSIONS")
+        		Extras.RiskDataEngine.NewObject("GIT_REFERRAL_CLAUSES")
+        		Extras.RiskDataEngine.NewObject("GIT_NOTES")
+        
+        		'Instantiate Claims object(s)
+        		Engine.NewObject("GIT")
+        		Engine.NewObject("GIT_FAP")
+        		Engine.NewObject("GIT_EXTENSIONS")
+        
+        		'---------------------------------------------------
+        		'---START: Non-child screen properties population---	
+        		'---------------------------------------------------
+        		Dim RiskObject, ClaimObject
+        
+        		RiskObject = "GIT"
+        		ClaimObject = "GIT"
+        
+                '---------------------------------------------'
+        		Call ToClaim(RiskObject,ClaimObject,"RISKATTACHDATE")
+        		Call ToClaim(RiskObject,ClaimObject,"EFFECTIVEDATE")
+        		'---------------Past Claims History---------------'
+        		Call ToClaim(RiskObject,ClaimObject,"GIT0_12_MONTHS")
+        		Call ToClaim(RiskObject,ClaimObject,"GIT0_12_AMOUNT")
+        		Call ToClaim(RiskObject,ClaimObject,"GIT13_24_MONTHS")
+        		Call ToClaim(RiskObject,ClaimObject,"GIT13_24_AMOUNT")
+        		Call ToClaim(RiskObject,ClaimObject,"GIT25_36_MONTHS")
+        		Call ToClaim(RiskObject,ClaimObject,"GIT25_36_AMOUNT")
+        		'---------------Rating Method---------------'
+        		Dim AC_CHECK, LL_CHECK, AH_CHECK
+        		
+        		Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_COVER")
+        		Call ToClaim(RiskObject,ClaimObject,"BASIS_OF_RATING")
+        		Call ToClaim(RiskObject,ClaimObject,"BASIS_AC_CHECK")
+        		Call ToClaim(RiskObject,ClaimObject,"BASIS_LL_CHECK")
+        		Call ToClaim(RiskObject,ClaimObject,"BASIS_AH_CHECK")
+        		Call ToClaim(RiskObject,ClaimObject,"ROAD")
+        		Call ToClaim(RiskObject,ClaimObject,"AIR")
+        		Call ToClaim(RiskObject,ClaimObject,"RAIL")
+        		Call ToClaim(RiskObject,ClaimObject,"DESC_GOODS")
+        		
+        		Call ToClaim(RiskObject,ClaimObject,"BASIS_AC_CHECK")
+                		Call ToClaim(RiskObject,ClaimObject,"BASIS_LL_CHECK")
+                		Call ToClaim(RiskObject,ClaimObject,"BASIS_AH_CHECK")
+        				
+        		AC_CHECK = Extras.RiskDataEngine.Item(RiskObject).Item("BASIS_AC_CHECK").Value
+        		LL_CHECK = Extras.RiskDataEngine.Item(RiskObject).Item("BASIS_LL_CHECK").Value
+        		AH_CHECK = Extras.RiskDataEngine.Item(RiskObject).Item("BASIS_AH_CHECK").Value
+        		
+        		If AC_CHECK = 1 Then
+        			Call ToClaim(RiskObject,ClaimObject,"AC_SI")
+        			Call ToClaim(RiskObject,ClaimObject,"AC_LOAD_LIMIT")
+        		End If
+        		
+        		If LL_CHECK = 1 Then
+        			Call ToClaim(RiskObject,ClaimObject,"LL_SI")
+        			Call ToClaim(RiskObject,ClaimObject,"LL_LOAD_LIMIT")
+        		End If
+        		
+        		If AH_CHECK = 1 Then
+        			Call ToClaim(RiskObject,ClaimObject,"AH_SI")
+        			Call ToClaim(RiskObject,ClaimObject,"AH_LOAD_LIMIT")
+        		End If
+        		
+        		'---------------First Amount Payable---------------'
+        		RiskObject = "GIT_FAP"
+        		ClaimObject = "GIT_FAP"
+        		Call ToClaim(RiskObject,ClaimObject,"FAP_PERC")
+        		Call ToClaim(RiskObject,ClaimObject,"FAP_MIN_AMT")
+        		Call ToClaim(RiskObject,ClaimObject,"FAP_MAX_AMT")
+        		Call ToClaim(RiskObject,ClaimObject,"THEFT_PERC")
+        		Call ToClaim(RiskObject,ClaimObject,"THEFT_MIN_AMT")
+        		Call ToClaim(RiskObject,ClaimObject,"THEFT_MAX_AMT")
+        		Call ToClaim(RiskObject,ClaimObject,"AFAP_PERC")
+        		Call ToClaim(RiskObject,ClaimObject,"AFAP_MIN_AMT")
+        		Call ToClaim(RiskObject,ClaimObject,"AFAP_MAX_AMT")
+        		
+        		'---------------Extensions---------------'
+        		RiskObject = "GIT_EXTENSIONS"
+        		ClaimObject = "GIT_EXTENSIONS"
+        		Call ToClaim(RiskObject,ClaimObject,"IS_ACPC")
+        		Call ToClaim(RiskObject,ClaimObject,"ACPC_LIMIT")
+        		
+        		Call ToClaim(RiskObject,ClaimObject,"IS_DEB")
+        		Call ToClaim(RiskObject,ClaimObject,"DEB_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"DEB_FAP")
+        		Call ToClaim(RiskObject,ClaimObject,"DEB_MIN_AMNT")
+        		
+        		Call ToClaim(RiskObject,ClaimObject,"IS_FIRE")
+        		Call ToClaim(RiskObject,ClaimObject,"FIRE_LIMIT")
+        		Call ToClaim(RiskObject,ClaimObject,"FIRE_FAP")
+        		Call ToClaim(RiskObject,ClaimObject,"FIRE_MIN_AMNT")
+        		
+        		Call ToClaim(RiskObject,ClaimObject,"IS_HIJACK")
+        		Call ToClaim(RiskObject,ClaimObject,"HIJACK_FAP")
+        		Call ToClaim(RiskObject,ClaimObject,"HIJACK_MIN_AMNT")
+        		
+        		Call ToClaim(RiskObject,ClaimObject,"IS_RIOT")
+        		Call ToClaim(RiskObject,ClaimObject,"RIOT_FAP")
+        		Call ToClaim(RiskObject,ClaimObject,"RIOT_MIN_AMNT")
+        		
+        		Call ToClaim(RiskObject,ClaimObject,"IS_EXT")
+        		Call ToClaim(RiskObject,ClaimObject,"EXT_FAP")
+        		Call ToClaim(RiskObject,ClaimObject,"EXT_MIN_AMNT")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"IS_NASRIA")
+        		Call ToClaim(RiskObject,ClaimObject,"NASRIA_LIMIT")
+        
+        		Call ToClaim(RiskObject,ClaimObject,"EXT_DESC")
+        
+                '---------------Endorsement---------------'
+        		Dim ClaimChild, Cnt, nIndex
+        		RiskObject = "GIT_CLAUSEPREM"
+        		ClaimObject = "GIT"
+        		ClaimChild = "GIT_CLAUSEPREM"
+        		Cnt = Extras.RiskDataEngine.Count(RiskObject)
+        
+        		For nIndex = 1 to Cnt
+        			Engine.Item(ClaimObject).NewObject(ClaimChild)
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"ENDORSE_CAP")
+        		Next
+        
+                '---------------Notes - Not Printed---------------'
+        		RiskObject = "GIT_CNOTE_DETAILS"
+        		ClaimChild = "GIT_CNOTE_DETAILS"
+        		Cnt = Extras.RiskDataEngine.Count(RiskObject)
+        
+        		For nIndex = 1 to Cnt
+        			Engine.Item(ClaimObject).NewObject(ClaimChild)
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"Date_Created")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"Created_By")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"Risk_Cover")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"Note_Subject")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"Note_Details")
+        		Next
+        
+                '---------------Notes - Printed---------------'
+        		RiskObject = "GIT_SCNOTE_DETAILS"
+        		ClaimChild = "GIT_SCNOTE_DETAILS"
+        		Cnt = Extras.RiskDataEngine.Count(RiskObject)
+        
+        		For nIndex = 1 to Cnt
+        			Engine.Item(ClaimObject).NewObject(ClaimChild)
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"Date_Created")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"Created_By")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"Risk_Cover")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"Note_Subject")
+        			Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"Note_Details")
+        		Next
+        End Sub
+
+        Sub PullFromRiskMONEY()
+        	'Instantiate Risk object(s)
+        	Extras.RiskDataEngine.NewObject("MONEY")
+        	Extras.RiskDataEngine.NewObject("MONEY_COVER")
+        	Extras.RiskDataEngine.NewObject("MONEY_MINOR")
+        	Extras.RiskDataEngine.NewObject("MONEY_SEASONAL")
+        	Extras.RiskDataEngine.NewObject("MONEY_EXTENSIONS")
+        	Extras.RiskDataEngine.NewObject("MONEY_REFERRAL_CLAUSES")
+        	Extras.RiskDataEngine.NewObject("MONEY_NOTES")
+        
+        	'Instantiate Claims object(s)
+        	Engine.NewObject("MONEY")
+        	Engine.NewObject("MONEY_COVER")
+        	Engine.NewObject("MONEY_MINOR")
+        	Engine.NewObject("MONEY_SEASONAL")
+        	Engine.NewObject("MONEY_EXTENSIONS")
+        
+        	'---------------------------------------------------
+        	'---START: Non-child screen properties population---	
+        	'---------------------------------------------------
+        	Dim RiskObject, ClaimObject
+        
+        	RiskObject = "MONEY"
+        	ClaimObject = "MONEY"
+        
+        	'---------------------------------------------'
+        	Call ToClaim(RiskObject,ClaimObject,"RISKATTACHDATE")
+        	Call ToClaim(RiskObject,ClaimObject,"EFFECTIVEDATE")
+        	
+        	Call ToClaim(RiskObject,ClaimObject,"IS_TRANSIT_WARRANTY")
+        	Call ToClaim(RiskObject,ClaimObject,"ALARM_WARRANTY")
+        	
+        	'---------------Past Claims History---------------'
+        	Call ToClaim(RiskObject,ClaimObject,"MS0_12_MONTHS")
+        	Call ToClaim(RiskObject,ClaimObject,"MS0_12_AMOUNT")
+        	Call ToClaim(RiskObject,ClaimObject,"MS13_24_MONTHS")
+        	Call ToClaim(RiskObject,ClaimObject,"MS13_24_AMOUNT")
+        	Call ToClaim(RiskObject,ClaimObject,"MS25_36_MONTHS")
+        	Call ToClaim(RiskObject,ClaimObject,"MS25_36_AMOUNT")
+        	
+        	
+        	'---------------Type of Safe---------------'
+        	Dim ClaimChild, Cnt, nIndex
+        	RiskObject = "MONEY_SAFE"
+        	ClaimObject = "MONEY"
+        	ClaimChild = "MONEY_SAFE"
+        	Cnt = Extras.RiskDataEngine.Count(RiskObject)
+        
+        	For nIndex = 1 to Cnt
+        		Engine.Item(ClaimObject).NewObject(ClaimChild)
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"DESCRIPT")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"SUMINSURED")
+        	Next
+        	
+        	
+        	'---------------Money Cover---------------'
+        	RiskObject = "MONEY_COVER"
+        	ClaimObject = "MONEY_COVER"
+        	Call ToClaim(RiskObject,ClaimObject,"IS_MAJOR")
+        	Call ToClaim(RiskObject,ClaimObject,"MAJOR_SUMINSURED")
+        	Call ToClaim(RiskObject,ClaimObject,"MAJOR_FAP")
+        	Call ToClaim(RiskObject,ClaimObject,"MAJOR_MIN_AMNT")
+        	
+        	Call ToClaim(RiskObject,ClaimObject,"IS_PA")
+        	Call ToClaim(RiskObject,ClaimObject,"PA_NUM")
+        	
+        	Call ToClaim(RiskObject,ClaimObject,"IS_DEATH")
+        	Call ToClaim(RiskObject,ClaimObject,"DEATH_SUMINSURED")
+        	
+        	Call ToClaim(RiskObject,ClaimObject,"IS_PERM")
+        	Call ToClaim(RiskObject,ClaimObject,"PERM_SUMINSURED")
+        	
+        	Call ToClaim(RiskObject,ClaimObject,"IS_MED")
+        	Call ToClaim(RiskObject,ClaimObject,"MED_SUMINSURED")
+        
+        
+        	'---------------Money Minor---------------'
+        	RiskObject = "MONEY_MINOR"
+        	ClaimObject = "MONEY_MINOR"
+        	
+        	Call ToClaim(RiskObject,ClaimObject,"IS_COMM")
+        	Call ToClaim(RiskObject,ClaimObject,"COMM_LOI")
+        	
+        	Call ToClaim(RiskObject,ClaimObject,"IS_RES")
+        	Call ToClaim(RiskObject,ClaimObject,"RES_LOI")
+        	
+        	Call ToClaim(RiskObject,ClaimObject,"IS_INSPA")
+        	Call ToClaim(RiskObject,ClaimObject,"INSPA_NUM")
+        	Call ToClaim(RiskObject,ClaimObject,"INSPA_LOI")
+        	
+        	Call ToClaim(RiskObject,ClaimObject,"IS_CUSTD")
+        	Call ToClaim(RiskObject,ClaimObject,"CUSTD_NUM")
+        	Call ToClaim(RiskObject,ClaimObject,"CUSTD_LOI")
+        	
+        	Call ToClaim(RiskObject,ClaimObject,"IS_CUSTCR")
+        	Call ToClaim(RiskObject,ClaimObject,"CUSTCR_NUM")
+        	Call ToClaim(RiskObject,ClaimObject,"CUSTCR_LOI")
+        	
+        	'---------------Money Seasonal---------------'
+        	RiskObject = "MONEY_SEASONAL"
+        	ClaimObject = "MONEY_SEASONAL"
+        	
+        	Call ToClaim(RiskObject,ClaimObject,"IS_DECEMBER")
+        	Call ToClaim(RiskObject,ClaimObject,"DECEMBER_SUMINSURED")
+        	Call ToClaim(RiskObject,ClaimObject,"DECEMBER_FAP")
+        	Call ToClaim(RiskObject,ClaimObject,"DECEMBER_MIN_AMT")
+        	
+        	Call ToClaim(RiskObject,ClaimObject,"IS_OTHER")
+        	Call ToClaim(RiskObject,ClaimObject,"OTHER_SUMINSURED")
+        	Call ToClaim(RiskObject,ClaimObject,"OTHER_FAP")
+        	Call ToClaim(RiskObject,ClaimObject,"OTHER_MIN_AMT")
+        	Call ToClaim(RiskObject,ClaimObject,"FROM_DATE")
+        	Call ToClaim(RiskObject,ClaimObject,"TO_DATE")
+        	
+        	Call ToClaim(RiskObject,ClaimObject,"TIME_PERIOD")
+        	
+        	'---------------Extensions---------------'
+        	RiskObject = "MONEY_EXTENSIONS"
+        	ClaimObject = "MONEY_EXTENSIONS"
+        	Call ToClaim(RiskObject,ClaimObject,"IS_ACPC")
+        	Call ToClaim(RiskObject,ClaimObject,"ACPC_LOI")
+        	
+        	Call ToClaim(RiskObject,ClaimObject,"IS_LOCK")
+        	Call ToClaim(RiskObject,ClaimObject,"LOCK_LOI")
+        	Call ToClaim(RiskObject,ClaimObject,"LOCK_FAP")
+        	Call ToClaim(RiskObject,ClaimObject,"LOCK_FAP_AMNT")
+        	
+        	Call ToClaim(RiskObject,ClaimObject,"IS_CLOTH")
+        	Call ToClaim(RiskObject,ClaimObject,"CLOTH_LOI")
+        	Call ToClaim(RiskObject,ClaimObject,"CLOTH_FAP")
+        	Call ToClaim(RiskObject,ClaimObject,"CLOTH_FAP_AMNT")
+        	
+        	Call ToClaim(RiskObject,ClaimObject,"IS_RIOT")
+        	Call ToClaim(RiskObject,ClaimObject,"RIOT_FAP")
+        	Call ToClaim(RiskObject,ClaimObject,"RIOT_FAP_AMNT")
+        	
+        	Call ToClaim(RiskObject,ClaimObject,"IS_NASRIA")
+        	Call ToClaim(RiskObject,ClaimObject,"NASRIA_LOI")
+        
+        	'---------------Endorsement---------------'
+        	'Dim ClaimChild, Cnt, nIndex
+        	RiskObject = "MONEY_CLAUSEPREM"
+        	ClaimObject = "MONEY"
+        	ClaimChild = "MONEY_CLAUSEPREM"
+        	Cnt = Extras.RiskDataEngine.Count(RiskObject)
+        
+        	For nIndex = 1 to Cnt
+        		Engine.Item(ClaimObject).NewObject(ClaimChild)
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"ENDORSE_CAP")
+        	Next
+        
+        	'---------------Notes - Not Printed---------------'
+        	RiskObject = "MONEY_CNOTE_DETAILS"
+        	ClaimChild = "MONEY_CNOTE_DETAILS"
+        	Cnt = Extras.RiskDataEngine.Count(RiskObject)
+        
+        	For nIndex = 1 to Cnt
+        		Engine.Item(ClaimObject).NewObject(ClaimChild)
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"DATE_CREATED")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"CREATED_BY")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"COVER_TYPE")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"NOTE_DESCRIPTION")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"NOTE_DETAILS")
+        	Next
+        
+        	'---------------Notes - Printed---------------'
+        	RiskObject = "MONEY_SCNOTE_DETAILS"
+        	ClaimChild = "MONEY_SCNOTE_DETAILS"
+        	Cnt = Extras.RiskDataEngine.Count(RiskObject)
+        
+        	For nIndex = 1 to Cnt
+        		Engine.Item(ClaimObject).NewObject(ClaimChild)
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"DATE_CREATED")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"CREATED_BY")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"COVER_TYPE")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"NOTE_DESCRIPTION")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"NOTE_DETAILS")
+        	Next
+        End Sub
+
+        Sub PullFromRiskBAR()
+        	'Instantiate Risk object(s)
+        	Extras.RiskDataEngine.NewObject("BAR")
+        	Extras.RiskDataEngine.NewObject("BAR_EXTENSIONS")
+        	Extras.RiskDataEngine.NewObject("BAR_REFERRAL_CLAUSES")
+        	Extras.RiskDataEngine.NewObject("NOTES")
+        
+        	'Instantiate Claims object(s)
+        	Engine.NewObject("BAR")
+        	Engine.NewObject("BAR_EXTENSIONS")
+        	
+        	'---------------------------------------------------
+        	'---START: Non-child screen properties population---	
+        	'---------------------------------------------------
+        	Dim RiskObject, ClaimObject
+        
+        	RiskObject = "BAR"
+        	ClaimObject = "BAR"
+        	
+        	'---------------------------------------------'
+        	Call ToClaim(RiskObject,ClaimObject,"ATTACHMENTDATE")
+        	Call ToClaim(RiskObject,ClaimObject,"EFFECTIVEDATE")
+        	
+        	'---------------Past Claims Count---------------'
+        	Call ToClaim(RiskObject,ClaimObject,"BAR0_12_MONTHS")
+        	Call ToClaim(RiskObject,ClaimObject,"BAR0_12_AMOUNT")
+        	Call ToClaim(RiskObject,ClaimObject,"BAR13_24_MONTHS")
+        	Call ToClaim(RiskObject,ClaimObject,"BAR13_24_AMOUNT")
+        	Call ToClaim(RiskObject,ClaimObject,"BAR25_36_MONTHS")
+        	Call ToClaim(RiskObject,ClaimObject,"BAR25_36_AMOUNT")
+        	
+        	'---------------Business All Risk---------------'
+        	Call ToClaim(RiskObject,ClaimObject,"ALARMW")
+        	Call ToClaim(RiskObject,ClaimObject,"TOT_SUMINSURED")
+        	
+        	'---------------Business All Risk Child---------------'
+        	Dim ClaimChild, Cnt, nIndex
+        	RiskObject = "BALLRISK"
+        	ClaimObject = "BAR"
+        	ClaimChild = "BALLRISK"
+        	Cnt = Extras.RiskDataEngine.Count(RiskObject)
+        
+        	For nIndex = 1 to Cnt
+        		Engine.Item(ClaimObject).NewObject(ClaimChild)
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"ADDED")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"CATEGORY")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"DESCRIPTION")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"SERIAL_NUMBER")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"REINSTATEMENT_VALUE")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"TMP_SI")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"SUMINSURED")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"FAP_PERC")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"FAP_AMNT")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"INTPARTY")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"PARTY_DATE")
+        		
+        		'---------------Business All Risk Grand Child---------------'
+        		Dim ClaimGrandChild, RiskGrandChild, GCnt, gIndex
+        		
+        		RiskGrandChild = "BALLRISK_CLAUSEPREM"
+        		ClaimGrandChild = "BALLRISK_CLAUSEPREM"
+        		GCnt = Extras.RiskDataEngine.Item(RiskObject,nIndex).Count(RiskGrandChild)
+        		For gIndex = 1 to GCnt
+        			Engine.Item(ClaimObject).Item(ClaimChild,nIndex).NewObject(ClaimGrandChild)
+        			
+        			Call ToGrandChildClaim(RiskObject,RiskGrandChild,ClaimObject,ClaimChild,ClaimGrandChild,nIndex,gIndex,"ENDORSE_CAP")
+        		Next
+        		
+        		RiskGrandChild = "BALLRISK_CNOTE_DETAILS"
+        		ClaimGrandChild = "BALLRISK_CNOTE_DETAILS"
+        		GCnt = Extras.RiskDataEngine.Item(RiskObject,nIndex).Count(RiskGrandChild)
+        		For gIndex = 1 to GCnt
+        			Engine.Item(ClaimObject).Item(ClaimChild,nIndex).NewObject(ClaimGrandChild)
+        			
+        			Call ToGrandChildClaim(RiskObject,RiskGrandChild,ClaimObject,ClaimChild,ClaimGrandChild,nIndex,gIndex,"DATE_CREATED")
+        			Call ToGrandChildClaim(RiskObject,RiskGrandChild,ClaimObject,ClaimChild,ClaimGrandChild,nIndex,gIndex,"CREATED_BY")
+        			Call ToGrandChildClaim(RiskObject,RiskGrandChild,ClaimObject,ClaimChild,ClaimGrandChild,nIndex,gIndex,"COVER_TYPE")
+        			Call ToGrandChildClaim(RiskObject,RiskGrandChild,ClaimObject,ClaimChild,ClaimGrandChild,nIndex,gIndex,"NOTE_DESCRIPTION")
+        			Call ToGrandChildClaim(RiskObject,RiskGrandChild,ClaimObject,ClaimChild,ClaimGrandChild,nIndex,gIndex,"NOTE_DETAILS")
+        		Next
+        		
+        		RiskGrandChild = "BALLRISK_SCNOTE_DETAILS"
+        		ClaimGrandChild = "BALLRISK_SCNOTE_DETAILS"
+        		GCnt = Extras.RiskDataEngine.Item(RiskObject,nIndex).Count(RiskGrandChild)
+        		For gIndex = 1 to GCnt
+        			Engine.Item(ClaimObject).Item(ClaimChild,nIndex).NewObject(ClaimGrandChild)
+        			
+        			Call ToGrandChildClaim(RiskObject,RiskGrandChild,ClaimObject,ClaimChild,ClaimGrandChild,nIndex,gIndex,"DATE_CREATED")
+        			Call ToGrandChildClaim(RiskObject,RiskGrandChild,ClaimObject,ClaimChild,ClaimGrandChild,nIndex,gIndex,"CREATED_BY")
+        			Call ToGrandChildClaim(RiskObject,RiskGrandChild,ClaimObject,ClaimChild,ClaimGrandChild,nIndex,gIndex,"COVER_TYPE")
+        			Call ToGrandChildClaim(RiskObject,RiskGrandChild,ClaimObject,ClaimChild,ClaimGrandChild,nIndex,gIndex,"NOTE_DESCRIPTION")
+        			Call ToGrandChildClaim(RiskObject,RiskGrandChild,ClaimObject,ClaimChild,ClaimGrandChild,nIndex,gIndex,"NOTE_DETAILS")
+        		Next
+        	Next
+        
+        	'---------------Extentions---------------'
+        	RiskObject = "BAR_EXTENSIONS"
+        	ClaimObject = "BAR_EXTENSIONS"
+        	
+        	Call ToClaim(RiskObject,ClaimObject,"IS_ADD")
+        	Call ToClaim(RiskObject,ClaimObject,"ADD_LOI")
+        	Call ToClaim(RiskObject,ClaimObject,"IS_COW")
+        	Call ToClaim(RiskObject,ClaimObject,"COW_LOI")
+        	Call ToClaim(RiskObject,ClaimObject,"IS_RIOT")
+        	Call ToClaim(RiskObject,ClaimObject,"RIOT_FAP_PERC")
+        	Call ToClaim(RiskObject,ClaimObject,"RIOT_MIN_AMNT")
+        	Call ToClaim(RiskObject,ClaimObject,"IS_NASRIA")
+        	Call ToClaim(RiskObject,ClaimObject,"NASRIA_LOI")
+        	'---------------------------------------------'
+        	
+        	'---------------Endorsement---------------'
+        	'Dim ClaimChild, Cnt, nIndex
+        	RiskObject = "BAR_CLAUSEPREM"
+        	ClaimObject = "BAR"
+        	ClaimChild = "BAR_CLAUSEPREM"
+        	Cnt = Extras.RiskDataEngine.Count(RiskObject)
+        
+        	For nIndex = 1 to Cnt
+        		Engine.Item(ClaimObject).NewObject(ClaimChild)
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"ENDORSE_CAP")
+        	Next
+        	
+        	'---------------------------------------------'
+        
+        	'---------------Notes - Not Printed---------------'
+        	RiskObject = "BAR_CNOTE_DETAILS"
+        	ClaimChild = "BAR_CNOTE_DETAILS"
+        	Cnt = Extras.RiskDataEngine.Count(RiskObject)
+        
+        	For nIndex = 1 to Cnt
+        		Engine.Item(ClaimObject).NewObject(ClaimChild)
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"DATE_CREATED")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"CREATED_BY")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"COVER_TYPE")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"NOTE_DESCRIPTION")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"NOTE_DETAILS")
+        	Next
+        	
+        	'---------------------------------------------'
+        
+        	'---------------Notes - Printed---------------'
+        	RiskObject = "BAR_SCNOTE_DETAILS"
+        	ClaimChild = "BAR_SCNOTE_DETAILS"
+        	Cnt = Extras.RiskDataEngine.Count(RiskObject)
+        
+        	For nIndex = 1 to Cnt
+        		Engine.Item(ClaimObject).NewObject(ClaimChild)
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"DATE_CREATED")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"CREATED_BY")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"COVER_TYPE")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"NOTE_DESCRIPTION")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"NOTE_DETAILS")
+        	Next
+        End Sub
+
+        Sub PullFromRiskTHEFT()
+        	'Instantiate Risk object(s)
+        	Extras.RiskDataEngine.NewObject("THEFT")
+        	Extras.RiskDataEngine.NewObject("THEFT_EXTENSIONS")
+        	Extras.RiskDataEngine.NewObject("THEFT_REFERRAL_CLAUSES")
+        	Extras.RiskDataEngine.NewObject("THEFT_NOTES")
+        
+        	'Instantiate Claims object(s)
+        	Engine.NewObject("THEFT")
+        	Engine.NewObject("THEFT_EXTENSIONS")
+        
+        	'---------------------------------------------------
+        	'---START: Non-child screen properties population---	
+        	'---------------------------------------------------
+        	Dim RiskObject, ClaimObject
+        
+        	RiskObject = "THEFT"
+        	ClaimObject = "THEFT"
+        
+        	'---------------------------------------------'
+        	Call ToClaim(RiskObject,ClaimObject,"RISK_ATTACH_DATE")
+        	Call ToClaim(RiskObject,ClaimObject,"EFFECTIVEDATE")
+        	
+        	Call ToClaim(RiskObject,ClaimObject,"INDCONST")
+        	Call ToClaim(RiskObject,ClaimObject,"STDCONST")
+        	Call ToClaim(RiskObject,ClaimObject,"AWARRANTY")
+        	
+        	'---------------Past Claims History---------------'
+        	Call ToClaim(RiskObject,ClaimObject,"THEFT0_12_MONTHS")
+        	Call ToClaim(RiskObject,ClaimObject,"THEFT0_12_AMOUNT")
+        	Call ToClaim(RiskObject,ClaimObject,"THEFT13_24_MONTHS")
+        	Call ToClaim(RiskObject,ClaimObject,"THEFT13_24_AMOUNT")
+        	Call ToClaim(RiskObject,ClaimObject,"THEFT25_36_MONTHS")
+        	Call ToClaim(RiskObject,ClaimObject,"THEFT25_36_AMOUNT")
+        	
+        	'---------------Rating Method---------------'
+        	Call ToClaim(RiskObject,ClaimObject,"SUMINSURED")
+        	Call ToClaim(RiskObject,ClaimObject,"FAP_PERC")
+        	Call ToClaim(RiskObject,ClaimObject,"MIN_AMNT")
+        	
+        	'---------------Extensions---------------'
+        	RiskObject = "THEFT_EXTENSIONS"
+        	ClaimObject = "THEFT_EXTENSIONS"
+        	Call ToClaim(RiskObject,ClaimObject,"IS_ACPC")
+        	Call ToClaim(RiskObject,ClaimObject,"ACPC_LIMIT")
+        	Call ToClaim(RiskObject,ClaimObject,"ACPC_RATE")
+        	
+        	Call ToClaim(RiskObject,ClaimObject,"IS_ADB")
+        	Call ToClaim(RiskObject,ClaimObject,"ADB_LIMIT")
+        	Call ToClaim(RiskObject,ClaimObject,"ADB_RATE")
+        	
+        	Call ToClaim(RiskObject,ClaimObject,"IS_LOSS")
+        	Call ToClaim(RiskObject,ClaimObject,"LOSS_LIMIT")
+        	Call ToClaim(RiskObject,ClaimObject,"LOSS_FAP_PERC")
+        	Call ToClaim(RiskObject,ClaimObject,"LOSS_MIN_AMNT")
+        	
+        	Call ToClaim(RiskObject,ClaimObject,"IS_MD")
+        	Call ToClaim(RiskObject,ClaimObject,"MD_LIMIT")
+        	
+        	Call ToClaim(RiskObject,ClaimObject,"IS_PETROL")
+        	Call ToClaim(RiskObject,ClaimObject,"PETROL_LIMIT")
+        	Call ToClaim(RiskObject,ClaimObject,"PETROL_FAP_PERC")
+        	Call ToClaim(RiskObject,ClaimObject,"PETROL_MIN_AMNT")
+        
+        	'---------------Endorsement---------------'
+        	Dim ClaimChild, Cnt, nIndex
+        	RiskObject = "THEFT_CLAUSEPREM"
+        	ClaimObject = "THEFT"
+        	ClaimChild = "THEFT_CLAUSEPREM"
+        	Cnt = Extras.RiskDataEngine.Count(RiskObject)
+        
+        	For nIndex = 1 to Cnt
+        		Engine.Item(ClaimObject).NewObject(ClaimChild)
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"ENDORSE_CAP")
+        	Next
+        
+        	'---------------Notes - Not Printed---------------'
+        	RiskObject = "THEFT_CNOTES_DETAILS"
+        	ClaimChild = "THEFT_CNOTES_DETAILS"
+        	Cnt = Extras.RiskDataEngine.Count(RiskObject)
+        
+        	For nIndex = 1 to Cnt
+        		Engine.Item(ClaimObject).NewObject(ClaimChild)
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"DATE_CREATED")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"CREATED_BY")
+        				Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"COVER_TYPE")
+        				Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"NOTE_DESCRIPTION")
+        				Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"NOTE_DETAILS")
+        	Next
+        
+        	'---------------Notes - Printed---------------'
+        	RiskObject = "THEFT_SCNOTES_DETAILS"
+        	ClaimChild = "THEFT_SCNOTES_DETAILS"
+        	Cnt = Extras.RiskDataEngine.Count(RiskObject)
+        
+        	For nIndex = 1 to Cnt
+        		Engine.Item(ClaimObject).NewObject(ClaimChild)
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"DATE_CREATED")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"CREATED_BY")
+        				Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"COVER_TYPE")
+        				Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"NOTE_DESCRIPTION")
+        				Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"NOTE_DETAILS")
+        	Next
+        End Sub
+
+        Sub PullFromRiskSB()
+        	'Instantiate Risk object(s)
+        	Extras.RiskDataEngine.NewObject("STATED")
+        	Extras.RiskDataEngine.NewObject("STATED_EMPLOYEE")
+        	Extras.RiskDataEngine.NewObject("STATED_COVER")
+        	Extras.RiskDataEngine.NewObject("STATED_FAP")
+        	Extras.RiskDataEngine.NewObject("STATED_EXTENSIONS")
+        	Extras.RiskDataEngine.NewObject("STATED_SERVICES")
+        	Extras.RiskDataEngine.NewObject("STATED_REFERRAL_CLAUSES")
+        
+        	'Instantiate Claims object(s)
+        	Engine.NewObject("STATED")
+        	Engine.NewObject("STATED_EMPLOYEE")
+        	Engine.NewObject("STATED_COVER")
+        	Engine.NewObject("STATED_FAP")
+        	Engine.NewObject("STATED_EXTENSIONS")
+        	Engine.NewObject("STATED_SERVICES")
+        	
+        
+        	'---------------------------------------------------
+        	'---START: Non-child screen properties population---	
+        	'---------------------------------------------------
+        	Dim RiskObject, ClaimObject
+        
+        	RiskObject = "STATED"
+        	ClaimObject = "STATED"
+        
+        	'---------------------------------------------'
+        	Call ToClaim(RiskObject,ClaimObject,"RISK_ATTACH_DATE")
+        	Call ToClaim(RiskObject,ClaimObject,"EFFECTIVEDATE")
+        	
+        	Call ToClaim(RiskObject,ClaimObject,"TOTAL_ANNUAL")
+        	Call ToClaim(RiskObject,ClaimObject,"BUSS_LIMIT")
+        	Call ToClaim(RiskObject,ClaimObject,"RI_SUMINSURED")
+        	Call ToClaim(RiskObject,ClaimObject,"ACC_LIMIT")
+        	Call ToClaim(RiskObject,ClaimObject,"AOL_LIMIT")
+        	
+        	
+        	'---------------Employee Details---------------'
+        	RiskObject = "STATED_EMPLOYEE"
+        	ClaimObject = "STATED_EMPLOYEE"
+        	Call ToClaim(RiskObject,ClaimObject,"NUM_EMPLOYEE")
+        	Call ToClaim(RiskObject,ClaimObject,"IS_IND_COVER")
+        	Call ToClaim(RiskObject,ClaimObject,"NAME")
+        	Call ToClaim(RiskObject,ClaimObject,"OCCUPATION")
+        	Call ToClaim(RiskObject,ClaimObject,"OCCUPATION_DESCRIPTION")
+        	
+        	'---------------Cover Details---------------'
+        	RiskObject = "STATED_COVER"
+        	ClaimObject = "STATED_COVER"
+        	Call ToClaim(RiskObject,ClaimObject,"IS_DEATH")
+        	Call ToClaim(RiskObject,ClaimObject,"DEATH_YEARS")
+        	
+        	Call ToClaim(RiskObject,ClaimObject,"IS_PDTP")
+        	Call ToClaim(RiskObject,ClaimObject,"PDTP_YEARS")
+        	
+        	Call ToClaim(RiskObject,ClaimObject,"IS_DISTOT")
+        	Call ToClaim(RiskObject,ClaimObject,"DISTOT_WEEKS")
+        	
+        	Call ToClaim(RiskObject,ClaimObject,"IS_DISPAR")
+        	Call ToClaim(RiskObject,ClaimObject,"DISPAR_WEEKS")
+        	
+        	Call ToClaim(RiskObject,ClaimObject,"IS_MEDEXP")
+        	Call ToClaim(RiskObject,ClaimObject,"MEDEXP_SUMINSURED")
+        
+        	'---------------Stated FAP---------------'
+        	RiskObject = "STATED_FAP"
+        	ClaimObject = "STATED_FAP"
+        	
+        	Call ToClaim(RiskObject,ClaimObject,"MED_FAP_PERC")
+        	Call ToClaim(RiskObject,ClaimObject,"MED_MIN_AMNT")
+        	Call ToClaim(RiskObject,ClaimObject,"TEMP_DAYS")
+        	
+        	'---------------Extensions---------------'
+        	RiskObject = "STATED_EXTENSIONS"
+        	ClaimObject = "STATED_EXTENSIONS"
+        	Call ToClaim(RiskObject,ClaimObject,"IS_HIVAE")
+        	Call ToClaim(RiskObject,ClaimObject,"HIVAE_LIMIT")
+        	Call ToClaim(RiskObject,ClaimObject,"HIVAE_RATE")
+        	
+        	Call ToClaim(RiskObject,ClaimObject,"IS_HOSP")
+        	Call ToClaim(RiskObject,ClaimObject,"HOSP_TIME")
+        	Call ToClaim(RiskObject,ClaimObject,"HOSP_PERIOD")
+        	Call ToClaim(RiskObject,ClaimObject,"HOSP_LIMIT")
+        	
+        	Call ToClaim(RiskObject,ClaimObject,"IS_SILL")
+        	Call ToClaim(RiskObject,ClaimObject,"SILL_TIME")
+        	Call ToClaim(RiskObject,ClaimObject,"SILL_LIMIT")
+        	Call ToClaim(RiskObject,ClaimObject,"SILL_FAP_PERC")
+        	Call ToClaim(RiskObject,ClaimObject,"SILL_MIN_AMNT")
+        	
+        	Call ToClaim(RiskObject,ClaimObject,"IS_TTDSICK")
+        	Call ToClaim(RiskObject,ClaimObject,"TTDSICK_TIME")
+        	Call ToClaim(RiskObject,ClaimObject,"TTDSICK_LIMIT")
+        	Call ToClaim(RiskObject,ClaimObject,"TTDSICK_FAP_PERC")
+        	Call ToClaim(RiskObject,ClaimObject,"TTDSICK_MIN_AMNT")
+        	
+        	Call ToClaim(RiskObject,ClaimObject,"IS_WAR")
+        
+        
+        	'---------------Assistance Services---------------'
+        	RiskObject = "STATED_SERVICES"
+        	ClaimObject = "STATED_SERVICES"
+        	Call ToClaim(RiskObject,ClaimObject,"IS_HIV")
+        	Call ToClaim(RiskObject,ClaimObject,"HIV_NUM")
+        	
+        	Call ToClaim(RiskObject,ClaimObject,"IS_ACC")
+        	Call ToClaim(RiskObject,ClaimObject,"ACC_NUM")
+        
+        	'---------------Endorsement---------------'
+        	Dim ClaimChild, Cnt, nIndex
+        	RiskObject = "STATED_CLAUSEPREM"
+        	ClaimObject = "STATED"
+        	ClaimChild = "STATED_CLAUSEPREM"
+        	Cnt = Extras.RiskDataEngine.Count(RiskObject)
+        
+        	For nIndex = 1 to Cnt
+        		Engine.Item(ClaimObject).NewObject(ClaimChild)
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"ENDORSE_CAP")
+        	Next
+        
+        	'---------------Notes - Not Printed---------------'
+        	RiskObject = "STATED_CNOTES_DETAILS"
+        	ClaimChild = "STATED_CNOTES_DETAILS"
+        	Cnt = Extras.RiskDataEngine.Count(RiskObject)
+        
+        	For nIndex = 1 to Cnt
+        		Engine.Item(ClaimObject).NewObject(ClaimChild)
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"DATE_CREATED")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"CREATED_BY")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"COVER_TYPE")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"NOTE_DESCRIPTION")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"NOTE_DETAILS")
+        	Next
+        
+        	'---------------Notes - Printed---------------'
+        	RiskObject = "STATED_SCNOTES_DETAILS"
+        	ClaimChild = "STATED_SCNOTES_DETAILS"
+        	Cnt = Extras.RiskDataEngine.Count(RiskObject)
+        
+        	For nIndex = 1 to Cnt
+        		Engine.Item(ClaimObject).NewObject(ClaimChild)
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"DATE_CREATED")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"CREATED_BY")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"COVER_TYPE")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"NOTE_DESCRIPTION")
+        		Call ToChildClaim(RiskObject,ClaimObject,ClaimChild,nIndex,"NOTE_DETAILS")
+        	Next
+        End Sub
+
+        Sub PullFromRiskGlass()
+        	Dim base_cover
+        	Dim att_date, eff_date
+        	Dim SumInsured, fap,minAmt, maxAmt
+        	Dim isAdd, addLoi
+        	Dim isRiot, riotFap, riotMinAmt
+        	Dim isSpecial, specFap, specMinAmt
+        	Dim isNasria, nasLoi
+        	Dim stCount, stTotalCount, ttCount, ttTotalCount
+        	
+        	Dim RiskObject, ClaimObject
+        
+        	RiskObject = "GLASS"
+        	ClaimObject = "GLASS"
+        	
+        	'---------------Past Claims Count---------------'
+        	Call ToClaim(RiskObject,ClaimObject,"GLS0_12_MONTHS")
+        	Call ToClaim(RiskObject,ClaimObject,"GLS0_12_AMOUNT")
+        	Call ToClaim(RiskObject,ClaimObject,"GLS13_24_MONTHS")
+        	Call ToClaim(RiskObject,ClaimObject,"GLS13_24_AMOUNT")
+        	Call ToClaim(RiskObject,ClaimObject,"GLS25_36_MONTHS")
+        	Call ToClaim(RiskObject,ClaimObject,"GLS25_36_AMOUNT")
+        	
+        			
+        	'Collect data from Policy risk
+        	
+        	att_date = Extras.RiskDataEngine.Item("GLASS").Item("ATTACHMENTDATE").Value
+        	eff_date = Extras.RiskDataEngine.Item("GLASS").Item("EFFECTIVEDATE").Value
+        
+        	base_cover = Extras.RiskDataEngine.Item("GLASS").Item("BASISCOVER").Value
+        
+        	
+        	SumInsured = Extras.RiskDataEngine.Item("GLASS_COVER").Item("SUM_INSURED").Value		
+        	fap = Extras.RiskDataEngine.Item("GLASS_COVER").Item("FAP").Value
+        	minAmt = Extras.RiskDataEngine.Item("GLASS_COVER").Item("MIN_AMT").Value		
+        	maxAmt = Extras.RiskDataEngine.Item("GLASS_COVER").Item("MAX_AMT").Value
+        	
+        	'Additional Claims Preparation costs
+        	isAdd = Extras.RiskDataEngine.Item("GLASS_EXTENSIONS").Item("IS_ADD").Value		
+        	addLoi = Extras.RiskDataEngine.Item("GLASS_EXTENSIONS").Item("ADD_LOI").Value
+        	
+        	'Riot & Strike
+        	isRiot = Extras.RiskDataEngine.Item("GLASS_EXTENSIONS").Item("IS_RIOT").Value		
+        	riotFap = Extras.RiskDataEngine.Item("GLASS_EXTENSIONS").Item("RIOT_FAP_PERC").Value
+        	riotMinAmt = Extras.RiskDataEngine.Item("GLASS_EXTENSIONS").Item("RIOT_MIN_AMNT").Value
+        	
+        	'Special Replacement
+        	isSpecial = Extras.RiskDataEngine.Item("GLASS_EXTENSIONS").Item("IS_SPECIAL").Value		
+        	specFap = Extras.RiskDataEngine.Item("GLASS_EXTENSIONS").Item("SP_FAP_PERC").Value
+        	specMinAmt = Extras.RiskDataEngine.Item("GLASS_EXTENSIONS").Item("SP_MIN_AMNT").Value
+        	
+        	'Nasria GLASS
+        	isNasria = Extras.RiskDataEngine.Item("GLASS_EXTENSIONS").Item("IS_NASRIA").Value		
+        	nasLoi = Extras.RiskDataEngine.Item("GLASS_EXTENSIONS").Item("NASRIA_LOI").Value
+        	
+        	'Send data to the claim screen
+        	
+        	Engine.Item("GLASS").Item("ATTACHMENTDATE").Value = att_date
+        	Engine.Item("GLASS").Item("EFFECTIVEDATE").Value = eff_date
+        	
+        	Engine.Item("GLASS").Item("BASISCOVER").Value = base_cover		
+        	
+        	Engine.Item("GLASS_COVER").Item("SUM_INSURED").Value = SumInsured
+        	Engine.Item("GLASS_COVER").Item("FAP").Value = fap
+        	Engine.Item("GLASS_COVER").Item("MIN_AMT").Value = minAmt
+        	Engine.Item("GLASS_COVER").Item("MAX_AMT").Value = maxAmt
+        	
+        	'Additional Claims Preparation costs
+        	Engine.Item("GLASS_EXTENSIONS").Item("IS_ADD").Value = isAdd
+        	Engine.Item("GLASS_EXTENSIONS").Item("ADD_LOI").Value = addLoi
+        	
+        	'Riot & Strike
+        	Engine.Item("GLASS_EXTENSIONS").Item("IS_RIOT").Value = isRiot
+        	Engine.Item("GLASS_EXTENSIONS").Item("RIOT_FAP_PERC").Value = riotFap
+        	Engine.Item("GLASS_EXTENSIONS").Item("RIOT_MIN_AMNT").Value = riotMinAmt
+        	
+        	'Special Replacement
+        	Engine.Item("GLASS_EXTENSIONS").Item("IS_SPECIAL").Value = isSpecial
+        	Engine.Item("GLASS_EXTENSIONS").Item("SP_FAP_PERC").Value = specFap
+        	Engine.Item("GLASS_EXTENSIONS").Item("SP_MIN_AMNT").Value = specMinAmt
+        	
+        	'Nasria GLASS
+        	Engine.Item("GLASS_EXTENSIONS").Item("IS_NASRIA").Value = isNasria
+        	Engine.Item("GLASS_EXTENSIONS").Item("NASRIA_LOI").Value = nasLoi
+        	
+        	'GLASS Endorsements
+        		
+        		stTotalCount = Extras.RiskDataEngine.Item("GLASS").Count("GLASS_CLAUSEPREM")
+        		
+        		For stCount = 1 To stTotalCount
+        		
+        			Engine.Item("GLASS").NewObject("GLASS_CLAUSEPREM")		
+        			
+        			Engine.Item("GLASS").Item("GLASS_CLAUSEPREM", stCount).Item("ENDORSE_CAP").Value = Extras.RiskDataEngine.Item("GLASS").Item("GLASS_CLAUSEPREM", stCount).Item("ENDORSE_CAP").Value
+        				
+        		Next
+        		
+        	
+        	
+        		'GLASS Notes(Not printed)
+        		
+        		ttTotalCount = Extras.RiskDataEngine.Item("GLASS").Count("GLASS_CNOTE_DETAILS")
+        		
+        		For ttCount = 1 To ttTotalCount
+        		
+        			Engine.Item("GLASS").NewObject("GLASS_CNOTE_DETAILS")		
+        			
+        			Engine.Item("GLASS").Item("GLASS_CNOTE_DETAILS", ttCount).Item("DATE_CREATED").Value = Extras.RiskDataEngine.Item("GLASS").Item("GLASS_CNOTE_DETAILS", ttCount).Item("DATE_CREATED").Value
+        			
+        			Engine.Item("GLASS").Item("GLASS_CNOTE_DETAILS", ttCount).Item("CREATED_BY").Value = Extras.RiskDataEngine.Item("GLASS").Item("GLASS_CNOTE_DETAILS", ttCount).Item("CREATED_BY").Value		
+        
+        			Engine.Item("GLASS").Item("GLASS_CNOTE_DETAILS", ttCount).Item("COVER_TYPE").Value = Extras.RiskDataEngine.Item("GLASS").Item("GLASS_CNOTE_DETAILS", ttCount).Item("COVER_TYPE").Value		
+        		
+        			Engine.Item("GLASS").Item("GLASS_CNOTE_DETAILS", ttCount).Item("NOTE_DESCRIPTION").Value = Extras.RiskDataEngine.Item("GLASS").Item("GLASS_CNOTE_DETAILS", ttCount).Item("NOTE_DESCRIPTION").Value
+        			
+        			Engine.Item("GLASS").Item("GLASS_CNOTE_DETAILS", ttCount).Item("NOTE_DETAILS").Value = Extras.RiskDataEngine.Item("GLASS").Item("GLASS_CNOTE_DETAILS", ttCount).Item("NOTE_DETAILS").Value		
+        		Next
+        		
+        		'GLASS Notes(printed)
+        		
+        		stTotalCount = Extras.RiskDataEngine.Item("GLASS").Count("GLASS_SCNOTE_DETAILS")
+        		
+        		For stCount = 1 To stTotalCount
+        		
+        			Engine.Item("GLASS").NewObject("GLASS_SCNOTE_DETAILS")		
+        			
+        			Engine.Item("GLASS").Item("GLASS_SCNOTE_DETAILS", stCount).Item("DATE_CREATED").Value = Extras.RiskDataEngine.Item("GLASS").Item("GLASS_SCNOTE_DETAILS", stCount).Item("DATE_CREATED").Value
+        			
+        			Engine.Item("GLASS").Item("GLASS_SCNOTE_DETAILS", stCount).Item("CREATED_BY").Value = Extras.RiskDataEngine.Item("GLASS").Item("GLASS_SCNOTE_DETAILS", stCount).Item("CREATED_BY").Value		
+        
+        			Engine.Item("GLASS").Item("GLASS_SCNOTE_DETAILS", stCount).Item("COVER_TYPE").Value = Extras.RiskDataEngine.Item("GLASS").Item("GLASS_SCNOTE_DETAILS", stCount).Item("COVER_TYPE").Value		
+        
+        			Engine.Item("GLASS").Item("GLASS_SCNOTE_DETAILS", stCount).Item("NOTE_DESCRIPTION").Value = Extras.RiskDataEngine.Item("GLASS").Item("GLASS_SCNOTE_DETAILS", stCount).Item("NOTE_DESCRIPTION").Value
+        			
+        			Engine.Item("GLASS").Item("GLASS_SCNOTE_DETAILS", stCount).Item("NOTE_DETAILS").Value = Extras.RiskDataEngine.Item("GLASS").Item("GLASS_SCNOTE_DETAILS", stCount).Item("NOTE_DETAILS").Value		
+        		Next
+        		
+        		
+        	
+        End Sub
+
+        
+                
+             
+        Dim iObjectInstanceCount
+        
+        Sub FindObjectInstanceCount(strScreenObjectName)
+        	iObjectInstanceCount = 1
+        
+        	' strScreenObjectName is the object that is associate with this screen (if a child), or "" if the root screen.
+        	If strScreenObjectName <> ""  Then
+        		Dim instanceCount
+        		
+        		' How many instance of this object exist?
+        		instanceCount = engine.count(strScreenObjectName)
+        		
+        		Dim i
+        		for i = 1 to instanceCount
+        			if engine.item(strScreenObjectName, i).item("OI").value = vAdditionalData(cAdditionalData_OIKey) then
+        				iObjectInstanceCount = i
+        			end if
+        		next
+        	End If
+        End Sub
+
+        Sub DefaultTextTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultCommentTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultIntegerTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CLng(strValue)
+        End Sub
+
+        
+        Sub DefaultCheckboxTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanListTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanRadioTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	If InStr(1, LCase(strValue), "code:", 1) = 1 Then
+        		' The default value has been specified as a code (code:<thecode>).
+        		Dim code
+        		Dim effectiveDate
+        		Dim version
+        		
+        		code = Mid(strValue, Len("code:")+1)
+        		effectiveDate = Now()
+        		version = 1
+        		
+        		Dim listItemId
+        		listItemId = Extras.GetField(strListCode, strListCode + "_Id", code, effectiveDate, version)
+        		
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(listItemId)
+        	Else
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        	End If
+        End Sub
+
+        
+        Sub DefaultRateListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	' TODO.
+        End Sub
+
+        
+        Sub DefaultDateTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	
+        	Dim location
+        	Dim Interval
+        	Dim Duration
+        	Dim DateValue
+        	
+        	'Upper case the input
+        	DateValue = UCase(strValue)
+        	'Check to see if we want data AND  Time
+        	location = InStr(1,DateValue,"DATETIME")
+        	if location > 0 then
+        		DateValue=  CDate(FormatDateTime(Now,0)) 'use the standard vb datetime
+        	End If
+        	'Check to see if TODAY is specified as a modifier
+        	location  = InStr(1,DateValue,"TODAY")
+        	If location > 0 Then
+        		'Determine if we are adding values
+        		location  = InStr(1,DateValue,"+")
+        		If location > 0 Then 
+        			Interval = Mid(DateValue,location + 1,1)
+        			
+        			If Interval = "Y" Then
+        				Interval = "YYYY"
+        			End If
+        			
+        			If Interval <> "" Then 
+        				Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        				DateValue = DateAdd(Interval,Duration,CDate(FormatDateTime(Now,2)))	
+        				
+        			Else
+        				'No Interval specified 
+        				'Need an error here!!!!
+        			End If	
+        		Else 
+        			'Check to see if we are subtracting values
+        			location  =InStr(1,DateValue,"-")
+        			If location > 0  Then 
+        				Interval = Mid(DateValue,location + 1,1)
+        				
+        				If Interval <> "" Then 
+        					Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        					DateValue = DateAdd(Interval, Duration * -1,CDate(FormatDateTime(Now,2)))	
+        				Else
+        					'No Interval specified 
+        					'Need an error here!!!!
+        				End If
+        			Else
+        				'No Function specified, so assume we are just using today's date as a shortdate
+        				DateValue = CDate(FormatDateTime(Now,2))
+        			End If
+        			
+        		End If
+        		
+        	End If	
+        	
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDate(DateValue)
+        End Sub
+
+        
+        Sub DefaultCurrencyTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+        
+        Sub DefaultPercentageTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+Sub WebRequired(bIsOnStart)
+	If bIsOnStart = True Then
+		Engine.NewObject("GENERAL")
+		Engine.NewObject("ADDRESS")
+		Engine.NewObject("BAR")
+		Engine.NewObject("BAR_EXTENSIONS")
+		Engine.NewObject("GLASS")
+		Engine.NewObject("GLASS_COVER")
+		Engine.NewObject("GLASS_EXTENSIONS")
+		Engine.NewObject("THEFT")
+		Engine.NewObject("THEFT_EXTENSIONS")
+		Engine.NewObject("MONEY")
+		Engine.NewObject("MONEY_COVER")
+		Engine.NewObject("MONEY_MINOR")
+		Engine.NewObject("MONEY_SEASONAL")
+		Engine.NewObject("MONEY_EXTENSIONS")
+		Engine.NewObject("GIT")
+		Engine.NewObject("GIT_FAP")
+		Engine.NewObject("GIT_EXTENSIONS")
+		Engine.NewObject("EMPDE")
+		Engine.NewObject("STATED")
+		Engine.NewObject("STATED_EMPLOYEE")
+		Engine.NewObject("STATED_COVER")
+		Engine.NewObject("STATED_FAP")
+		Engine.NewObject("STATED_EXTENSIONS")
+		Engine.NewObject("STATED_SERVICES")
+		Engine.NewObject("FIDGUAR")
+		Engine.NewObject("ELECTEQUIP")
+		Engine.NewObject("EE_EXTENSIONS")
+		Engine.NewObject("MBREAK")
+		Engine.NewObject("CLOSS")
+		Engine.NewObject("DSTOCK")
+		Engine.NewObject("EXPOSURE_SUMMARY")
+	End If
+End Sub
+
+Sub onScreenLogic(bIsOnStart)
+        
+         If bIsOnStart = True Or bIsOnStart = False Then
+        	Call GetClaimUserLevel()
+        End If
+        
+         
+        
+        
+        	If bIsOnStart = True Then
+        		Call PullFromRiskGeneral()
+        		Call PullFromRiskBAR()
+        		Call PullFromRiskGlass()
+        		Call PullFromRiskMONEY()
+        		Call PullFromRiskGIT()
+        		Call PullFromRiskTHEFT()
+        		Call PullFromRiskSB()
+        		Call PullFromRiskEE()
+        		Call PullFromRiskFG()
+        		Call PullFromRiskGPA()
+        		Call PullFromRiskMachBreakdown()
+        		
+        		Call DoInstanceCount
+        	End If
+        End Sub
+
+        
+        Sub DoInstanceCount
+        ' The ScreenMain rule is added to every screen automatically.
+        
+        
+        Call FindObjectInstanceCount("")
+End Sub
+
+Sub onValidate_GENERAL__THIRDPARTY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "THIRDPARTY", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__SALVAGE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "SALVAGE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__RECOVERY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "RECOVERY", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__IS_SPM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "IS_SPM", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__IS_THRDTLS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "IS_THRDTLS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__IS_NAMAPP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "IS_NAMAPP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__IS_BAR(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "IS_BAR", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__IS_GLASS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "IS_GLASS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__IS_THEFT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "IS_THEFT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__IS_MONEY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "IS_MONEY", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__IS_GIT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "IS_GIT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__IS_PA(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "IS_PA", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__IS_SB(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "IS_SB", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__IS_FIDELITY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "IS_FIDELITY", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__IS_ELECEQUIP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "IS_ELECEQUIP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__IS_MACHINERY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "IS_MACHINERY", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_ELECTEQUIP__IS_RB(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("ELECTEQUIP", "IS_RB", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_MBREAK__IS_MACH(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("MBREAK", "IS_MACH", "1", "{listcode}")
+        End If
+End Sub
+
+Sub DoDefaults(bIsOnStart)
+    Call WebRequired(bIsOnStart)
+    Call onScreenLogic(bIsOnStart)
+    Call onValidate_GENERAL__THIRDPARTY(bIsOnStart)
+    Call onValidate_GENERAL__SALVAGE(bIsOnStart)
+    Call onValidate_GENERAL__RECOVERY(bIsOnStart)
+    Call onValidate_GENERAL__IS_SPM(bIsOnStart)
+    Call onValidate_GENERAL__IS_THRDTLS(bIsOnStart)
+    Call onValidate_GENERAL__IS_NAMAPP(bIsOnStart)
+    Call onValidate_GENERAL__IS_BAR(bIsOnStart)
+    Call onValidate_GENERAL__IS_GLASS(bIsOnStart)
+    Call onValidate_GENERAL__IS_THEFT(bIsOnStart)
+    Call onValidate_GENERAL__IS_MONEY(bIsOnStart)
+    Call onValidate_GENERAL__IS_GIT(bIsOnStart)
+    Call onValidate_GENERAL__IS_PA(bIsOnStart)
+    Call onValidate_GENERAL__IS_SB(bIsOnStart)
+    Call onValidate_GENERAL__IS_FIDELITY(bIsOnStart)
+    Call onValidate_GENERAL__IS_ELECEQUIP(bIsOnStart)
+    Call onValidate_GENERAL__IS_MACHINERY(bIsOnStart)
+    Call onValidate_ELECTEQUIP__IS_RB(bIsOnStart)
+    Call onValidate_MBREAK__IS_MACH(bIsOnStart)
+End Sub
+
+Sub Start()
+    Call DoDefaults(True)
+End Sub
+
+Sub Main()
+    Call DoDefaults(False)
+End Sub
+

@@ -1,0 +1,34 @@
+Sub Start()
+	Dim dtExpiryDate
+	Dim dtCoverStartDate
+	Dim dtAnniversaryDate
+	Dim vResults
+	Dim dtRenewalDate
+	Dim dYear
+	
+	STOP
+    
+  	'Get dates
+	Call Extras.CallNamedStoredProcedure(6722, CStr("GetPreviousVersionDates"), vResults)
+	If IsArray(vResults) = True Then		
+		dtAnniversaryDate  = vResults(2, 0)
+		dtRenewalDate  = vResults(3, 0)
+	End If
+	
+	If (Extras.IsTrueMonthlyPolicy = False) Then
+		If Extras.CoverStartDate = dtRenewalDate Then
+			'Assign the new Quote Date for Annivesary Renewal
+			Engine.Item("MOTOR").Item("QUOTE_DATE").Value = Extras.CoverStartDate
+			dYear = Year(Extras.CoverStartDate)
+			Engine.Item("MOTOR").Item("QUOTE_YEAR").Value = dYear
+		End If
+	Else
+		If Extras.CoverStartDate = dtAnniversaryDate Then
+			'Assign the new Quote Date for Annivesary Renewal
+			Engine.Item("MOTOR").Item("QUOTE_DATE").Value = Extras.CoverStartDate 
+			dYear = Year(Extras.CoverStartDate)
+			Engine.Item("MOTOR").Item("QUOTE_YEAR").Value = dYear
+		End If
+	End If
+
+End Sub

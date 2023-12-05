@@ -1,0 +1,32 @@
+Sub Start()
+    Dim originalLimit
+    Dim defaultLimit
+
+    originalLimit = Engine.Item("DNOLIAB").Item("LIMITINDEM").Value
+    defaultLimit = 250000000
+
+    If originalLimit > 250000000 Then
+        ReferIt("This quote will be referred to Reinsurance Team")
+        CreateTask("Reinsurance Team")
+    End If
+End Sub
+
+Function ReferIt(mRefMessage)
+    Dim mCnt
+    With Engine
+        .NewObject("DNOLIABRSK_Output")
+        mCnt = .count("DNOLIABRSK_Output")
+        .Item("DNOLIABRSK_Output", mCnt).item("Refer_reason").value = mRefMessage
+    End With
+End Function
+
+
+Function CreateTask(vRefMessage)
+    Extras.TaskUser = "All Users"
+    Extras.TaskUrgent = 1
+    Extras.TaskUserGroup = "RITEAM"
+    Extras.TaskGroup = "RITEAM"
+    Extras.TaskDescription = vRefMessage
+    Dim mReturn
+    mReturn = Extras.AddTaskToWorkManager()
+End Function

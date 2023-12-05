@@ -1,0 +1,445 @@
+Sub Start()
+
+    Dim SI, Rate, Premium, totalSI, totalExtensions
+	Dim MonthlyPremium
+	Dim VatFreeSI, VatFreePremium
+	Dim prodCode, branchName, iTOOFlag
+	Dim PublicSI, ProductSI, EmployerSI
+	Dim ClaimsSI, MonthlySI, CollapseSI,  DamageSI, EmergencySI, MemberSI, LegalSI, ArrestSI, Sub_Con_Basis_Of_Limit, Xol_Motor_Basis_Of_Limit, Care_Cus_Basis_Of_Limit
+	Dim ProductPrem, PublicPrem, EmployerPrem, Claims_Prem, Collapse_Prem, Damage_Prem, Emergency_Prem, Member_Prem, Legal_Prem, WrongFul_Prem, Includ_Ext_Tot_Prem, Sub_Con_Prem, Xol_Motor_Prem, Care_Cus_Prem
+	
+	'Branch and ITOO information
+	prodCode  = SafecStr(Engine.Item("GENERAL").Item("PRODCODE").value)
+	branchName = SafecStr(Engine.Item("GENERAL").Item("BRANCH").value)
+	iTOOFlag = ConvertToBool(Engine.Item("RISK_DETAILS").Item("ITOOAPPROV").value)
+	
+	'Public Liability
+	PublicSI = SafecDbl(Engine.Item("RISK_DETAILS").Item("PUBLIC_LIABILITY_LIMIT").value)
+	PublicPrem = SafecDbl(Engine.Item("RISK_DETAILS").Item("PUBLIC_LIABILITY_PREMIUM").value)
+	
+	'Products Liability
+	ProductSI = SafecDbl(Engine.Item("RISK_DETAILS").Item("PRODUCTS_LIABILITY_LIMIT").value)
+	ProductPrem = SafecDbl(Engine.Item("RISK_DETAILS").Item("PRODUCTS_LIABILITY_PREMIUM").value)
+	
+	'Employers Liability
+	EmployerSI = SafecDbl(Engine.Item("RISK_DETAILS").Item("EMPLOYERS_LIABILITY_LIMIT").value)
+	EmployerPrem = SafecDbl(Engine.Item("RISK_DETAILS").Item("EMPLOYERS_LIABILITY_PREMIUM").value)
+	
+	'The Overall Premium
+	Premium = PublicPrem + ProductPrem + EmployerPrem
+	
+	
+	'SafecDbl(Engine.Item("RISK_DETAILS").Item("TOTAL_PREMIUM").value)
+	
+	'-------------------------Extensions------------------------------'
+	'At the moment all additional extensions are being added to Public Liability
+	
+	'Claims Preparation Costs
+	ClaimsSI = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("CLAIMS_LIMIT").value)
+	Claims_Prem = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("CLAIMS_PREMIUM").value)
+	
+	'Construction and Scaffolding
+	CollapseSI = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("COLLAPSE_LIMIT").value)
+	Collapse_Prem = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("COLLAPSE_PREMIUM").value)
+	'Damage to Leased Premises
+	DamageSI = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("DAMAGE_LIMIT").value)
+	Damage_Prem = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("DAMAGE_PREMIUM").value)
+	
+	'Emergency Medical Expenses
+	EmergencySI = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("EMERGENCY_LIMIT").value)
+	Emergency_Prem = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("EMERGENCY_PREMIUM").value)
+	
+	'Legal Defence Costs
+	LegalSI = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("LEGAL_LIMIT").value)
+	Legal_Prem = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("LEGAL_PREMIUM").value)
+	'Arrest and Defamation
+	ArrestSI = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("ARREST_LIMIT").value)
+	WrongFul_Prem = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("WRONGFUL_PREMIUM").value)
+	
+	
+	'--------------------Optional Extensions ----------------------------------'
+	'Member to Member Liability
+	MemberSI = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("MEMBER_LIMIT").value)
+	Member_Prem = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("MEMBER_PREMIUM").value)
+	
+	'Sub-Contractors
+	Sub_Con_Basis_Of_Limit = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("SUB_CON_BASIS_OF_LIMIT").value)
+	Sub_Con_Prem  = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("SUB_CON_PREMIUM").value)
+	
+	'XOL Motor
+	Xol_Motor_Basis_Of_Limit = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("XOL_MOTOR_BASIS_OF_LIMIT").value)
+	Xol_Motor_Prem = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("XOL_MOTOR_PREMIUM").value)
+	
+	'Care, custody & control
+	Care_Cus_Basis_Of_Limit = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("CARE_CUS_BASIS_OF_LIMIT").value)
+	Care_Cus_Prem = SafecDbl(Engine.Item("RISK_EXTENSIONS").Item("CARE_CUS_PREMIUM").value)
+	
+	'Including and Optional Prem total
+	Includ_Ext_Tot_Prem = Claims_Prem + Collapse_Prem + Damage_Prem + Emergency_Prem + Member_Prem + Legal_Prem + WrongFul_Prem + Sub_Con_Prem + Xol_Motor_Prem + Care_Cus_Prem
+	
+	Premium = Premium + Includ_Ext_Tot_Prem
+	totalExtensions = ClaimsSI + CollapseSI + DamageSI + EmergencySI + MemberSI + LegalSI + ArrestSI + Sub_Con_Basis_Of_Limit + Xol_Motor_Basis_Of_Limit + Care_Cus_Basis_Of_Limit
+	
+	'--------------------------End Of Extensions-----------------------'
+	
+	
+	If prodCode = "CLA" Then
+		If branchName = "ITOO" and iTOOFlag = True Then
+
+			If PublicPrem > 0 Then
+				Rate = 0.00
+				'totalSI = PublicSI + totalExtensions
+				'VatFreeSI = SafecDbl(PublicSI/1.15)
+				VatFreeSI = SafecDbl(PublicSI/1.15)
+				VatFreePremium = SafecDbl(PublicPrem/1.15)
+				GenerateOutput VatFreeSI, Rate, VatFreePremium, "EVPUBLIAB"
+			End If
+		
+			If ProductPrem > 0 Then
+				Rate = 0.00
+				'Premium = 0.00
+				'VatFreeSI = SafecDbl(ProductSI/1.15)
+				VatFreeSI = 0.00
+				VatFreePremium = SafecDbl(ProductPrem/1.15)
+				GenerateOutput VatFreeSI, Rate, VatFreePremium, "LIABPROD"
+			End If
+			
+			If EmployerPrem > 0 Then	
+				Rate = 0.00
+				'Premium = 0.00
+				'VatFreeSI = SafecDbl(EmployerSI/1.15)
+				VatFreeSI = 0.00
+				VatFreePremium = SafecDbl(EmployerPrem/1.15)
+				GenerateOutput VatFreeSI, Rate, VatFreePremium, "LIABEMP"
+			End If
+			'Claims Preparation Costs
+			If Claims_Prem > 0 Then 
+			    Rate = 0.00
+				'Premium = 0.00
+			
+				'VatFreeSI = SafecDbl(ClaimsSI/1.15)
+				VatFreeSI = 0.00
+				VatFreePremium = SafecDbl(Claims_Prem/1.15)
+				GenerateOutput VatFreeSI, Rate, VatFreePremium, "EXTCPC"
+			End If 
+			
+			'Construction and Scaffolding
+			If Collapse_Prem > 0 Then 
+			    Rate = 0.00
+				'Premium = 0.00
+			
+				'VatFreeSI = SafecDbl(CollapseSI/1.15)
+				VatFreeSI = 0.00
+				VatFreePremium = SafecDbl(Collapse_Prem/1.15)
+				GenerateOutput VatFreeSI, Rate, VatFreePremium, "EVEXCON"
+			End If 
+			
+			'Damage to Leased Premises
+			If Damage_Prem > 0 Then 
+			    Rate = 0.00
+				'Premium = 0.00
+				'VatFreeSI = SafecDbl(DamageSI/1.15)
+				VatFreeSI = 0.00
+				VatFreePremium = SafecDbl(Damage_Prem/1.15)
+				GenerateOutput VatFreeSI, Rate, VatFreePremium, "EVEXDLP"
+			End If 
+			
+	        'Emergency Medical Expenses
+			If Emergency_Prem > 0 Then 
+			    Rate = 0.00
+				'Premium = 0.00
+				'VatFreeSI = SafecDbl(EmergencySI/1.15)
+				VatFreeSI = 0.00
+				VatFreePremium = SafecDbl(Emergency_Prem/1.15)
+				GenerateOutput VatFreeSI, Rate, VatFreePremium, "EVEXMED"
+			End If 
+			
+			'Legal Defence Costs
+			If Legal_Prem > 0 Then 
+			    Rate = 0.00
+				'Premium = 0.00
+				'VatFreeSI = SafecDbl(LegalSI/1.15)
+				VatFreeSI = 0.00
+				VatFreePremium = SafecDbl(Legal_Prem /1.15)
+				GenerateOutput VatFreeSI, Rate, VatFreePremium, "TREXELC"
+			End If 
+			
+			If WrongFul_Prem > 0 Then 
+			    Rate = 0.00
+				'Premium = 0.00
+				'VatFreeSI = SafecDbl(LegalSI/1.15)
+				VatFreeSI = 0.00
+				VatFreePremium = SafecDbl(WrongFul_Prem/1.15)
+				GenerateOutput VatFreeSI, Rate, VatFreePremium, "COMPROXWA"
+			End If 
+			
+			'Member to Member Liability
+			If Member_Prem > 0 Then
+			    Rate = 0.00
+				'Premium = 0.00
+				'VatFreeSI = SafecDbl(MemberSI/1.15)
+				VatFreeSI = 0.00
+				VatFreePremium = SafecDbl(Member_Prem/1.15)
+				GenerateOutput VatFreeSI, Rate, VatFreePremium, "EVEXMML"
+			
+			End If 
+			
+	        'Sub-Contractors
+	         If Sub_Con_Prem > 0 Then
+			    Rate = 0.00
+				'Premium = 0.00
+				'VatFreeSI = SafecDbl(Sub_Con_Basis_Of_Limit/1.15)
+				VatFreeSI =  0.00
+				VatFreePremium = SafecDbl(Sub_Con_Prem/1.15)
+				GenerateOutput VatFreeSI, Rate, VatFreePremium, "GLEXTCONL"
+			   End If 
+			
+			
+			'XOL Motor
+	        If Xol_Motor_Prem > 0 Then
+			    Rate = 0.00
+				'Premium = 0.00
+				'VatFreeSI = SafecDbl(Xol_Motor_Basis_Of_Limit/1.15)
+				VatFreeSI = 0.00
+				VatFreePremium = SafecDbl(Xol_Motor_Prem/1.15)
+				GenerateOutput VatFreeSI, Rate, VatFreePremium, "EVEXXOLMOT"
+			  End If 
+			  
+            'Care, custody & control
+	         If Care_Cus_Prem > 0 Then
+			    Rate = 0.00
+				'Premium = 0.00
+				'VatFreeSI = SafecDbl(Care_Cus_Basis_Of_Limit/1.15)
+				VatFreeSI = 0.00
+				VatFreePremium = SafecDbl(Care_Cus_Prem/1.15)
+				GenerateOutput VatFreeSI, Rate, VatFreePremium, "GLEXTCCC"
+			  End If 
+			  
+		Else
+		
+			If Premium > 0 Then
+				Rate = 0.00
+				'totalSI = PublicSI + ProductSI + EmployerSI + totalExtensions
+				'VatFreeSI = SafecDbl(totalSI/1.15)
+				VatFreeSI = SafecDbl(PublicSI/1.15)
+				VatFreePremium = SafecDbl(Premium/1.15)
+				GenerateOutput VatFreeSI, Rate, VatFreePremium, "EVPUBEX"
+			End If
+		End If
+	End If
+	
+	If prodCode = "CLM" Then
+		If branchName = "ITOO" and iTOOFlag = True Then
+		
+			If PublicPrem > 0 Then
+		  Dim PublicMonthlyRate, PublicMonthlyPI, PublicMonthlyPrem, PublicRate
+				'----------Month Rate Calculate-----------'
+				PublicRate = SafecDbl(PublicPrem / PublicSI * 100)
+				'----------End Month Rate Calculate-----------'
+				PublicMonthlyRate = SafecDbl(PublicRate/12)
+				PublicMonthlyPrem =(PublicSI * (PublicMonthlyRate * 0.01))
+				VatFreeSI =  SafecDbl(PublicSI/1.15)
+				VatFreePremium =  SafecDbl(PublicMonthlyPrem/1.15)
+				GenerateOutput VatFreeSI, PublicMonthlyRate, VatFreePremium, "EVPUBLIAB"
+			End If
+			
+			If ProductPrem > 0 Then
+				Rate = 0.00
+				VatFreeSI = 0.00
+				MonthlyPremium = MonthlyPremium/12
+				'Premium = 0.00
+				'VatFreeSI = SafecDbl(ProductSI/1.15)
+				
+				VatFreePremium = SafecDbl(MonthlyPremium/1.15)
+				GenerateOutput VatFreeSI, Rate, VatFreePremium, "LIABPROD"
+			End If
+			
+			If EmployerPrem > 0 Then	
+				Rate = 0.00
+				'Premium = 0.00
+				MonthlyPremium = EmployerPrem/12
+				'VatFreeSI = SafecDbl(EmployerSI/1.15)
+				VatFreeSI = 0.00
+				VatFreePremium = SafecDbl(MonthlyPremium/1.15)
+				GenerateOutput VatFreeSI, Rate, VatFreePremium, "LIABEMP"
+			End If
+			'Claims Preparation Costs
+			If Claims_Prem > 0 Then 
+			    Rate = 0.00
+				'Premium = 0.00
+			
+				'VatFreeSI = SafecDbl(ClaimsSI/1.15)
+				MonthlyPremium = Claims_Prem/12
+				VatFreeSI = 0.00
+				VatFreePremium = SafecDbl(MonthlyPremium/1.15)
+				GenerateOutput VatFreeSI, Rate, VatFreePremium, "EXTCPC"
+			End If 
+			
+			'Construction and Scaffolding
+			If Collapse_Prem > 0 Then 
+			    Rate = 0.00
+				'Premium = 0.00
+			     MonthlyPremium = Collapse_Prem / 12
+				'VatFreeSI = SafecDbl(CollapseSI/1.15)
+				VatFreeSI = 0.00
+				
+				VatFreePremium = SafecDbl(MonthlyPremium/1.15)
+				GenerateOutput VatFreeSI, Rate, VatFreePremium, "EVEXCON"
+			End If 
+			
+			'Damage to Leased Premises
+			If Damage_Prem > 0 Then 
+			    Rate = 0.00
+				'Premium = 0.00
+				'VatFreeSI = SafecDbl(DamageSI/1.15)
+				MonthlyPremium = Damage_Prem / 12
+				VatFreeSI = 0.00
+				
+				VatFreePremium = SafecDbl(MonthlyPremium/1.15)
+				GenerateOutput VatFreeSI, Rate, VatFreePremium, "EVEXDLP"
+			End If 
+			
+			
+			
+	        'Emergency Medical Expenses
+			If Emergency_Prem > 0 Then 
+			    Rate = 0.00
+				'Premium = 0.00
+				MonthlyPremium = Emergency_Prem / 12
+				'VatFreeSI = SafecDbl(EmergencySI/1.15)
+				VatFreeSI = 0.00
+				VatFreePremium = SafecDbl(MonthlyPremium/1.15)
+				GenerateOutput VatFreeSI, Rate, VatFreePremium, "EVEXMED"
+			End If 
+			
+			'Legal Defence Costs
+			
+			If Legal_Prem > 0 Then 
+			    Rate = 0.00
+				'Premium = 0.00
+				'VatFreeSI = SafecDbl(LegalSI/1.15)
+				MonthlyPremium = Legal_Prem / 12
+				VatFreeSI = 0.00
+				
+				VatFreePremium = SafecDbl(MonthlyPremium /1.15)
+				GenerateOutput VatFreeSI, Rate, VatFreePremium, "TREXELC"
+			End If 
+			
+			If WrongFul_Prem > 0 Then 
+			    Rate = 0.00
+				'Premium = 0.00
+				'VatFreeSI = SafecDbl(LegalSI/1.15)
+				MonthlyPremium = WrongFul_Prem / 12
+				VatFreeSI = 0.00
+				VatFreePremium = SafecDbl(MonthlyPremium/1.15)
+				GenerateOutput VatFreeSI, Rate, VatFreePremium, "COMPROXWA"
+			End If 
+			
+			'Member to Member Liability
+	      
+			If Member_Prem > 0 Then
+			
+			    Rate = 0.00
+				'Premium = 0.00
+				
+				'VatFreeSI = SafecDbl(MemberSI/1.15)
+				MonthlyPremium = Member_Prem / 12
+				VatFreeSI = 0.00 
+				
+				VatFreePremium = SafecDbl(MonthlyPremium/1.15)
+				GenerateOutput VatFreeSI, Rate, VatFreePremium, "EVEXMML"
+			
+			End If 
+			
+			
+	        'Sub-Contractors
+	         If Sub_Con_Prem > 0 Then
+			    Rate = 0.00
+				'Premium = 0.00
+				
+				'VatFreeSI = SafecDbl(Sub_Con_Basis_Of_Limit/1.15)
+				MonthlyPremium = Sub_Con_Prem / 12
+				VatFreeSI = 0.00
+				
+				VatFreePremium = SafecDbl(MonthlyPremium/1.15)
+				GenerateOutput VatFreeSI, Rate, VatFreePremium, "GLEXTCONL"
+			   End If 
+			
+			
+			'XOL Motor
+	        If Xol_Motor_Prem > 0 Then
+			    Rate = 0.00
+				'Premium = 0.00
+				'VatFreeSI = SafecDbl(Xol_Motor_Basis_Of_Limit/1.15)
+				MonthlyPremium = Xol_Motor_Prem / 12
+				VatFreeSI = 0.00
+				
+				VatFreePremium = SafecDbl(MonthlyPremium/1.15)
+				GenerateOutput VatFreeSI, Rate, VatFreePremium, "EVEXXOLMOT"
+			  End If 
+			  
+            'Care, custody & control
+	         If Care_Cus_Prem > 0 Then
+			    Rate = 0.00
+				'Premium = 0.00
+				MonthlyPremium = Care_Cus_Prem /12
+				'VatFreeSI = SafecDbl(Care_Cus_Basis_Of_Limit/1.15)
+				VatFreeSI = 0.00
+				
+				VatFreePremium = SafecDbl(MonthlyPremium/1.15)
+				GenerateOutput VatFreeSI, Rate, VatFreePremium, "GLEXTCCC"
+			  End If 
+			  
+		Else
+			If Premium > 0 Then
+				Rate = 0.00
+				'totalSI = PublicSI + ProductSI + EmployerSI + totalExtensions
+				
+				MonthlyPremium = Premium / 12
+				 'MonthlySI = PublicSI/12
+				'VatFreeSI = SafecDbl(totalSI/1.15)
+				VatFreeSI = SafecDbl(PublicSI/1.15)
+				VatFreePremium = SafecDbl(MonthlyPremium /1.15)
+				GenerateOutput VatFreeSI, Rate, VatFreePremium, "EVPUBEX"
+			End If
+		End If
+	End If
+
+End Sub
+
+Function GenerateOutput(cSI, cRate, cPrem, cRatingSection)
+
+    Dim iCount
+
+    Engine.NewObject("EVENTLIAB_Output")
+    iCount = Engine.Count("EVENTLIAB_Output")
+
+    Engine.Item("EVENTLIAB_Output", iCount).Item("Sum_insured").Value = cSI
+    Engine.Item("EVENTLIAB_Output", iCount).Item("Rate").Value = cRate
+    Engine.Item("EVENTLIAB_Output", iCount).Item("Premium").Value = cPrem
+    Engine.Item("EVENTLIAB_Output", iCount).Item("risk_rating_section").Value = cRatingSection
+
+End Function
+
+Function SafecDbl(value)
+
+    SafecDbl = 0
+    On Error Resume Next
+    SafecDbl = CDbl(value)
+    On Error GoTo 0
+
+End Function
+
+Function SafecStr(value)
+    SafecStr = ""
+    On Error Resume Next
+    SafecStr = CStr(value)
+    On Error GoTo 0
+End Function
+
+Function ConvertToBool(value)
+    ConvertToBool = 0
+    On Error Resume Next
+    ConvertToBool = CBool(value)
+    On Error GoTo 0
+End Function

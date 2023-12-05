@@ -1,0 +1,946 @@
+        '**********************************************************************************************
+        'Load Defaults from UDLs
+        '**********************************************************************************************
+        Sub LoadDefaults()
+         Dim vResults
+         Dim IsTheft
+         
+         
+         	'Check if Theft was taken within the policy
+        	Call Extras.CallNamedStoredProcedure(clng(6722),cstr("Check_TheftSelection"), vResults)	
+        	If IsArray(vResults) Then
+        	   IsTheft = vResults(0,0)
+        	End If
+        	
+         
+          'Assign Defaults and Theft Value to Fields
+          With Engine.Item("GENERAL")
+        	.Item("FI_ERATE").Value = Extras.GetField("UDL_GFIRE_DEFAULTS", "Default_Value", "FI_ERATE",Extras.CoverStartDate)
+        	.Item("FI_DPERC").Value = Extras.GetField("UDL_GFIRE_DEFAULTS", "Default_Value", "FI_DPERC",Extras.CoverStartDate)
+        	.Item("FI_FRATE").Value = Extras.GetField("UDL_GFIRE_DEFAULTS", "Default_Value", "FI_FRATE",Extras.CoverStartDate)
+        	.Item("FI_FAMNT").Value = Extras.GetField("UDL_GFIRE_DEFAULTS", "Default_Value", "FI_FAMNT",Extras.CoverStartDate)
+        	.Item("FI_GAMNT").Value = Extras.GetField("UDL_GFIRE_DEFAULTS", "Default_Value", "FI_GAMNT",Extras.CoverStartDate) 
+        	.Item("FI_LAMNT").Value = Extras.GetField("UDL_GFIRE_DEFAULTS", "Default_Value", "FI_LAMNT",Extras.CoverStartDate)
+        	.Item("FI_SNCAMNT").Value = Extras.GetField("UDL_GFIRE_DEFAULTS", "Default_Value", "FI_SNCAMNT",Extras.CoverStartDate)
+        	.Item("BC_GAMNT").Value = Extras.GetField("UDL_GFIRE_DEFAULTS", "Default_Value", "BC_GAMNT",Extras.CoverStartDate) 
+        	.Item("BC_AMNT").Value = Extras.GetField("UDL_GFIRE_DEFAULTS", "Default_Value", "BC_AMNT",Extras.CoverStartDate)
+        	.Item("BC_SNAMNT").Value = Extras.GetField("UDL_GFIRE_DEFAULTS", "Default_Value", "BC_SNAMNT",Extras.CoverStartDate)
+        	.Item("BC_RRATE").Value = Extras.GetField("UDL_GFIRE_DEFAULTS", "Default_Value", "BC_RRATE",Extras.CoverStartDate)
+        	.Item("BC_LAMNT").Value = Extras.GetField("UDL_GFIRE_DEFAULTS", "Default_Value", "BC_LAMNT",Extras.CoverStartDate)
+        	.Item("OC_TRATE").Value = Extras.GetField("UDL_GFIRE_DEFAULTS", "Default_Value", "OC_TRATE",Extras.CoverStartDate)
+        	.Item("OC_LAMNT").Value = Extras.GetField("UDL_GFIRE_DEFAULTS", "Default_Value", "OC_LAMNT",Extras.CoverStartDate)
+        	.Item("OC_LIAMNT").Value = Extras.GetField("UDL_GFIRE_DEFAULTS", "Default_Value", "OC_LIAMNT",Extras.CoverStartDate)
+        	.Item("FIRE_MPL").Value = Extras.GetField("UDL_GFIRE_DEFAULTS", "Default_Value", "FIRE_MPL",Extras.CoverStartDate)
+        	.Item("FIRE_LAMNT").Value = Extras.GetField("UDL_GFIRE_DEFAULTS", "Default_Value", "FIRE_LAMNT",Extras.CoverStartDate)
+        	.Item("F_WBC_RATE").Value = Extras.GetField("UDL_GFIRE_DEFAULTS", "Default_Value", "F_WBC_RATE",Extras.CoverStartDate)
+        	.Item("F_WBC_AMNT").Value = Extras.GetField("UDL_GFIRE_DEFAULTS", "Default_Value", "F_WBC_AMNT",Extras.CoverStartDate)
+        	.Item("AD_FAP_AMT").Value = Extras.GetField("UDL_GFIRE_DEFAULTS", "Default_Value", "AD_FAP_AMT",Extras.CoverStartDate)
+        	.Item("AD_FAP").Value = Extras.GetField("UDL_GFIRE_DEFAULTS", "Default_Value", "AD_FAP",Extras.CoverStartDate)
+        	.Item("BC_G_FAP").Value = Extras.GetField("UDL_GFIRE_DEFAULTS", "Default_Value", "BC_G_FAP",Extras.CoverStartDate)
+        	.Item("BC_G_FAMT").Value = Extras.GetField("UDL_GFIRE_DEFAULTS", "Default_Value", "BC_G_FAMT",Extras.CoverStartDate)
+        	.Item("BC_WB_FAP").Value = Extras.GetField("UDL_GFIRE_DEFAULTS", "Default_Value", "BC_WB_FAP",Extras.CoverStartDate)
+        	.Item("BC_WB_AMNT").Value = Extras.GetField("UDL_GFIRE_DEFAULTS", "Default_Value", "BC_WB_AMNT",Extras.CoverStartDate)
+        	.Item("BC_THF_FAP").Value = Extras.GetField("UDL_GFIRE_DEFAULTS", "Default_Value", "BC_THF_FAP",Extras.CoverStartDate)
+        	.Item("BC_THF_AMT").Value = Extras.GetField("UDL_GFIRE_DEFAULTS", "Default_Value", "BC_THF_AMT",Extras.CoverStartDate)
+        	.Item("FI_G_FAP").Value = Extras.GetField("UDL_GFIRE_DEFAULTS", "Default_Value", "FI_G_FAP",Extras.CoverStartDate)
+        	.Item("FI_G_FAMT").Value = Extras.GetField("UDL_GFIRE_DEFAULTS", "Default_Value", "FI_G_FAMT",Extras.CoverStartDate)
+        	.Item("BC_SL_FAP").Value = Extras.GetField("UDL_GFIRE_DEFAULTS", "Default_Value", "BC_SL_FAP",Extras.CoverStartDate)
+        	.Item("BC_SL_FAMT").Value = Extras.GetField("UDL_GFIRE_DEFAULTS", "Default_Value", "BC_SL_FAMT",Extras.CoverStartDate)
+        	.Item("BC_SFAMNT").Value = Extras.GetField("UDL_GFIRE_DEFAULTS", "Default_Value", "BC_SFAMNT",Extras.CoverStartDate)
+        	.Item("IS_MISC_THEFT").Value = IsTheft
+        	
+          End With
+        
+        
+         
+        End Sub
+
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        Sub SetUserDetails()
+            Dim vUserResult 
+        	Dim lUserId
+            Call Extras.CallNamedStoredProcedure(CLng(6722), CStr("GetUserDetails"), vUserResult,Array("sUserName", Extras.Username))
+            If IsArray(vUserResult) Then
+                Engine.Item("GENERAL").Item("LoggedInUser").Value = Extras.Username
+        		lUserId = vUserResult(0,0)
+        		Engine.Item("GENERAL").Item("LoggedInUserFullName").Value = vUserResult(1,0)
+        		Engine.Item("GENERAL").Item("LoggedInUserEmail").Value = vUserResult(2,0)
+            End If
+        
+            'Get user authority level
+            Dim vExtraParameters
+            Dim sRiskCode
+            Dim vResults
+        	Dim sProdCode
+            sProdCode = Extras.ProductCode
+        	
+            vExtraParameters = array( "lUserId", lUserId, "sProdCode", sProdCode)
+            Call Extras.CallNamedStoredProcedure(CLng(6722), "GetUserAuthorityLevel", vResults, vExtraParameters)
+        	If IsArray(vResults) then
+        		If vResults(0,0) <> "" Then
+        			Engine.Item("GENERAL").Item("UserLevel").Value = Replace(vResults(0,0), "U","")
+        			Engine.Item("GENERAL").Item("UserGroup").Value = vResults(0,0)
+        		Else
+        			'Assign Default Level to 1
+        			Engine.Item("GENERAL").Item("UserLevel").Value = 1
+        			Engine.Item("GENERAL").Item("UserGroup").Value = "U1"
+        		End If
+        	End IF
+        End Sub
+
+        Dim iObjectInstanceCount
+        
+        Sub FindObjectInstanceCount(strScreenObjectName)
+        	iObjectInstanceCount = 1
+        
+        	' strScreenObjectName is the object that is associate with this screen (if a child), or "" if the root screen.
+        	If strScreenObjectName <> ""  Then
+        		Dim instanceCount
+        		
+        		' How many instance of this object exist?
+        		instanceCount = engine.count(strScreenObjectName)
+        		
+        		Dim i
+        		for i = 1 to instanceCount
+        			if engine.item(strScreenObjectName, i).item("OI").value = vAdditionalData(cAdditionalData_OIKey) then
+        				iObjectInstanceCount = i
+        			end if
+        		next
+        	End If
+        End Sub
+
+        Sub DefaultTextTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultCommentTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultIntegerTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CLng(strValue)
+        End Sub
+
+        
+        Sub DefaultCheckboxTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanListTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanRadioTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	If InStr(1, LCase(strValue), "code:", 1) = 1 Then
+        		' The default value has been specified as a code (code:<thecode>).
+        		Dim code
+        		Dim effectiveDate
+        		Dim version
+        		
+        		code = Mid(strValue, Len("code:")+1)
+        		effectiveDate = Now()
+        		version = 1
+        		
+        		Dim listItemId
+        		listItemId = Extras.GetField(strListCode, strListCode + "_Id", code, effectiveDate, version)
+        		
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(listItemId)
+        	Else
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        	End If
+        End Sub
+
+        
+        Sub DefaultRateListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	' TODO.
+        End Sub
+
+        
+        Sub DefaultDateTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	
+        	Dim location
+        	Dim Interval
+        	Dim Duration
+        	Dim DateValue
+        	
+        	'Upper case the input
+        	DateValue = UCase(strValue)
+        	'Check to see if we want data AND  Time
+        	location = InStr(1,DateValue,"DATETIME")
+        	if location > 0 then
+        		DateValue=  CDate(FormatDateTime(Now,0)) 'use the standard vb datetime
+        	End If
+        	'Check to see if TODAY is specified as a modifier
+        	location  = InStr(1,DateValue,"TODAY")
+        	If location > 0 Then
+        		'Determine if we are adding values
+        		location  = InStr(1,DateValue,"+")
+        		If location > 0 Then 
+        			Interval = Mid(DateValue,location + 1,1)
+        			
+        			If Interval = "Y" Then
+        				Interval = "YYYY"
+        			End If
+        			
+        			If Interval <> "" Then 
+        				Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        				DateValue = DateAdd(Interval,Duration,CDate(FormatDateTime(Now,2)))	
+        				
+        			Else
+        				'No Interval specified 
+        				'Need an error here!!!!
+        			End If	
+        		Else 
+        			'Check to see if we are subtracting values
+        			location  =InStr(1,DateValue,"-")
+        			If location > 0  Then 
+        				Interval = Mid(DateValue,location + 1,1)
+        				
+        				If Interval <> "" Then 
+        					Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        					DateValue = DateAdd(Interval, Duration * -1,CDate(FormatDateTime(Now,2)))	
+        				Else
+        					'No Interval specified 
+        					'Need an error here!!!!
+        				End If
+        			Else
+        				'No Function specified, so assume we are just using today's date as a shortdate
+        				DateValue = CDate(FormatDateTime(Now,2))
+        			End If
+        			
+        		End If
+        		
+        	End If	
+        	
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDate(DateValue)
+        End Sub
+
+        
+        Sub DefaultCurrencyTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+        
+        Sub DefaultPercentageTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+Sub WebRequired(bIsOnStart)
+	If bIsOnStart = True Then
+		Engine.NewObject("GENERAL")
+		Engine.NewObject("ADDRESS")
+		Engine.NewObject("RISK_SELECTION")
+		Engine.NewObject("CLAIM_HISTORY")
+		Engine.NewObject("FIRE")
+		Engine.NewObject("FIRE_EXTENSIONS")
+		Engine.NewObject("REINSEXP_FIRE")
+		Engine.NewObject("BUILDCOM")
+		Engine.NewObject("BCOM_EXTENSIONS")
+		Engine.NewObject("REINSEXP_BC")
+		Engine.NewObject("OFFICE")
+		Engine.NewObject("OFFICE_EXTENSIONS")
+		Engine.NewObject("REINSEXP_OC")
+		Engine.NewObject("BI")
+		Engine.NewObject("BI_EXTENSIONS")
+		Engine.NewObject("REINSEXP_BI")
+		Engine.NewObject("AR")
+		Engine.NewObject("AR_EXTENSIONS")
+		Engine.NewObject("REINSEXP_AR")
+		Engine.NewObject("AD")
+		Engine.NewObject("AD_EXTENSIONS")
+		Engine.NewObject("PREMIUM_SUMMARY")
+		Engine.NewObject("EXPOSURE_SUMMARY")
+		Engine.NewObject("REFERRALS")
+	End If
+End Sub
+
+Sub onScreenLogic(bIsOnStart)
+        
+         If bIsOnStart = True Or bIsOnStart = False Then
+        	Call LoadDefaults()
+        End If
+        
+         
+        
+        
+        If bIsOnStart = True Or bIsOnStart = False Then
+        	Call SetUserDetails()
+        End If
+        ' The ScreenMain rule is added to every screen automatically.
+        
+        
+        Call FindObjectInstanceCount("")
+End Sub
+
+Sub onValidate_GENERAL__IS_MTA_REASON(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "IS_MTA_REASON", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__ACCEPT_DUPLIC_CLIENT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "ACCEPT_DUPLIC_CLIENT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__IS_VAT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultListTo("GENERAL", "IS_VAT", "1", "UDL_CMA_VAT")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__NEXUSQS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultIntegerTo("GENERAL", "NEXUSQS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_GENERAL__IS_MISC_THEFT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("GENERAL", "IS_MISC_THEFT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_SELECTION__FIRE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("RISK_SELECTION", "FIRE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_SELECTION__BUILDINGS_COMB(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("RISK_SELECTION", "BUILDINGS_COMB", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_SELECTION__OFFICE_CONT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("RISK_SELECTION", "OFFICE_CONT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_SELECTION__BI(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("RISK_SELECTION", "BI", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_SELECTION__ACCOUNT_RECEIVE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("RISK_SELECTION", "ACCOUNT_RECEIVE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_SELECTION__ACCIDENTAL_DAMAGE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("RISK_SELECTION", "ACCIDENTAL_DAMAGE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_SELECTION__POLICYTYPE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultListTo("RISK_SELECTION", "POLICYTYPE", "1", "UDL_POLICYTYPE")
+        End If
+End Sub
+
+Sub onValidate_RISK_SELECTION__APPLICABLE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("RISK_SELECTION", "APPLICABLE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_RISK_SELECTION__RISK_BLOCKED(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("RISK_SELECTION", "RISK_BLOCKED", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_FIRE__FLAT_PREMIUM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("FIRE", "FLAT_PREMIUM", "1", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_FIRE__MULTIPLE_BUILDINGS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("FIRE", "MULTIPLE_BUILDINGS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_FIRE__STOCK_DECLARATION(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("FIRE", "STOCK_DECLARATION", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_FIRE_EXTENSIONS__IS_ACPC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("FIRE_EXTENSIONS", "IS_ACPC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_FIRE_EXTENSIONS__IS_BRANDS_AND_LABELS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("FIRE_EXTENSIONS", "IS_BRANDS_AND_LABELS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_FIRE_EXTENSIONS__IS_LEAKAGE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("FIRE_EXTENSIONS", "IS_LEAKAGE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_FIRE_EXTENSIONS__IS_RIOT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("FIRE_EXTENSIONS", "IS_RIOT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_FIRE_EXTENSIONS__IS_SUBSI(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("FIRE_EXTENSIONS", "IS_SUBSI", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_FIRE_EXTENSIONS__IS_WILD_BMB(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("FIRE_EXTENSIONS", "IS_WILD_BMB", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_FIRE_EXTENSIONS__IS_WILD_BMC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("FIRE_EXTENSIONS", "IS_WILD_BMC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_FIRE_EXTENSIONS__IS_SHADES(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("FIRE_EXTENSIONS", "IS_SHADES", "1", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_FIRE_EXTENSIONS__IS_GEYSER(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("FIRE_EXTENSIONS", "IS_GEYSER", "1", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_FIRE_EXTENSIONS__IS_AVG(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("FIRE_EXTENSIONS", "IS_AVG", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_FIRE_EXTENSIONS__IS_NASRIA_FIRE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("FIRE_EXTENSIONS", "IS_NASRIA_FIRE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_FIRE_EXTENSIONS__IS_NASRIA_ESC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("FIRE_EXTENSIONS", "IS_NASRIA_ESC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_FIRE_EXTENSIONS__IS_NASRIA_INFL(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("FIRE_EXTENSIONS", "IS_NASRIA_INFL", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BUILDCOM__FLAT_PREMIUM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BUILDCOM", "FLAT_PREMIUM", "1", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BCOM_EXTENSIONS__IS_ACPC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BCOM_EXTENSIONS", "IS_ACPC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BCOM_EXTENSIONS__IS_POA(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BCOM_EXTENSIONS", "IS_POA", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BCOM_EXTENSIONS__IS_RIOT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BCOM_EXTENSIONS", "IS_RIOT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BCOM_EXTENSIONS__IS_SUBSI(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BCOM_EXTENSIONS", "IS_SUBSI", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BCOM_EXTENSIONS__IS_THEFT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BCOM_EXTENSIONS", "IS_THEFT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BCOM_EXTENSIONS__IS_WILD_BM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BCOM_EXTENSIONS", "IS_WILD_BM", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BCOM_EXTENSIONS__IS_SHADES(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BCOM_EXTENSIONS", "IS_SHADES", "1", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BCOM_EXTENSIONS__IS_SANITARY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BCOM_EXTENSIONS", "IS_SANITARY", "1", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BCOM_EXTENSIONS__IS_GEYSER(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BCOM_EXTENSIONS", "IS_GEYSER", "1", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BCOM_EXTENSIONS__IS_AVG(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BCOM_EXTENSIONS", "IS_AVG", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BCOM_EXTENSIONS__IS_NASRIA_BC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BCOM_EXTENSIONS", "IS_NASRIA_BC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BCOM_EXTENSIONS__IS_NASRIA_ESC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BCOM_EXTENSIONS", "IS_NASRIA_ESC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BCOM_EXTENSIONS__IS_NASRIA_INFL(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BCOM_EXTENSIONS", "IS_NASRIA_INFL", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_OFFICE__FLAT_PREMIUM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("OFFICE", "FLAT_PREMIUM", "1", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_OFFICE__IS_ALARM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("OFFICE", "IS_ALARM", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_OFFICE_EXTENSIONS__IS_ACPC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("OFFICE_EXTENSIONS", "IS_ACPC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_OFFICE_EXTENSIONS__IS_LEAKAGE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("OFFICE_EXTENSIONS", "IS_LEAKAGE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_OFFICE_EXTENSIONS__IS_RIOT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("OFFICE_EXTENSIONS", "IS_RIOT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_OFFICE_EXTENSIONS__IS_THEFT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("OFFICE_EXTENSIONS", "IS_THEFT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_OFFICE_EXTENSIONS__IS_WILD_BM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("OFFICE_EXTENSIONS", "IS_WILD_BM", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_OFFICE_EXTENSIONS__IS_NASRIA_OC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("OFFICE_EXTENSIONS", "IS_NASRIA_OC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BI__FLAT_PREMIUM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BI", "FLAT_PREMIUM", "1", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BI__TYPE_OF_COVER(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultListTo("BI", "TYPE_OF_COVER", "1", "UDL_BI_COVERTYPE")
+        End If
+End Sub
+
+Sub onValidate_BI__UNINS_WORK_EXP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCommentTo("BI", "UNINS_WORK_EXP", "1.Purchases less discounts received 2.Bad debts 3.Discounts allowed 4.Other", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BI__STAND_CHARGE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCommentTo("BI", "STAND_CHARGE", "1.Salaries 2.Rent 3.Electricity, rates and taxes", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BI__IS_GPB(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BI", "IS_GPB", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BI__IS_GR(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BI", "IS_GR", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BI__IS_REVENUE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BI", "IS_REVENUE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BI__IS_AICW(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BI", "IS_AICW", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BI__IS_WG(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BI", "IS_WG", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BI__IS_DWW(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BI", "IS_DWW", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BI__IS_FP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BI", "IS_FP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BI_EXTENSIONS__IS_AD(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BI_EXTENSIONS", "IS_AD", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BI_EXTENSIONS__IS_ACPC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BI_EXTENSIONS", "IS_ACPC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BI_EXTENSIONS__IS_PAE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BI_EXTENSIONS", "IS_PAE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BI_EXTENSIONS__IS_PTE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BI_EXTENSIONS", "IS_PTE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BI_EXTENSIONS__IS_PTI(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BI_EXTENSIONS", "IS_PTI", "1", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BI_EXTENSIONS__IS_PUEC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BI_EXTENSIONS", "IS_PUEC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BI_EXTENSIONS__IS_PUIP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BI_EXTENSIONS", "IS_PUIP", "1", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BI_EXTENSIONS__IS_TFE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BI_EXTENSIONS", "IS_TFE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BI_EXTENSIONS__IS_UNSPEC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BI_EXTENSIONS", "IS_UNSPEC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BI_EXTENSIONS__IS_SPEC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BI_EXTENSIONS", "IS_SPEC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BI_EXTENSIONS__IS_SUB(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BI_EXTENSIONS", "IS_SUB", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_BI_EXTENSIONS__IS_NASRIA_BI(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("BI_EXTENSIONS", "IS_NASRIA_BI", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_AR__FLAT_PREMIUM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("AR", "FLAT_PREMIUM", "1", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_AR_EXTENSIONS__IS_ACPC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("AR_EXTENSIONS", "IS_ACPC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_AR_EXTENSIONS__IS_RIOT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("AR_EXTENSIONS", "IS_RIOT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_AR_EXTENSIONS__IS_DUP_REC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("AR_EXTENSIONS", "IS_DUP_REC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_AR_EXTENSIONS__IS_PROTECT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("AR_EXTENSIONS", "IS_PROTECT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_AR_EXTENSIONS__IS_TRANSIT(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("AR_EXTENSIONS", "IS_TRANSIT", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_AD__FLAT_PREMIUM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("AD", "FLAT_PREMIUM", "1", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_AD__IS_AD_AVG(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("AD", "IS_AD_AVG", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_AD__IS_LEAK_AVG(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("AD", "IS_LEAK_AVG", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_AD_EXTENSIONS__IS_ACPC(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("AD_EXTENSIONS", "IS_ACPC", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_AD__IS_REINSTATE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("AD", "IS_REINSTATE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_AD__IS_LOSS_AVG(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("AD", "IS_LOSS_AVG", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_AD__EXCL_PROPERTY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("AD", "EXCL_PROPERTY", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_AD__DEFINE_PROPERTY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("AD", "DEFINE_PROPERTY", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_REFERRALS__RefCount(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultIntegerTo("REFERRALS", "RefCount", "0", "{listcode}")
+        End If
+End Sub
+
+Sub DoDefaults(bIsOnStart)
+    Call WebRequired(bIsOnStart)
+    Call onScreenLogic(bIsOnStart)
+    Call onValidate_GENERAL__IS_MTA_REASON(bIsOnStart)
+    Call onValidate_GENERAL__ACCEPT_DUPLIC_CLIENT(bIsOnStart)
+    Call onValidate_GENERAL__IS_VAT(bIsOnStart)
+    Call onValidate_GENERAL__NEXUSQS(bIsOnStart)
+    Call onValidate_GENERAL__IS_MISC_THEFT(bIsOnStart)
+    Call onValidate_RISK_SELECTION__FIRE(bIsOnStart)
+    Call onValidate_RISK_SELECTION__BUILDINGS_COMB(bIsOnStart)
+    Call onValidate_RISK_SELECTION__OFFICE_CONT(bIsOnStart)
+    Call onValidate_RISK_SELECTION__BI(bIsOnStart)
+    Call onValidate_RISK_SELECTION__ACCOUNT_RECEIVE(bIsOnStart)
+    Call onValidate_RISK_SELECTION__ACCIDENTAL_DAMAGE(bIsOnStart)
+    Call onValidate_RISK_SELECTION__POLICYTYPE(bIsOnStart)
+    Call onValidate_RISK_SELECTION__APPLICABLE(bIsOnStart)
+    Call onValidate_RISK_SELECTION__RISK_BLOCKED(bIsOnStart)
+    Call onValidate_FIRE__FLAT_PREMIUM(bIsOnStart)
+    Call onValidate_FIRE__MULTIPLE_BUILDINGS(bIsOnStart)
+    Call onValidate_FIRE__STOCK_DECLARATION(bIsOnStart)
+    Call onValidate_FIRE_EXTENSIONS__IS_ACPC(bIsOnStart)
+    Call onValidate_FIRE_EXTENSIONS__IS_BRANDS_AND_LABELS(bIsOnStart)
+    Call onValidate_FIRE_EXTENSIONS__IS_LEAKAGE(bIsOnStart)
+    Call onValidate_FIRE_EXTENSIONS__IS_RIOT(bIsOnStart)
+    Call onValidate_FIRE_EXTENSIONS__IS_SUBSI(bIsOnStart)
+    Call onValidate_FIRE_EXTENSIONS__IS_WILD_BMB(bIsOnStart)
+    Call onValidate_FIRE_EXTENSIONS__IS_WILD_BMC(bIsOnStart)
+    Call onValidate_FIRE_EXTENSIONS__IS_SHADES(bIsOnStart)
+    Call onValidate_FIRE_EXTENSIONS__IS_GEYSER(bIsOnStart)
+    Call onValidate_FIRE_EXTENSIONS__IS_AVG(bIsOnStart)
+    Call onValidate_FIRE_EXTENSIONS__IS_NASRIA_FIRE(bIsOnStart)
+    Call onValidate_FIRE_EXTENSIONS__IS_NASRIA_ESC(bIsOnStart)
+    Call onValidate_FIRE_EXTENSIONS__IS_NASRIA_INFL(bIsOnStart)
+    Call onValidate_BUILDCOM__FLAT_PREMIUM(bIsOnStart)
+    Call onValidate_BCOM_EXTENSIONS__IS_ACPC(bIsOnStart)
+    Call onValidate_BCOM_EXTENSIONS__IS_POA(bIsOnStart)
+    Call onValidate_BCOM_EXTENSIONS__IS_RIOT(bIsOnStart)
+    Call onValidate_BCOM_EXTENSIONS__IS_SUBSI(bIsOnStart)
+    Call onValidate_BCOM_EXTENSIONS__IS_THEFT(bIsOnStart)
+    Call onValidate_BCOM_EXTENSIONS__IS_WILD_BM(bIsOnStart)
+    Call onValidate_BCOM_EXTENSIONS__IS_SHADES(bIsOnStart)
+    Call onValidate_BCOM_EXTENSIONS__IS_SANITARY(bIsOnStart)
+    Call onValidate_BCOM_EXTENSIONS__IS_GEYSER(bIsOnStart)
+    Call onValidate_BCOM_EXTENSIONS__IS_AVG(bIsOnStart)
+    Call onValidate_BCOM_EXTENSIONS__IS_NASRIA_BC(bIsOnStart)
+    Call onValidate_BCOM_EXTENSIONS__IS_NASRIA_ESC(bIsOnStart)
+    Call onValidate_BCOM_EXTENSIONS__IS_NASRIA_INFL(bIsOnStart)
+    Call onValidate_OFFICE__FLAT_PREMIUM(bIsOnStart)
+    Call onValidate_OFFICE__IS_ALARM(bIsOnStart)
+    Call onValidate_OFFICE_EXTENSIONS__IS_ACPC(bIsOnStart)
+    Call onValidate_OFFICE_EXTENSIONS__IS_LEAKAGE(bIsOnStart)
+    Call onValidate_OFFICE_EXTENSIONS__IS_RIOT(bIsOnStart)
+    Call onValidate_OFFICE_EXTENSIONS__IS_THEFT(bIsOnStart)
+    Call onValidate_OFFICE_EXTENSIONS__IS_WILD_BM(bIsOnStart)
+    Call onValidate_OFFICE_EXTENSIONS__IS_NASRIA_OC(bIsOnStart)
+    Call onValidate_BI__FLAT_PREMIUM(bIsOnStart)
+    Call onValidate_BI__TYPE_OF_COVER(bIsOnStart)
+    Call onValidate_BI__UNINS_WORK_EXP(bIsOnStart)
+    Call onValidate_BI__STAND_CHARGE(bIsOnStart)
+    Call onValidate_BI__IS_GPB(bIsOnStart)
+    Call onValidate_BI__IS_GR(bIsOnStart)
+    Call onValidate_BI__IS_REVENUE(bIsOnStart)
+    Call onValidate_BI__IS_AICW(bIsOnStart)
+    Call onValidate_BI__IS_WG(bIsOnStart)
+    Call onValidate_BI__IS_DWW(bIsOnStart)
+    Call onValidate_BI__IS_FP(bIsOnStart)
+    Call onValidate_BI_EXTENSIONS__IS_AD(bIsOnStart)
+    Call onValidate_BI_EXTENSIONS__IS_ACPC(bIsOnStart)
+    Call onValidate_BI_EXTENSIONS__IS_PAE(bIsOnStart)
+    Call onValidate_BI_EXTENSIONS__IS_PTE(bIsOnStart)
+    Call onValidate_BI_EXTENSIONS__IS_PTI(bIsOnStart)
+    Call onValidate_BI_EXTENSIONS__IS_PUEC(bIsOnStart)
+    Call onValidate_BI_EXTENSIONS__IS_PUIP(bIsOnStart)
+    Call onValidate_BI_EXTENSIONS__IS_TFE(bIsOnStart)
+    Call onValidate_BI_EXTENSIONS__IS_UNSPEC(bIsOnStart)
+    Call onValidate_BI_EXTENSIONS__IS_SPEC(bIsOnStart)
+    Call onValidate_BI_EXTENSIONS__IS_SUB(bIsOnStart)
+    Call onValidate_BI_EXTENSIONS__IS_NASRIA_BI(bIsOnStart)
+    Call onValidate_AR__FLAT_PREMIUM(bIsOnStart)
+    Call onValidate_AR_EXTENSIONS__IS_ACPC(bIsOnStart)
+    Call onValidate_AR_EXTENSIONS__IS_RIOT(bIsOnStart)
+    Call onValidate_AR_EXTENSIONS__IS_DUP_REC(bIsOnStart)
+    Call onValidate_AR_EXTENSIONS__IS_PROTECT(bIsOnStart)
+    Call onValidate_AR_EXTENSIONS__IS_TRANSIT(bIsOnStart)
+    Call onValidate_AD__FLAT_PREMIUM(bIsOnStart)
+    Call onValidate_AD__IS_AD_AVG(bIsOnStart)
+    Call onValidate_AD__IS_LEAK_AVG(bIsOnStart)
+    Call onValidate_AD_EXTENSIONS__IS_ACPC(bIsOnStart)
+    Call onValidate_AD__IS_REINSTATE(bIsOnStart)
+    Call onValidate_AD__IS_LOSS_AVG(bIsOnStart)
+    Call onValidate_AD__EXCL_PROPERTY(bIsOnStart)
+    Call onValidate_AD__DEFINE_PROPERTY(bIsOnStart)
+    Call onValidate_REFERRALS__RefCount(bIsOnStart)
+End Sub
+
+Sub Start()
+    Call DoDefaults(True)
+End Sub
+
+Sub Main()
+    Call DoDefaults(False)
+End Sub
+

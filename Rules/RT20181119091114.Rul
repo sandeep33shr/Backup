@@ -1,0 +1,252 @@
+Sub Start()
+	Dim limitIndem, baseRate, vatFreeSumInsured, Premium, vatFreePremium
+	Dim prodCode, branchName, statusFlag
+		prodCode  = SafecStr(Engine.Item("GENERAL").Item("PRODCODE").value)
+		limitIndem = SafecDbl(Engine.Item("DNOLIAB").Item("LIMITINDEM").value)
+		baseRate = SafecDbl (Engine.Item("DNOLIAB").Item("BASERATE").value)
+		branchName = SafecStr(Engine.Item("GENERAL").Item("BRANCH").value)
+		statusFlag = GetUDLCode((Engine.Item("NOTES").Item("APPSTATUS").value),"UDL_APPSTATUS")
+		
+		
+		
+		If prodCode = "CLA" Then
+			Premium = (limitIndem * (baseRate * 0.01))
+			vatFreePremium = SafecDbl(Premium / 1.15)
+			vatFreeSumInsured = SafecDbl(limitIndem / 1.15)
+			
+			If branchName = "ITOO" Then
+					If statusFlag = "UNK" Then
+						call CreateTask("has been referred to iTOO for approval")
+						Refer "This quote has been referred to iTOO for approval"
+					End If
+					
+					If statusFlag = "DECLINE" Then
+						call CreateTask("has been declined by iTOO")
+						Refer "This quote has been declined by iTOO"
+					End If 
+					
+					If statusFlag = "APP" Then
+						call CreateTask("has been approved by iTOO")					
+						GenerateOutput vatFreeSumInsured, baseRate, vatFreePremium, "DNOLIAB"
+					End If
+					
+					
+				Else
+					GenerateOutput vatFreeSumInsured, baseRate, vatFreePremium, "DNOTRYEXC"
+			End If 
+		End If
+		
+		If prodCode = "CLM" Then
+			Dim monthlyRate
+			monthlyRate = baseRate /12
+			Premium = (limitIndem * (monthlyRate * 0.01))
+			               
+			vatFreePremium = SafecDbl(Premium / 1.15)
+			vatFreeSumInsured = SafecDbl(limitIndem / 1.15)
+			If branchName = "ITOO" Then
+					If statusFlag = "UNK" Then
+						call CreateTask("has been referred to iTOO for approval")
+						Refer "This quote has been referred to iTOO for approval"
+					End If
+					
+					If statusFlag = "DECLINE" Then
+						call CreateTask("has been declined by iTOO")
+						Decline "This quote has been declined by iTOO"
+					End If 
+					
+					If statusFlag = "APP" Then
+						call CreateTask("has been approved by iTOO")
+						GenerateOutput vatFreeSumInsured, baseRate, vatFreePremium, "DNOLIAB"
+					End If
+				Else
+					GenerateOutput vatFreeSumInsured, monthlyRate, vatFreePremium, "DNOTRYEXC"
+			End If
+		 End If
+
+End Sub
+
+Function GenerateOutput(cSI, cRATE, cPREM, cRatingSection)
+	Dim counter
+	Engine.NewObject("DNOLIABRSK_Output")
+	counter= Engine.Count("DNOLIABRSK_Output")
+
+	Engine.Item("DNOLIABRSK_Output",counter).Item("Sum_insured").value = cSI
+	Engine.Item("DNOLIABRSK_Output",counter).Item("Rate").value = cRATE
+	Engine.Item("DNOLIABRSK_Output",counter).Item("Premium").value = cPREM
+	Engine.Item("DNOLIABRSK_Output",counter).Item("risk_rating_section").value = cRatingSection
+
+End Function
+
+Sub Refer(sReferReason)
+'****************************
+            Dim iCount
+            Engine.NewObject("DNOLIABRSK_Output")
+            iCount = Engine.Count("DNOLIABRSK_Output")
+    Engine.Item("DNOLIABRSK_Output", iCount).Item("Refer_Reason").Value = sReferReason        
+End Sub 
+
+Sub Decline(sDeclineReason)
+'****************************
+            Dim iCount
+            Engine.NewObject("DNOLIABRSK_Output")
+            iCount = Engine.Count("DNOLIABRSK_Output")
+    Engine.Item("DNOLIABRSK_Output", iCount).Item("Decline_Reason").Value = sDeclineReason        
+End Sub           
+
+
+
+Function GetProrataPrem(annPrem)
+	GetProrataPrem = 0
+	Dim dtStartDate, dtEndDate, prorataFactor, thisPrem
+	Dim vResults
+	Dim m_lReturn
+	Dim offset
+	
+	offset = 1
+	m_lReturn = Extras.GetBODetails(vResults)
+	
+	If IsArray(vResults) Then
+		dtStartDate = SafecDate(vResults(1,0))
+		dtEndDate = SafecDate(vResults(2,0))
+	End If
+	
+	prorataFactor = CalculateProrataFactor(dtStartDate, dtEndDate, offset)
+	
+	thisPrem = annPrem * prorataFactor
+	
+	GetProrataPrem = thisPrem	
+	
+End Function
+
+'****************************************************************************************
+' returns propotion of dblValue based on number of days between dtStartDate and dtEndDate
+'****************************************************************************************
+
+Function CalculateProrataFactor(dtStartDate, dtEndDate, lOffsetValue)
+		dim lMaxDays, lPeriodDays
+		lMaxDays = 365
+	   CalculateProrataFactor = 1
+
+		if IsLeapYear(Year(dtStartDate)) then
+						if DateDiff("d",dtStartDate,"29 Feb " & Year(dtStartDate)) >= 0  then
+										lMaxDays = 366
+						end if
+		elseif IsLeapYear(Year(dtEndDate)) then
+						if DateDiff("d","29 Feb " & Year(dtEndDate),dtEndDate) >= 0 then
+										lMaxDays = 366
+						end if                                    
+		end if
+		
+		lPeriodDays =  Abs(DateDiff("d",dtStartDate,dtEndDate))
+		
+		lPeriodDays = lPeriodDays + lOffsetValue
+		
+	   CalculateProrataFactor = (lPeriodDays/lMaxDays)
+
+End function
+
+
+'****************************************************************************************
+' Create task on work manager
+'****************************************************************************************
+
+Sub CreateTask(sTaskDescription)
+    Dim mReturn
+	Dim vExtraParameters
+	Dim lCount
+    Dim sTaskCode : sTaskCode = "UNDER"
+    Dim sInsuranceNo
+    Dim sUserGroupCode
+	Dim vResults
+	
+	Call Extras.CallNamedStoredProcedure (clng(6722), cstr("GetPolicyNumber"), vResults, vExtraParameters)
+
+	If IsArray(vResults) Then
+		For lCount = lBound(vResults, 2) to uBound(vResults, 2)
+ 			sInsuranceNo = vResults(0,lCount)
+		Next
+	End If
+
+
+    sUserGroupCode = "ITOOTEAM"
+
+    sTaskCode = sTaskCode & SafeCStr(Extras.TransactionType)
+   
+		Extras.TaskUrgent = 1
+               Extras.TaskDueDate = Date
+		Extras.TaskCode = sTaskCode
+		Extras.TaskDescription = " Quote " & sInsuranceNo & " " & sTaskDescription
+    'Extras.TaskGroup = "UNDER"
+		Extras.TaskUser = "All Users"
+		Extras.TaskUserGroup = sUserGroupCode
+		mReturn = Extras.AddTaskToWorkManager()
+End Sub
+
+
+'***************************************************************************************
+Function GetUDLCode(SearchValue, UdlName)
+'***************************************************************************************
+	DIM vResult
+	DIM sSQL	
+
+	SearchValue = SafecDbl(SearchValue)
+	
+    IF SafecDbl(SearchValue) = 0 THEN
+        GetUDLCode = 0
+		Exit Function
+    END IF
+	
+	sSQL = "Select Code from " & UdlName & " Where " & UdlName & "_id = " & SearchValue 
+	Call Extras.CallNamedStoredProcedure(4033, "RetrieveData", vResult, Array("sSQL",sSQL))
+	If IsArray(vResult) then			
+		GetUDLCode =  vResult(0,0)	
+	else
+		GetUDLCode = vResult
+	End if
+End Function
+
+
+Function IsLeapYear(lYear)
+		IsLeapYear = False
+		
+		If lYear > 0 Then
+			IsLeapYear = ((lYear Mod 4 = 0 And lYear Mod 100 <> 0) Or (lYear Mod 4 = 0 And lYear Mod 100 = 0 And lYear Mod 400 = 0))
+		End If               
+End Function
+
+Function SafecDbl(value)
+		SafecDbl = 0
+		On Error Resume Next
+		SafecDbl = CDbl(value)
+		On Error GoTo 0
+End Function
+
+
+Function SafeInt(value)
+	SafeInt = 0
+	On Error Resume Next
+	SafeInt = CInt(value)
+	On Error GoTo 0
+End Function
+
+Function SafecStr(value)
+    SafecStr = ""
+    On Error Resume Next
+    SafecStr = CStr(value)
+    On Error GoTo 0
+End Function
+
+Function ConvertToBool(value)
+    ConvertToBool = 0
+    On Error Resume Next
+    ConvertToBool = CBool(value)
+    On Error GoTo 0
+
+End Function
+
+Function SafecDate(value)
+    SafecDate = 0
+    On Error Resume Next
+    SafecDate = CDate(value)
+    On Error GoTo 0
+End Function

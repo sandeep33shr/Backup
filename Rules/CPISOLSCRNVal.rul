@@ -1,0 +1,62 @@
+Execute GetIncludeScriptFromFile("ExpensesReserveUpdate.rul")
+
+'****************************************************
+' Merge sFileName into current script file
+'****************************************************
+Function GetIncludeScriptFromFile(sFileName)
+	Dim objFileSystem, objTextStream, objRegistry, sRulePath, sOS
+
+	Set objRegistry = CreateObject("Wscript.shell")
+
+	sOS = trim(objRegistry.RegRead("HKEY_LOCAL_MACHINE\HARDWARE\DESCRIPTION\System\CentralProcessor\0\Identifier"))
+
+	if Instr(sOS,"64") > 0 then
+		sRulePath = trim(objRegistry.RegRead("HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Pure\PureInstallation\Common\GIS\RulePath"))
+	else
+		sRulePath = trim(objRegistry.RegRead("HKEY_LOCAL_MACHINE\Software\Pure\PureInstallation\Common\GIS\RulePath"))
+	end if
+
+	if right(sRulePath,1) <> "\" then
+		sRulePath = sRulePath & "\"
+	end if
+
+	'read the include file from disk
+	Set objFileSystem = CreateObject("Scripting.FileSystemObject")
+	Set objTextStream = objFileSystem.OpenTextFile(sRulePath & sFileName, 1)
+	GetIncludeScriptFromFile = objTextStream.ReadAll
+	objTextStream.Close
+
+	set objFileSystem = nothing
+	set objTextStream = nothing
+	set objRegistry = nothing
+End Function
+'************* End of GetIncludeScriptFromFile *******
+
+Sub DoValidation()
+'Write validation code here
+
+	If (Extras.TransactionType = kTRANSACTIONTYPE_OpenClaim) OR (Extras.TransactionType = kTRANSACTIONTYPE_MaintainClaim) OR (Extras.TransactionType = kTRANSACTIONTYPE_PayClaim) then
+		Call CoreReserves()
+		Call CorePayment ()
+		'Call CoreRecoveries ()
+	End If
+End Sub
+
+Sub Start()
+	
+    If (Extras.TransactionType = kTRANSACTIONTYPE_OpenClaim) OR (Extras.TransactionType = kTRANSACTIONTYPE_MaintainClaim) OR (Extras.TransactionType = kTRANSACTIONTYPE_PayClaim) then
+		Call CoreReserves()
+		Call CorePayment ()
+		'Call CoreRecoveries ()
+	End If
+End Sub
+
+Sub Main()
+	
+    If (Extras.TransactionType = kTRANSACTIONTYPE_OpenClaim) OR (Extras.TransactionType = kTRANSACTIONTYPE_MaintainClaim) OR (Extras.TransactionType = kTRANSACTIONTYPE_PayClaim) then
+		Call CoreReserves()
+		Call CorePayment ()
+		'Call CoreRecoveries ()
+	End If
+End Sub
+

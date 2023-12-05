@@ -1,0 +1,305 @@
+        Dim iObjectInstanceCount
+        
+        Sub FindObjectInstanceCount(strScreenObjectName)
+        	iObjectInstanceCount = 1
+        
+        	' strScreenObjectName is the object that is associate with this screen (if a child), or "" if the root screen.
+        	If strScreenObjectName <> ""  Then
+        		Dim instanceCount
+        		
+        		' How many instance of this object exist?
+        		instanceCount = engine.count(strScreenObjectName)
+        		
+        		Dim i
+        		for i = 1 to instanceCount
+        			if engine.item(strScreenObjectName, i).item("OI").value = vAdditionalData(cAdditionalData_OIKey) then
+        				iObjectInstanceCount = i
+        			end if
+        		next
+        	End If
+        End Sub
+
+        Sub DefaultTextTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultCommentTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = strValue
+        End Sub
+
+        
+        Sub DefaultIntegerTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CLng(strValue)
+        End Sub
+
+        
+        Sub DefaultCheckboxTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanListTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultBooleanRadioTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        End Sub
+
+        
+        Sub DefaultListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	If InStr(1, LCase(strValue), "code:", 1) = 1 Then
+        		' The default value has been specified as a code (code:<thecode>).
+        		Dim code
+        		Dim effectiveDate
+        		Dim version
+        		
+        		code = Mid(strValue, Len("code:")+1)
+        		effectiveDate = Now()
+        		version = 1
+        		
+        		Dim listItemId
+        		listItemId = Extras.GetField(strListCode, strListCode + "_Id", code, effectiveDate, version)
+        		
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(listItemId)
+        	Else
+        		Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CInt(strValue)
+        	End If
+        End Sub
+
+        
+        Sub DefaultRateListTo(strSourceObject, strSourceProperty, strValue, strListCode)
+        	' TODO.
+        End Sub
+
+        
+        Sub DefaultDateTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	
+        	Dim location
+        	Dim Interval
+        	Dim Duration
+        	Dim DateValue
+        	
+        	'Upper case the input
+        	DateValue = UCase(strValue)
+        	'Check to see if we want data AND  Time
+        	location = InStr(1,DateValue,"DATETIME")
+        	if location > 0 then
+        		DateValue=  CDate(FormatDateTime(Now,0)) 'use the standard vb datetime
+        	End If
+        	'Check to see if TODAY is specified as a modifier
+        	location  = InStr(1,DateValue,"TODAY")
+        	If location > 0 Then
+        		'Determine if we are adding values
+        		location  = InStr(1,DateValue,"+")
+        		If location > 0 Then 
+        			Interval = Mid(DateValue,location + 1,1)
+        			
+        			If Interval = "Y" Then
+        				Interval = "YYYY"
+        			End If
+        			
+        			If Interval <> "" Then 
+        				Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        				DateValue = DateAdd(Interval,Duration,CDate(FormatDateTime(Now,2)))	
+        				
+        			Else
+        				'No Interval specified 
+        				'Need an error here!!!!
+        			End If	
+        		Else 
+        			'Check to see if we are subtracting values
+        			location  =InStr(1,DateValue,"-")
+        			If location > 0  Then 
+        				Interval = Mid(DateValue,location + 1,1)
+        				
+        				If Interval <> "" Then 
+        					Duration  = Mid(DateValue,location + 2,Len(DateValue) - (location+1))
+        					DateValue = DateAdd(Interval, Duration * -1,CDate(FormatDateTime(Now,2)))	
+        				Else
+        					'No Interval specified 
+        					'Need an error here!!!!
+        				End If
+        			Else
+        				'No Function specified, so assume we are just using today's date as a shortdate
+        				DateValue = CDate(FormatDateTime(Now,2))
+        			End If
+        			
+        		End If
+        		
+        	End If	
+        	
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDate(DateValue)
+        End Sub
+
+        
+        Sub DefaultCurrencyTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+        
+        Sub DefaultPercentageTo(strSourceObject, strSourceProperty, strValue, strIgnore)
+        	Engine.Item(strSourceObject, iObjectInstanceCount).Item(strSourceProperty).Value = CDbl(strValue)
+        End Sub
+
+Sub WebRequired(bIsOnStart)
+	If bIsOnStart = True Then
+		Engine.NewObject("TMOTOCLAIM")
+	End If
+End Sub
+
+Sub onScreenLogic(bIsOnStart)
+        If bIsOnStart = True Then
+        		Dim x,cnt,nIndex
+        		Engine.NewObject("TOPUPMOTOR")
+        		Extras.RiskDataEngine.NewObject("TMOTOCLAIM")
+        		
+                    '---------------------------------------------------
+        		    '---START: Non-child screen properties population---	
+        		    '--------------------------------------------------- 
+        			   'Collect data from Policy risk
+        			   Dim MakeCode, Descript, Year_Manufactured, Registration_No, Engine_No, Chassis, Vin_No, SumInsured, Make, Model
+        			   
+                                  MakeCode  = Extras.RiskDataEngine.Item("TOPUPMOTOR").Item("MAKECODE").Value
+                			      Descript  = Extras.RiskDataEngine.Item("TOPUPMOTOR").Item("MMDESCRIPT").Value
+        						  Year_Manufactured = Extras.RiskDataEngine.Item("TOPUPMOTOR").Item("YEARMAN").Value
+        						  Registration_No  = Extras.RiskDataEngine.Item("TOPUPMOTOR").Item("REG_NO").Value
+                			      Engine_No  = Extras.RiskDataEngine.Item("TOPUPMOTOR").Item("ENGINE_NO").Value
+        						  Chassis = Extras.RiskDataEngine.Item("TOPUPMOTOR").Item("CHASSIS").Value
+        						  Vin_No  = Extras.RiskDataEngine.Item("TOPUPMOTOR").Item("VIN_NO").Value
+                			      SumInsured  = Extras.RiskDataEngine.Item("TOPUPMOTOR").Item("SUMINSURED").Value
+        						  Make  = Extras.RiskDataEngine.Item("TOPUPMOTOR").Item("MAKE").Value
+        						  Model  = Extras.RiskDataEngine.Item("TOPUPMOTOR").Item("MODEL").Value
+        						  
+                				'	'Send data to the claim screen
+                				
+                					Engine.Item("TMOTOCLAIM").Item("MAKECODE").Value = MakeCode
+                					Engine.Item("TMOTOCLAIM").Item("MMDESCRIPT").Value = Descript
+        							Engine.Item("TMOTOCLAIM").Item("YEARMAN").Value = Year_Manufactured	
+                                    Engine.Item("TMOTOCLAIM").Item("REG_NO").Value = Registration_No
+                					Engine.Item("TMOTOCLAIM").Item("ENGINE_NO").Value = Engine_No
+        							Engine.Item("TMOTOCLAIM").Item("CHASSIS").Value = Chassis
+                                    Engine.Item("TMOTOCLAIM").Item("VIN_NO").Value = Vin_No
+                					Engine.Item("TMOTOCLAIM").Item("SUMINSURED").Value = SumInsured
+        							Engine.Item("TMOTOCLAIM").Item("MAKE").Value = Make
+        							Engine.Item("TMOTOCLAIM").Item("MODEL").Value = Model
+        													
+        					
+        		Call DoInstanceCount
+        	End If
+        End Sub
+
+        
+        Sub DoInstanceCount
+        If bIsOnStart = True Then
+        		Dim x,cnt,nIndex
+        		Engine.NewObject("TOPUPMOTOR")
+        		Extras.RiskDataEngine.NewObject("TMOTOCLAIM")
+        		
+                    '---------------------------------------------------
+        		    '---START: Non-child screen properties population---	
+        		    '--------------------------------------------------- 
+        			   'Collect data from Policy risk
+        			   Dim MakeCode, Descript, Year_Manufactured, Registration_No, Engine_No, Chassis, Vin_No, SumInsured, Make, Model
+        			   
+                                  MakeCode  = Extras.RiskDataEngine.Item("TOPUPMOTOR").Item("MAKECODE").Value
+                			      Descript  = Extras.RiskDataEngine.Item("TOPUPMOTOR").Item("MMDESCRIPT").Value
+        						  Year_Manufactured = Extras.RiskDataEngine.Item("TOPUPMOTOR").Item("YEARMAN").Value
+        						  Registration_No  = Extras.RiskDataEngine.Item("TOPUPMOTOR").Item("REG_NO").Value
+                			      Engine_No  = Extras.RiskDataEngine.Item("TOPUPMOTOR").Item("ENGINE_NO").Value
+        						  Chassis = Extras.RiskDataEngine.Item("TOPUPMOTOR").Item("CHASSIS").Value
+        						  Vin_No  = Extras.RiskDataEngine.Item("TOPUPMOTOR").Item("VIN_NO").Value
+                			      SumInsured  = Extras.RiskDataEngine.Item("TOPUPMOTOR").Item("SUMINSURED").Value
+        						  Make  = Extras.RiskDataEngine.Item("TOPUPMOTOR").Item("MAKE").Value
+        						  Model  = Extras.RiskDataEngine.Item("TOPUPMOTOR").Item("MODEL").Value
+        						  
+                				'	'Send data to the claim screen
+                				
+                					Engine.Item("TMOTOCLAIM").Item("MAKECODE").Value = MakeCode
+                					Engine.Item("TMOTOCLAIM").Item("MMDESCRIPT").Value = Descript
+        							Engine.Item("TMOTOCLAIM").Item("YEARMAN").Value = Year_Manufactured	
+                                    Engine.Item("TMOTOCLAIM").Item("REG_NO").Value = Registration_No
+                					Engine.Item("TMOTOCLAIM").Item("ENGINE_NO").Value = Engine_No
+        							Engine.Item("TMOTOCLAIM").Item("CHASSIS").Value = Chassis
+                                    Engine.Item("TMOTOCLAIM").Item("VIN_NO").Value = Vin_No
+                					Engine.Item("TMOTOCLAIM").Item("SUMINSURED").Value = SumInsured
+        							Engine.Item("TMOTOCLAIM").Item("MAKE").Value = Make
+        							Engine.Item("TMOTOCLAIM").Item("MODEL").Value = Model
+        													
+        					
+        		Call DoInstanceCount
+        	End If
+        End Sub
+
+        
+        Sub DoInstanceCount
+        ' The ScreenMain rule is added to every screen automatically.
+        
+        
+        Call FindObjectInstanceCount("")
+End Sub
+
+Sub onValidate_TMOTOCLAIM__THIRDPARTY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("TMOTOCLAIM", "THIRDPARTY", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_TMOTOCLAIM__SALVAGE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("TMOTOCLAIM", "SALVAGE", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_TMOTOCLAIM__RECOVERY(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("TMOTOCLAIM", "RECOVERY", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_TMOTOCLAIM__IS_SPM(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("TMOTOCLAIM", "IS_SPM", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_TMOTOCLAIM__IS_THRDTLS(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("TMOTOCLAIM", "IS_THRDTLS", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_TMOTOCLAIM__IS_NAMAPP(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultCheckboxTo("TMOTOCLAIM", "IS_NAMAPP", "0", "{listcode}")
+        End If
+End Sub
+
+Sub onValidate_TMOTOCLAIM__COVERTYPE(bIsOnStart)
+        If bIsOnStart = True Then
+        	Call DefaultRateListTo("TMOTOCLAIM", "COVERTYPE", "1", "MVCOVER")
+        End If
+End Sub
+
+Sub DoDefaults(bIsOnStart)
+    Call WebRequired(bIsOnStart)
+    Call onScreenLogic(bIsOnStart)
+    Call onValidate_TMOTOCLAIM__THIRDPARTY(bIsOnStart)
+    Call onValidate_TMOTOCLAIM__SALVAGE(bIsOnStart)
+    Call onValidate_TMOTOCLAIM__RECOVERY(bIsOnStart)
+    Call onValidate_TMOTOCLAIM__IS_SPM(bIsOnStart)
+    Call onValidate_TMOTOCLAIM__IS_THRDTLS(bIsOnStart)
+    Call onValidate_TMOTOCLAIM__IS_NAMAPP(bIsOnStart)
+    Call onValidate_TMOTOCLAIM__COVERTYPE(bIsOnStart)
+End Sub
+
+Sub Start()
+    Call DoDefaults(True)
+End Sub
+
+Sub Main()
+    Call DoDefaults(False)
+End Sub
+

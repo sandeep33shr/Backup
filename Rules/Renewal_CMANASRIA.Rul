@@ -1,0 +1,4 @@
+Sub Start()
+	
+	Engine.Item("NASRIA").Item("EFFECTIVEDATE").Value = Extras.CoverStartDate
+End Sub

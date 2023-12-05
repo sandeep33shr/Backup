@@ -1,0 +1,87 @@
+
+Sub Start()
+
+	Call CheckSumInsured()
+
+End Sub
+
+Sub CheckSumInsured()
+Dim Code
+	Dim SumInsured, Min_SI
+	Dim sSQL, vResult
+    Dim AllRiskCOunt
+    Dim RiskObject, RiskChildObject
+    Dim x, nIndex 
+
+    x = 1
+    RiskObject = "COMPEQ_DET"
+    RiskChildObject = "COMPEQ"
+    AllRiskCOunt = Engine.Count(RiskObject)
+
+'------------Get Data from Screen--------------' 
+For nIndex = x To AllRiskCOunt
+Code = SafecStr(Engine.Item(RiskChildObject).Item(RiskObject, x).Item("CATEGORY_CODE").value) 
+SumInsured = SafecDbl(Engine.Item(RiskChildObject).Item(RiskObject, x).Item("SUMINSURED").Value)
+	
+	If Code <> "" Then
+		sSQL = "Select Min_SI from UDL_PCEQRITEM Where code = '" & Code & "'"
+		Call Extras.CallNamedStoredProcedure(4033, "RetrieveData", vResult, Array("sSQL", sSQL))
+		If IsArray(vResult) Then
+			Min_SI = vResult(0, 0)
+		End If
+
+	 If SumInsured < Min_SI Then
+        Engine.Item("COMPEQ").Item("COMPEQ_DET",x).Item("SUMINSURED").Value = Min_SI
+    Else
+        Engine.Item("COMPEQ").Item("COMPEQ_DET",x).Item("SUMINSURED").Value = SumInsured
+    End If
+	End If
+    	x = x + 1
+Next
+End Sub
+
+Sub MinimumSIOutput(DeclineMsg)
+    Dim iCount
+    Engine.NewObject(PCOMPEQRSK & "_Output")
+    iCount = Engine.Count(PCOMPEQRSK & "_Output")
+    Engine.Item(PCOMPEQRSK & "_OUTPUT", iCount).Item("Decline_Reason").Value = DeclineMsg & " - Sum Insured is Smaller than the minimum Sum Insured"
+End Sub
+
+Function SafeCCur(vIn)
+    SafeCCur = 0
+    On Error Resume Next
+    SafeCCur = CCur(vIn)
+    On Error GoTo 0
+End Function
+Function SafecDbl(value)
+
+                SafecDbl=0
+                On Error Resume Next
+                SafecDbl=CDbl(value)
+                On Error GoTo 0
+
+End Function
+Function SafecStr(value)
+    SafecStr = ""
+    On Error Resume Next
+    SafecStr = CStr(value)
+    On Error GoTo 0
+End Function
+    Function SafeInt(value)
+        SafeInt = 0
+        On Error Resume Next
+        SafeInt = CInt(value)
+        On Error GoTo 0
+    End Function
+    Function SafecBool(value)
+        SafecBool = 0
+        On Error Resume Next
+        SafecBool = CBool(value)
+        On Error GoTo 0
+    End Function
+    Function SafecLng(value)
+        SafecLng = 0
+        On Error Resume Next
+        SafecLng = CLng(value)
+        On Error GoTo 0
+    End Function

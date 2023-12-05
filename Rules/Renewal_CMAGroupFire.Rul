@@ -1,0 +1,28 @@
+Sub Start()
+	
+	'Check if the cover has been added
+	If	Engine.Item("RISK_SELECTION").Item("FIRE").Value = 1 Then
+		Engine.Item("FIRE").Item("EFFECTIVEDATE").Value = Extras.CoverStartDate
+	End If
+	
+	If	Engine.Item("RISK_SELECTION").Item("BUILDINGS_COMB").Value = 1 Then
+		Engine.Item("BUILDCOM").Item("EFFECTIVEDATE").Value = Extras.CoverStartDate
+	End If
+	
+	If	Engine.Item("RISK_SELECTION").Item("OFFICE_CONT").Value = 1 Then
+		Engine.Item("OFFICE").Item("EFFECTIVEDATE").Value = Extras.CoverStartDate
+	End If
+	
+	If	Engine.Item("RISK_SELECTION").Item("BI").Value = 1 Then
+		Engine.Item("BI").Item("EFFECTIVEDATE").Value = Extras.CoverStartDate
+	End If
+	
+	If	Engine.Item("RISK_SELECTION").Item("ACCOUNT_RECEIVE").Value = 1 Then
+		Engine.Item("AR").Item("EFFECTIVEDATE").Value = Extras.CoverStartDate
+	End If
+	
+	If	Engine.Item("RISK_SELECTION").Item("ACCIDENTAL_DAMAGE").Value = 1 Then
+		Engine.Item("AD").Item("EFFECTIVEDATE").Value = Extras.CoverStartDate
+	End If
+
+End Sub
